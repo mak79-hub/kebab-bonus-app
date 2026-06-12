@@ -1,0 +1,115 @@
+body {
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 500px;
+    margin: auto;
+}
+
+.card {
+    background: #1b1b1b;
+    border: 2px solid #ff2b2b;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+h1 {
+    color: white;
+    text-align: center;
+}
+
+h2 {
+    color: white;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: none;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    background: #ff2b2b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #d90000;
+}
+
+.logo {
+    text-align: center;
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.points {
+    color: #ffd700;
+    font-size: 36px;
+    font-weight: bold;
+}
+
+.success {
+    background: #1f5f1f;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.error {
+    background: #8b0000;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+a {
+    color: #ff6b6b;
+}
+label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    font-size: 16px;
+}
+
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.logo {
+    text-align: center;
+    font-size: 34px;
+    font-weight: 900;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+}
+
+button {
+    background: #c1121f;
+}
+
+button:hover {
+    background: #9b0d18;
+}
