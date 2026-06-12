@@ -1,20 +1,68 @@
-from flask import Flask, request, render_template
-import psycopg2
-import qrcode
+import os
 import base64
 from io import BytesIO
 
+import psycopg2
+import qrcode
+from flask import Flask, request, render_template, url_for
+
 app = Flask(__name__)
 
-DB_CONFIG = {
-    "host": "localhost",
-    "database": "kebab_assistent",
-    "user": "postgres",
-    "password": "Auto2026!"
-}
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 def get_db_connection():
-    return psycopg2.connect(**DB_CONFIG)
+    if DATABASE_URL:
+        return psycopg2.connect(DATABASE_URL)
+    return psycopg2.connect(
+        host="localhost",
+        database="kebab_assistent",
+        user="postgres",
+        password="Auto2026!"
+    )
+
+def init_db():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS kunden (
+            id SERIAL PRIMARY KEY,
+            kunden_id TEXT UNIQUE,
+            vorname TEXT NOT NULL,
+            nachname TEXT NOT NULL,
+            geburtsdatum DATE NOT NULL,
+            telefon TEXT,
+            adresse TEXT,
+            werbeeinwilligung BOOLEAN DEFAULT FALSE,
+            werbeeinwilligung_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS kunden_laeden (
+            id SERIAL PRIMARY KEY,
+            kunde_id INTEGER REFERENCES kunden(id),
+            laden_id INTEGER DEFAULT 1,
+            punkte INTEGER DEFAULT 0,
+            letzter_besuch TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(kunde_id, laden_id)
+        );
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS punkte_bewegungen (
+            id SERIAL PRIMARY KEY,
+            kunde_id INTEGER REFERENCES kunden(id),
+            typ TEXT NOT NULL,
+            punkte INTEGER NOT NULL,
+            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def make_qr_code(data):
     img = qrcode.make(data)
@@ -38,6 +86,8 @@ def get_punktestand(kunde_id):
     conn.close()
 
     return punktestand
+
+init_db()
 
 @app.route("/", methods=["GET", "POST"])
 def register():
@@ -78,7 +128,7 @@ def register():
                     werbeeinwilligung_am
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                RETURNING id, kunden_id
+                RETURNING id
             """, (
                 vorname,
                 nachname,
@@ -88,9 +138,14 @@ def register():
                 angebote
             ))
 
-            kunde = cur.fetchone()
-            kunde_db_id = kunde[0]
-            kunden_id = kunde[1]
+            kunde_db_id = cur.fetchone()[0]
+            kunden_id = f"KH-{30000 + kunde_db_id}"
+
+            cur.execute("""
+                UPDATE kunden
+                SET kunden_id = %s
+                WHERE id = %s
+            """, (kunden_id, kunde_db_id))
 
         cur.execute("""
             INSERT INTO kunden_laeden (
@@ -107,7 +162,7 @@ def register():
         cur.close()
         conn.close()
 
-        qr_data = f"http://10.3.1.45:5000/kunde/{kunden_id}"
+        qr_data = url_for("kunde", kunden_id=kunden_id, _external=True)
         qr_code = make_qr_code(qr_data)
 
         return f"""
@@ -148,16 +203,12 @@ def kunde(kunden_id):
 
     return f"""
     <h1>Kundenkarte</h1>
-
     <p>Kunden-ID:</p>
     <h2>{kunde[1]}</h2>
-
     <p>Name:</p>
     <h2>{kunde[2]} {kunde[3]}</h2>
-
     <p>Aktueller Punktestand:</p>
     <h2>{punktestand} Punkte</h2>
-
     <a href="/">Zurück</a>
     """
 
@@ -173,14 +224,11 @@ def mitarbeiter():
 
     return """
     <h1>Mitarbeiterbereich</h1>
-
     <form method="POST">
         Kunden-ID eingeben:<br>
-        <input type="text" name="kunden_id" placeholder="KH-30002" required><br><br>
-
+        <input type="text" name="kunden_id" placeholder="KH-30001" required><br><br>
         <button type="submit">Kunden suchen</button>
     </form>
-
     <br>
     <a href="/">Zurück</a>
     """
@@ -206,10 +254,9 @@ def mitarbeiter_kunde(kunden_id):
         conn.close()
         return """
         <h1>Kunde nicht gefunden</h1>
-
         <form action="/mitarbeiter" method="POST">
             Kunden-ID nochmal eingeben:<br>
-            <input type="text" name="kunden_id" placeholder="KH-30002" required><br><br>
+            <input type="text" name="kunden_id" placeholder="KH-30001" required><br><br>
             <button type="submit">Kunden suchen</button>
         </form>
         """
@@ -267,7 +314,6 @@ def mitarbeiter_kunde(kunden_id):
 
     return f"""
     <h1>Mitarbeiterbereich</h1>
-
     <p>{meldung}</p>
 
     <p>Kunden-ID:</p>
@@ -282,26 +328,20 @@ def mitarbeiter_kunde(kunden_id):
     <hr>
 
     <h3>Punkte gutschreiben</h3>
-
     <form method="POST">
         Einkaufsbetrag in Euro:<br>
         <input type="number" step="0.01" name="betrag" required><br><br>
-
         <input type="hidden" name="aktion" value="gutschrift">
-
         <button type="submit">Punkte gutschreiben</button>
     </form>
 
     <hr>
 
     <h3>Punkte einlösen</h3>
-
     <form method="POST">
         Punkte einlösen:<br>
         <input type="number" name="punkte_einloesen" required><br><br>
-
         <input type="hidden" name="aktion" value="einloesung">
-
         <button type="submit">Punkte einlösen</button>
     </form>
 
