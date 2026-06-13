@@ -92,7 +92,7 @@ def get_punktestand(kunde_id):
     return punktestand
 
 
-def mitarbeiter_style():
+def app_style():
     return """
     <style>
         * {
@@ -126,16 +126,31 @@ def mitarbeiter_style():
 
         .logo {
             text-align: center;
-            font-size: 28px;
+            font-size: 30px;
             font-weight: 900;
             color: #ff2b2b;
             margin-bottom: 6px;
+            letter-spacing: 1px;
         }
 
         .subtitle {
             text-align: center;
-            color: #aaa;
+            color: #bbb;
             margin-bottom: 24px;
+            font-size: 16px;
+        }
+
+        .success-icon {
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            background: #1fa463;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 18px auto;
+            font-size: 38px;
+            font-weight: 900;
         }
 
         .info-box {
@@ -147,7 +162,7 @@ def mitarbeiter_style():
         }
 
         .label {
-            color: #999;
+            color: #aaa;
             font-size: 14px;
             margin-bottom: 4px;
         }
@@ -167,13 +182,38 @@ def mitarbeiter_style():
         }
 
         .points .number {
-            font-size: 44px;
+            font-size: 46px;
             font-weight: 900;
         }
 
         .points .text {
             font-size: 16px;
             color: #ffe2e2;
+        }
+
+        .qr-box {
+            background: white;
+            border-radius: 22px;
+            padding: 18px;
+            text-align: center;
+            margin: 20px auto;
+            max-width: 300px;
+        }
+
+        .qr-box img {
+            width: 250px;
+            max-width: 100%;
+        }
+
+        .hint {
+            background: #252525;
+            border: 1px solid #444;
+            border-radius: 16px;
+            padding: 14px;
+            color: #ddd;
+            font-size: 15px;
+            line-height: 1.4;
+            margin-bottom: 18px;
         }
 
         input {
@@ -248,10 +288,6 @@ def mitarbeiter_style():
             height: 1px;
             background: #333;
             margin: 24px 0;
-        }
-
-        a {
-            color: white;
         }
 
         .small-link {
@@ -355,14 +391,37 @@ def register():
         qr_code = make_qr_code(qr_data)
 
         return f"""
-        <h1>Registrierung erfolgreich</h1>
-        <h2>Willkommen {vorname} {nachname}</h2>
-        <p>Deine Kunden-ID:</p>
-        <h2>{kunden_id}</h2>
-        <p>Bitte speichere diesen QR-Code. Er wird beim Sammeln und Einlösen von Punkten benötigt.</p>
-        <img src="data:image/png;base64,{qr_code}" width="250">
-        <br><br>
-        <a href="/">Zurück zur Registrierung</a>
+        {app_style()}
+        <div class="page">
+            <div class="card">
+                <div class="logo">KEBAB HÖHLE</div>
+                <div class="subtitle">Bonusprogramm</div>
+
+                <div class="success-icon">✓</div>
+
+                <h1 style="text-align:center; margin-bottom:8px;">Registrierung erfolgreich</h1>
+                <p style="text-align:center; color:#bbb; margin-bottom:22px;">
+                    Willkommen {vorname} {nachname}
+                </p>
+
+                <div class="info-box">
+                    <div class="label">Deine Kunden-ID</div>
+                    <div class="value">{kunden_id}</div>
+                </div>
+
+                <div class="qr-box">
+                    <img src="data:image/png;base64,{qr_code}">
+                </div>
+
+                <div class="hint">
+                    Bitte speichere diesen QR-Code oder mache einen Screenshot.
+                    Der QR-Code wird beim Sammeln und Einlösen von Punkten benötigt.
+                </div>
+
+                <a class="btn btn-red" href="/kunde/{kunden_id}">Meine Kundenkarte öffnen</a>
+                <a class="btn btn-dark" href="/">Neue Registrierung</a>
+            </div>
+        </div>
         """
 
     return render_template("register.html")
@@ -387,12 +446,22 @@ def kunde(kunden_id):
     conn.close()
 
     if not kunde:
-        return "<h1>Kunde nicht gefunden</h1>"
+        return f"""
+        {app_style()}
+        <div class="page">
+            <div class="card">
+                <div class="logo">KEBAB HÖHLE</div>
+                <div class="subtitle">Kundenkarte</div>
+                <div class="message">❌ Kunde nicht gefunden.</div>
+                <a class="btn btn-red" href="/">Zur Registrierung</a>
+            </div>
+        </div>
+        """
 
     punktestand = get_punktestand(kunde[0])
 
     return f"""
-    {mitarbeiter_style()}
+    {app_style()}
     <div class="page">
         <div class="card">
             <div class="logo">KEBAB HÖHLE</div>
@@ -411,8 +480,9 @@ def kunde(kunden_id):
                 <div class="text">aktuelle Punkte</div>
             </div>
 
-            <a class="btn btn-red" href="/mitarbeiter/{kunde[1]}">Mitarbeiterbereich öffnen</a>
-            <a class="small-link" href="/">Zur Registrierung</a>
+            <div class="hint">
+                Zeige diesen QR-Code im Laden vor, um Punkte zu sammeln oder einzulösen.
+            </div>
         </div>
     </div>
     """
@@ -425,7 +495,7 @@ def mitarbeiter():
         return redirect(f"/mitarbeiter/{kunden_id}")
 
     return f"""
-    {mitarbeiter_style()}
+    {app_style()}
     <div class="page">
         <div class="card">
             <div class="logo">KEBAB HÖHLE</div>
@@ -464,7 +534,7 @@ def mitarbeiter_kunde(kunden_id):
         cur.close()
         conn.close()
         return f"""
-        {mitarbeiter_style()}
+        {app_style()}
         <div class="page">
             <div class="card">
                 <div class="logo">KEBAB HÖHLE</div>
@@ -513,7 +583,7 @@ def mitarbeiter_kunde(kunden_id):
     punktestand = get_punktestand(kunde_db_id)
 
     return f"""
-    {mitarbeiter_style()}
+    {app_style()}
     <div class="page">
         <div class="card">
             <div class="logo">KEBAB HÖHLE</div>
@@ -570,7 +640,7 @@ def punkte_einloesen(kunden_id):
         cur.close()
         conn.close()
         return f"""
-        {mitarbeiter_style()}
+        {app_style()}
         <div class="page">
             <div class="card">
                 <div class="logo">KEBAB HÖHLE</div>
@@ -616,7 +686,7 @@ def punkte_einloesen(kunden_id):
     conn.close()
 
     return f"""
-    {mitarbeiter_style()}
+    {app_style()}
     <div class="page">
         <div class="card">
             <div class="logo">KEBAB HÖHLE</div>
