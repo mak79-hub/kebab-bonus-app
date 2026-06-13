@@ -419,7 +419,7 @@ def register():
                 </div>
 
                 <a class="btn btn-red" href="/kunde/{kunden_id}">Meine Kundenkarte öffnen</a>
-                <a class="btn btn-dark" href="/">Neue Registrierung</a>
+                <a class="small-link" href="/">Neuen Kunden registrieren</a>
             </div>
         </div>
         """
@@ -478,10 +478,6 @@ def kunde(kunden_id):
             <div class="points">
                 <div class="number">{punktestand}</div>
                 <div class="text">aktuelle Punkte</div>
-            </div>
-
-            <div class="hint">
-                Zeige diesen QR-Code im Laden vor, um Punkte zu sammeln oder einzulösen.
             </div>
         </div>
     </div>
