@@ -1,115 +1,172 @@
+* {
+    box-sizing: border-box;
+}
+
 body {
-    background: #111;
-    color: white;
-    font-family: Arial, sans-serif;
     margin: 0;
-    padding: 20px;
+    background: #080808;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-.container {
-    max-width: 500px;
-    margin: auto;
+.register-page {
+    min-height: 100vh;
+    padding: 22px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.card {
-    background: #1b1b1b;
+.brand-header {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    text-align: center;
+    padding: 26px 10px 18px 10px;
+    overflow: hidden;
+}
+
+.brand-logo-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url("/static/logo.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 260px;
+    opacity: 0.13;
+    filter: grayscale(100%);
+    z-index: 0;
+}
+
+.brand-title {
+    position: relative;
+    z-index: 1;
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #ffffff;
+    line-height: 1;
+}
+
+.brand-subtitle {
+    position: relative;
+    z-index: 1;
+    margin-top: 6px;
+    font-size: 20px;
+    color: #ff2b2b;
+    font-weight: 700;
+}
+
+.register-card {
+    width: 100%;
+    max-width: 560px;
+    background: rgba(10, 10, 10, 0.94);
     border: 2px solid #ff2b2b;
-    border-radius: 15px;
-    padding: 20px;
-    margin-bottom: 20px;
+    border-radius: 22px;
+    padding: 28px;
+    box-shadow: 0 22px 55px rgba(0,0,0,0.55);
 }
 
 h1 {
-    color: white;
     text-align: center;
+    font-size: 34px;
+    margin: 0 0 26px 0;
 }
 
-h2 {
-    color: white;
+label {
+    display: block;
+    font-size: 22px;
+    margin-bottom: 8px;
+    color: #f2f2f2;
 }
 
 input {
     width: 100%;
-    padding: 12px;
-    margin-top: 5px;
-    margin-bottom: 15px;
-    box-sizing: border-box;
-    border-radius: 8px;
-    border: none;
+    padding: 17px;
+    margin-bottom: 24px;
+    border-radius: 14px;
+    border: 1px solid #444;
+    background: #2a2a2a;
+    color: white;
+    font-size: 20px;
+    outline: none;
+}
+
+input:focus {
+    border-color: #ff2b2b;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 17px;
+    margin-bottom: 18px;
+}
+
+.checkbox-row input {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    flex-shrink: 0;
 }
 
 button {
     width: 100%;
-    padding: 14px;
+    padding: 18px;
     background: #ff2b2b;
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 18px;
-    font-weight: bold;
+    border-radius: 14px;
+    font-size: 21px;
+    font-weight: 900;
+    cursor: pointer;
+    margin-top: 8px;
 }
 
 button:hover {
     background: #d90000;
 }
 
-.logo {
-    text-align: center;
-    font-size: 32px;
-    font-weight: bold;
-    margin-bottom: 20px;
-}
-
-.points {
-    color: #ffd700;
-    font-size: 36px;
-    font-weight: bold;
-}
-
-.success {
-    background: #1f5f1f;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-}
-
-.error {
-    background: #8b0000;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-}
-
 a {
     color: #ff6b6b;
 }
-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-    font-size: 16px;
-}
 
-input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    flex-shrink: 0;
-}
+@media (max-width: 600px) {
+    .register-page {
+        padding: 12px 10px;
+    }
 
-.logo {
-    text-align: center;
-    font-size: 34px;
-    font-weight: 900;
-    margin-bottom: 24px;
-    letter-spacing: 1px;
-}
+    .brand-title {
+        font-size: 38px;
+    }
 
-button {
-    background: #c1121f;
-}
+    .brand-subtitle {
+        font-size: 18px;
+    }
 
-button:hover {
-    background: #9b0d18;
+    .brand-logo-bg {
+        background-size: 230px;
+        opacity: 0.12;
+    }
+
+    .register-card {
+        max-width: none;
+        width: 100%;
+        border-radius: 20px;
+        padding: 24px;
+    }
+
+    h1 {
+        font-size: 32px;
+    }
+
+    label {
+        font-size: 21px;
+    }
+
+    input {
+        font-size: 20px;
+        padding: 18px;
+    }
 }
