@@ -4,21 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kebab Höhle Bonusprogramm</title>
-
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-<div class="container">
+<div class="register-page">
 
-    <div class="logo">
-        🔥 KEBAB HÖHLE 🔥
+    <div class="brand-header">
+        <div class="brand-logo-bg"></div>
+        <div class="brand-title">KEBAB HÖHLE</div>
+        <div class="brand-subtitle">Bonusprogramm</div>
     </div>
 
-    <div class="card">
+    <div class="register-card">
 
-        <h1>Bonusprogramm</h1>
+        <h1>Registrieren</h1>
 
         <form method="POST">
 
@@ -37,25 +38,17 @@
             <label>Adresse (optional)</label>
             <input type="text" name="adresse">
 
-            <br>
-
-            <label>
-                <input type="checkbox" required>
-                Ich akzeptiere die Datenschutzhinweise
+            <label class="checkbox-row">
+                <input type="checkbox" name="datenschutz" required>
+                <span>Ich akzeptiere die Datenschutzhinweise</span>
             </label>
 
-            <br>
-
-            <label>
+            <label class="checkbox-row">
                 <input type="checkbox" name="angebote">
-                Ich möchte Angebote erhalten
+                <span>Ich möchte Angebote erhalten</span>
             </label>
 
-            <br><br>
-
-            <button type="submit">
-                Registrieren
-            </button>
+            <button type="submit">Registrieren</button>
 
         </form>
 
