@@ -4,38 +4,37 @@
 
 body {
     margin: 0;
-    background: #080808;
+    background: #050505;
     color: white;
     font-family: Arial, Helvetica, sans-serif;
 }
 
 .register-page {
+    position: relative;
     min-height: 100vh;
-    padding: 22px 14px;
+    padding: 28px 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-.brand-header {
-    position: relative;
-    width: 100%;
-    max-width: 560px;
-    text-align: center;
-    padding: 26px 10px 18px 10px;
     overflow: hidden;
 }
 
-.brand-logo-bg {
-    position: absolute;
-    inset: 0;
+.register-page::before {
+    content: "";
+    position: fixed;
+    top: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 520px;
+    height: 520px;
     background-image: url("/static/logo.png");
     background-repeat: no-repeat;
     background-position: center;
-    background-size: 260px;
-    opacity: 0.13;
+    background-size: contain;
+    opacity: 0.18;
     filter: grayscale(100%);
     z-index: 0;
+    pointer-events: none;
 }
 
 .brand-title {
@@ -43,41 +42,34 @@ body {
     z-index: 1;
     font-size: 42px;
     font-weight: 900;
-    letter-spacing: 1px;
-    color: #ffffff;
-    line-height: 1;
-}
-
-.brand-subtitle {
-    position: relative;
-    z-index: 1;
-    margin-top: 6px;
-    font-size: 20px;
-    color: #ff2b2b;
-    font-weight: 700;
+    letter-spacing: 2px;
+    color: white;
+    text-align: center;
+    margin-bottom: 14px;
 }
 
 .register-card {
+    position: relative;
+    z-index: 1;
     width: 100%;
     max-width: 560px;
-    background: rgba(10, 10, 10, 0.94);
+    background: rgba(0, 0, 0, 0.88);
     border: 2px solid #ff2b2b;
     border-radius: 22px;
     padding: 28px;
-    box-shadow: 0 22px 55px rgba(0,0,0,0.55);
+    box-shadow: 0 22px 55px rgba(0,0,0,0.65);
 }
 
 h1 {
     text-align: center;
-    font-size: 34px;
-    margin: 0 0 26px 0;
+    font-size: 38px;
+    margin: 0 0 28px 0;
 }
 
 label {
     display: block;
     font-size: 22px;
     margin-bottom: 8px;
-    color: #f2f2f2;
 }
 
 input {
@@ -128,37 +120,32 @@ button:hover {
     background: #d90000;
 }
 
-a {
-    color: #ff6b6b;
-}
-
 @media (max-width: 600px) {
     .register-page {
-        padding: 12px 10px;
+        padding: 18px 10px;
+    }
+
+    .register-page::before {
+        width: 430px;
+        height: 430px;
+        top: 20px;
+        opacity: 0.16;
     }
 
     .brand-title {
-        font-size: 38px;
-    }
-
-    .brand-subtitle {
-        font-size: 18px;
-    }
-
-    .brand-logo-bg {
-        background-size: 230px;
-        opacity: 0.12;
+        font-size: 36px;
+        margin-bottom: 10px;
     }
 
     .register-card {
-        max-width: none;
         width: 100%;
-        border-radius: 20px;
+        max-width: none;
         padding: 24px;
+        border-radius: 20px;
     }
 
     h1 {
-        font-size: 32px;
+        font-size: 34px;
     }
 
     label {
