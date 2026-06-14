@@ -21,16 +21,16 @@ body {
 
 .logo-background {
     position: absolute;
-    top: 5px;
+    top: -55px;
     left: 50%;
     transform: translateX(-50%);
-    width: 760px;
-    height: 520px;
+    width: 780px;
+    height: 540px;
     background-image: url("/static/logo.png");
     background-repeat: no-repeat;
     background-position: center top;
     background-size: contain;
-    opacity: 0.78;
+    opacity: 0.92;
     z-index: 0;
     pointer-events: none;
 }
@@ -40,7 +40,7 @@ body {
     z-index: 1;
     width: 100%;
     max-width: 560px;
-    background: rgba(0, 0, 0, 0.82);
+    background: rgba(0, 0, 0, 0.76);
     border-left: 2px solid #ff2b2b;
     border-right: 2px solid #ff2b2b;
     border-bottom: 2px solid #ff2b2b;
@@ -72,7 +72,7 @@ h1 {
     text-align: center;
     font-size: 38px;
     margin: 0 0 28px 0;
-    text-shadow: 0 0 18px rgba(0,0,0,0.95);
+    text-shadow: 0 0 18px rgba(0,0,0,1);
 }
 
 label {
@@ -131,14 +131,14 @@ button:hover {
 
 @media (max-width: 600px) {
     .register-page {
-        padding: 195px 10px 22px 10px;
+        padding: 190px 10px 22px 10px;
     }
 
     .logo-background {
-        top: 8px;
-        width: 640px;
-        height: 430px;
-        opacity: 0.78;
+        top: -45px;
+        width: 650px;
+        height: 455px;
+        opacity: 0.92;
     }
 
     .register-card {
@@ -146,7 +146,7 @@ button:hover {
         max-width: none;
         padding: 24px;
         border-radius: 0 0 20px 20px;
-        background: rgba(0, 0, 0, 0.82);
+        background: rgba(0, 0, 0, 0.76);
     }
 
     .register-card::before,
