@@ -1,14 +1,19 @@
 import os
 import base64
 from io import BytesIO
+from datetime import timedelta
 
 import psycopg2
 import qrcode
-from flask import Flask, request, render_template, url_for, redirect
+from flask import Flask, request, render_template, url_for, redirect, session
 
 app = Flask(__name__)
 
+app.secret_key = os.environ.get("SECRET_KEY", "kebab-hoehe-test-secret-key")
+app.permanent_session_lifetime = timedelta(hours=12)
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
+MITARBEITER_PIN = os.environ.get("MITARBEITER_PIN", "1234")
 
 
 def get_db_connection():
@@ -92,12 +97,14 @@ def get_punktestand(kunde_id):
     return punktestand
 
 
+def ist_mitarbeiter():
+    return session.get("mitarbeiter_angemeldet") is True
+
+
 def app_style():
     return """
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -116,7 +123,7 @@ def app_style():
 
         .card {
             width: 100%;
-            max-width: 520px;
+            max-width: 560px;
             background: #1b1b1b;
             border: 1px solid #333;
             border-radius: 22px;
@@ -229,9 +236,7 @@ def app_style():
             outline: none;
         }
 
-        input:focus {
-            border-color: #ff2b2b;
-        }
+        input:focus { border-color: #ff2b2b; }
 
         button, .btn {
             width: 100%;
@@ -344,24 +349,12 @@ def register():
         else:
             cur.execute("""
                 INSERT INTO kunden (
-                    vorname,
-                    nachname,
-                    geburtsdatum,
-                    telefon,
-                    adresse,
-                    werbeeinwilligung,
-                    werbeeinwilligung_am
+                    vorname, nachname, geburtsdatum, telefon, adresse,
+                    werbeeinwilligung, werbeeinwilligung_am
                 )
                 VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                 RETURNING id
-            """, (
-                vorname,
-                nachname,
-                geburtsdatum,
-                telefon,
-                adresse,
-                angebote
-            ))
+            """, (vorname, nachname, geburtsdatum, telefon, adresse, angebote))
 
             kunde_db_id = cur.fetchone()[0]
             kunden_id = f"KH-{30000 + kunde_db_id}"
@@ -373,12 +366,7 @@ def register():
             """, (kunden_id, kunde_db_id))
 
         cur.execute("""
-            INSERT INTO kunden_laeden (
-                kunde_id,
-                laden_id,
-                punkte,
-                letzter_besuch
-            )
+            INSERT INTO kunden_laeden (kunde_id, laden_id, punkte, letzter_besuch)
             VALUES (%s, 1, 0, CURRENT_TIMESTAMP)
             ON CONFLICT (kunde_id, laden_id) DO NOTHING
         """, (kunde_db_id,))
@@ -484,8 +472,56 @@ def kunde(kunden_id):
     """
 
 
+@app.route("/mitarbeiter-login", methods=["GET", "POST"])
+def mitarbeiter_login():
+    meldung = ""
+    next_url = request.args.get("next", "/mitarbeiter")
+
+    if request.method == "POST":
+        pin = request.form.get("pin", "").strip()
+        next_url = request.form.get("next", "/mitarbeiter")
+
+        if pin == MITARBEITER_PIN:
+            session.permanent = True
+            session["mitarbeiter_angemeldet"] = True
+            return redirect(next_url)
+        else:
+            meldung = "❌ Falscher PIN."
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Mitarbeiter Login</div>
+
+            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+
+            <form method="POST">
+                <div class="section-title">Mitarbeiter-PIN eingeben</div>
+                <label class="label">PIN</label>
+                <input type="password" name="pin" placeholder="PIN eingeben" required>
+                <input type="hidden" name="next" value="{next_url}">
+                <button class="btn-red" type="submit">Einloggen</button>
+            </form>
+
+            <a class="small-link" href="/">Zur Registrierung</a>
+        </div>
+    </div>
+    """
+
+
+@app.route("/mitarbeiter-logout")
+def mitarbeiter_logout():
+    session.pop("mitarbeiter_angemeldet", None)
+    return redirect("/mitarbeiter-login")
+
+
 @app.route("/mitarbeiter", methods=["GET", "POST"])
 def mitarbeiter():
+    if not ist_mitarbeiter():
+        return redirect("/mitarbeiter-login?next=/mitarbeiter")
+
     if request.method == "POST":
         kunden_id = request.form.get("kunden_id", "").strip().upper()
         return redirect(f"/mitarbeiter/{kunden_id}")
@@ -504,7 +540,7 @@ def mitarbeiter():
                 <button class="btn-red" type="submit">Kunden öffnen</button>
             </form>
 
-            <a class="small-link" href="/">Zur Registrierung</a>
+            <a class="btn btn-dark" href="/mitarbeiter-logout">Abmelden</a>
         </div>
     </div>
     """
@@ -513,6 +549,10 @@ def mitarbeiter():
 @app.route("/mitarbeiter/<kunden_id>", methods=["GET", "POST"])
 def mitarbeiter_kunde(kunden_id):
     kunden_id = kunden_id.strip().upper()
+
+    if not ist_mitarbeiter():
+        return redirect(f"/mitarbeiter-login?next=/mitarbeiter/{kunden_id}")
+
     meldung = ""
 
     conn = get_db_connection()
@@ -535,14 +575,8 @@ def mitarbeiter_kunde(kunden_id):
             <div class="card">
                 <div class="logo">KEBAB HÖHLE</div>
                 <div class="subtitle">Kunde nicht gefunden</div>
-
                 <div class="message">❌ Diese Kunden-ID wurde nicht gefunden.</div>
-
-                <form action="/mitarbeiter" method="POST">
-                    <label class="label">Kunden-ID nochmal eingeben</label>
-                    <input type="text" name="kunden_id" placeholder="KH-30001" required>
-                    <button class="btn-red" type="submit">Kunden suchen</button>
-                </form>
+                <a class="btn btn-red" href="/mitarbeiter">Zurück</a>
             </div>
         </div>
         """
@@ -560,11 +594,7 @@ def mitarbeiter_kunde(kunden_id):
 
         if punkte > 0:
             cur.execute("""
-                INSERT INTO punkte_bewegungen (
-                    kunde_id,
-                    typ,
-                    punkte
-                )
+                INSERT INTO punkte_bewegungen (kunde_id, typ, punkte)
                 VALUES (%s, %s, %s)
             """, (kunde_db_id, "GUTSCHRIFT", punkte))
 
@@ -611,6 +641,7 @@ def mitarbeiter_kunde(kunden_id):
 
             <a class="btn btn-orange" href="/mitarbeiter/{kunde[1]}/einloesen">Punkte einlösen</a>
             <a class="btn btn-dark" href="/mitarbeiter">Anderen Kunden suchen</a>
+            <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
         </div>
     </div>
     """
@@ -619,6 +650,10 @@ def mitarbeiter_kunde(kunden_id):
 @app.route("/mitarbeiter/<kunden_id>/einloesen", methods=["GET", "POST"])
 def punkte_einloesen(kunden_id):
     kunden_id = kunden_id.strip().upper()
+
+    if not ist_mitarbeiter():
+        return redirect(f"/mitarbeiter-login?next=/mitarbeiter/{kunden_id}/einloesen")
+
     meldung = ""
 
     conn = get_db_connection()
@@ -666,11 +701,7 @@ def punkte_einloesen(kunden_id):
             meldung = "❌ Nicht genug Punkte vorhanden."
         else:
             cur.execute("""
-                INSERT INTO punkte_bewegungen (
-                    kunde_id,
-                    typ,
-                    punkte
-                )
+                INSERT INTO punkte_bewegungen (kunde_id, typ, punkte)
                 VALUES (%s, %s, %s)
             """, (kunde_db_id, "EINLOESUNG", -punkte_einloesen))
 
@@ -715,6 +746,7 @@ def punkte_einloesen(kunden_id):
             </form>
 
             <a class="btn btn-dark" href="/mitarbeiter/{kunde[1]}">Zurück zur Kundenseite</a>
+            <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
         </div>
     </div>
     """
