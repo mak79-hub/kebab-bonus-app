@@ -104,18 +104,20 @@ def ist_mitarbeiter():
 def app_style():
     return """
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
-            background: #111;
+            background: #080808;
             color: #fff;
         }
 
         .page {
             min-height: 100vh;
-            padding: 24px;
+            padding: 14px;
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -123,17 +125,17 @@ def app_style():
 
         .card {
             width: 100%;
-            max-width: 560px;
-            background: #1b1b1b;
+            max-width: 680px;
+            background: #171717;
             border: 1px solid #333;
-            border-radius: 22px;
-            padding: 24px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+            border-radius: 26px;
+            padding: 30px;
+            box-shadow: 0 20px 55px rgba(0,0,0,0.55);
         }
 
         .logo {
             text-align: center;
-            font-size: 30px;
+            font-size: 38px;
             font-weight: 900;
             color: #ff2b2b;
             margin-bottom: 6px;
@@ -143,108 +145,123 @@ def app_style():
         .subtitle {
             text-align: center;
             color: #bbb;
-            margin-bottom: 24px;
-            font-size: 16px;
+            margin-bottom: 30px;
+            font-size: 22px;
+            font-weight: 700;
         }
 
         .success-icon {
-            width: 74px;
-            height: 74px;
+            width: 96px;
+            height: 96px;
             border-radius: 50%;
             background: #1fa463;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0 auto 18px auto;
-            font-size: 38px;
+            margin: 0 auto 22px auto;
+            font-size: 52px;
             font-weight: 900;
         }
 
         .info-box {
             background: #252525;
-            border-radius: 18px;
-            padding: 18px;
-            margin-bottom: 18px;
-            border: 1px solid #333;
+            border-radius: 22px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #3a3a3a;
         }
 
         .label {
             color: #aaa;
-            font-size: 14px;
-            margin-bottom: 4px;
+            font-size: 18px;
+            margin-bottom: 6px;
+            font-weight: 700;
         }
 
         .value {
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 14px;
+            font-size: 34px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            word-break: break-word;
+        }
+
+        .value:last-child {
+            margin-bottom: 0;
         }
 
         .points {
-            background: linear-gradient(135deg, #b30000, #ff2b2b);
-            border-radius: 18px;
-            padding: 18px;
+            background: linear-gradient(135deg, #9d0000, #ff2b2b);
+            border-radius: 24px;
+            padding: 28px 18px;
             text-align: center;
-            margin-bottom: 22px;
+            margin-bottom: 28px;
+            box-shadow: 0 12px 30px rgba(255,43,43,0.22);
         }
 
         .points .number {
-            font-size: 46px;
+            font-size: 82px;
+            line-height: 0.95;
             font-weight: 900;
         }
 
         .points .text {
-            font-size: 16px;
+            margin-top: 8px;
+            font-size: 22px;
             color: #ffe2e2;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
         }
 
         .qr-box {
             background: white;
-            border-radius: 22px;
-            padding: 18px;
+            border-radius: 26px;
+            padding: 22px;
             text-align: center;
-            margin: 20px auto;
-            max-width: 300px;
+            margin: 24px auto;
+            max-width: 390px;
         }
 
         .qr-box img {
-            width: 250px;
+            width: 330px;
             max-width: 100%;
         }
 
         .hint {
             background: #252525;
             border: 1px solid #444;
-            border-radius: 16px;
-            padding: 14px;
+            border-radius: 18px;
+            padding: 18px;
             color: #ddd;
-            font-size: 15px;
-            line-height: 1.4;
-            margin-bottom: 18px;
+            font-size: 19px;
+            line-height: 1.45;
+            margin-bottom: 22px;
         }
 
         input {
             width: 100%;
-            padding: 16px;
-            border-radius: 14px;
+            padding: 22px;
+            border-radius: 18px;
             border: 1px solid #444;
-            background: #111;
+            background: #0f0f0f;
             color: #fff;
-            font-size: 20px;
-            margin-top: 8px;
-            margin-bottom: 16px;
+            font-size: 28px;
+            margin-top: 10px;
+            margin-bottom: 22px;
             outline: none;
         }
 
-        input:focus { border-color: #ff2b2b; }
+        input:focus {
+            border-color: #ff2b2b;
+        }
 
         button, .btn {
             width: 100%;
             border: none;
-            border-radius: 14px;
-            padding: 16px;
-            font-size: 18px;
-            font-weight: 800;
+            border-radius: 18px;
+            padding: 22px;
+            font-size: 24px;
+            font-weight: 900;
             cursor: pointer;
             text-decoration: none;
             display: block;
@@ -260,7 +277,7 @@ def app_style():
             background: #2b2b2b;
             color: white;
             border: 1px solid #444;
-            margin-top: 12px;
+            margin-top: 16px;
         }
 
         .btn-green {
@@ -274,43 +291,139 @@ def app_style():
         }
 
         .message {
-            padding: 14px;
-            border-radius: 14px;
-            margin-bottom: 18px;
+            padding: 18px;
+            border-radius: 18px;
+            margin-bottom: 22px;
             background: #252525;
             border: 1px solid #444;
             text-align: center;
-            font-weight: 700;
+            font-size: 20px;
+            font-weight: 800;
         }
 
         .section-title {
-            font-size: 20px;
+            font-size: 28px;
             font-weight: 900;
-            margin-bottom: 10px;
+            margin-bottom: 14px;
         }
 
         .divider {
             height: 1px;
             background: #333;
-            margin: 24px 0;
+            margin: 30px 0;
         }
 
         .small-link {
             display: block;
             text-align: center;
             color: #aaa;
-            margin-top: 18px;
+            margin-top: 22px;
             text-decoration: none;
+            font-size: 18px;
         }
 
         .danger-note {
             color: #ffb3b3;
             background: #351818;
             border: 1px solid #6b2222;
-            padding: 12px;
-            border-radius: 14px;
-            margin-bottom: 16px;
-            font-size: 14px;
+            padding: 16px;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+
+        .success-title {
+            text-align: center;
+            font-size: 34px;
+            margin-bottom: 10px;
+        }
+
+        .success-subtitle {
+            text-align: center;
+            color: #bbb;
+            font-size: 20px;
+            margin-bottom: 26px;
+        }
+
+        @media (max-width: 600px) {
+            .page {
+                padding: 10px;
+            }
+
+            .card {
+                max-width: none;
+                width: 100%;
+                border-radius: 22px;
+                padding: 24px;
+            }
+
+            .logo {
+                font-size: 34px;
+            }
+
+            .subtitle {
+                font-size: 21px;
+                margin-bottom: 26px;
+            }
+
+            .success-icon {
+                width: 88px;
+                height: 88px;
+                font-size: 48px;
+            }
+
+            .success-title {
+                font-size: 31px;
+            }
+
+            .success-subtitle {
+                font-size: 19px;
+            }
+
+            .label {
+                font-size: 18px;
+            }
+
+            .value {
+                font-size: 32px;
+            }
+
+            .points {
+                padding: 28px 16px;
+                margin-bottom: 26px;
+            }
+
+            .points .number {
+                font-size: 86px;
+            }
+
+            .points .text {
+                font-size: 22px;
+            }
+
+            .section-title {
+                font-size: 29px;
+            }
+
+            input {
+                font-size: 29px;
+                padding: 22px;
+            }
+
+            button, .btn {
+                font-size: 25px;
+                padding: 23px;
+            }
+
+            .qr-box {
+                max-width: 360px;
+                padding: 20px;
+            }
+
+            .qr-box img {
+                width: 315px;
+            }
         }
     </style>
     """
@@ -387,8 +500,8 @@ def register():
 
                 <div class="success-icon">✓</div>
 
-                <h1 style="text-align:center; margin-bottom:8px;">Registrierung erfolgreich</h1>
-                <p style="text-align:center; color:#bbb; margin-bottom:22px;">
+                <h1 class="success-title">Registrierung erfolgreich</h1>
+                <p class="success-subtitle">
                     Willkommen {vorname} {nachname}
                 </p>
 
@@ -468,7 +581,7 @@ def kunde(kunden_id):
 
             <div class="points">
                 <div class="number">{punktestand}</div>
-                <div class="text">aktuelle Punkte</div>
+                <div class="text">Punkte</div>
             </div>
         </div>
     </div>
@@ -630,7 +743,7 @@ def mitarbeiter_kunde(kunden_id):
 
             <div class="points">
                 <div class="number">{punktestand}</div>
-                <div class="text">aktuelle Punkte</div>
+                <div class="text">Punkte</div>
             </div>
 
             <form method="POST">
@@ -734,7 +847,7 @@ def punkte_einloesen(kunden_id):
 
             <div class="points">
                 <div class="number">{punktestand}</div>
-                <div class="text">verfügbare Punkte</div>
+                <div class="text">Punkte</div>
             </div>
 
             <div class="danger-note">
