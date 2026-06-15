@@ -104,9 +104,7 @@ def ist_mitarbeiter():
 def app_style():
     return """
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             margin: 0;
@@ -117,7 +115,7 @@ def app_style():
 
         .page {
             min-height: 100vh;
-            padding: 14px;
+            padding: 8px;
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -125,63 +123,76 @@ def app_style():
 
         .card {
             width: 100%;
-            max-width: 680px;
+            max-width: 820px;
             background: #171717;
             border: 1px solid #333;
-            border-radius: 26px;
-            padding: 30px;
+            border-radius: 28px;
+            padding: 34px;
             box-shadow: 0 20px 55px rgba(0,0,0,0.55);
         }
 
         .logo {
             text-align: center;
-            font-size: 38px;
+            font-size: 48px;
             font-weight: 900;
             color: #ff2b2b;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             letter-spacing: 1px;
         }
 
         .subtitle {
             text-align: center;
             color: #bbb;
-            margin-bottom: 30px;
-            font-size: 22px;
-            font-weight: 700;
+            margin-bottom: 34px;
+            font-size: 30px;
+            font-weight: 800;
         }
 
         .success-icon {
-            width: 96px;
-            height: 96px;
+            width: 112px;
+            height: 112px;
             border-radius: 50%;
             background: #1fa463;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0 auto 22px auto;
-            font-size: 52px;
+            margin: 0 auto 26px auto;
+            font-size: 64px;
             font-weight: 900;
+        }
+
+        .success-title {
+            text-align: center;
+            font-size: 44px;
+            margin-bottom: 12px;
+        }
+
+        .success-subtitle {
+            text-align: center;
+            color: #bbb;
+            font-size: 28px;
+            margin-bottom: 32px;
         }
 
         .info-box {
             background: #252525;
-            border-radius: 22px;
-            padding: 24px;
-            margin-bottom: 24px;
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 30px;
             border: 1px solid #3a3a3a;
         }
 
         .label {
             color: #aaa;
-            font-size: 18px;
-            margin-bottom: 6px;
-            font-weight: 700;
+            font-size: 24px;
+            margin-bottom: 8px;
+            font-weight: 800;
         }
 
         .value {
-            font-size: 34px;
+            font-size: 46px;
             font-weight: 900;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             word-break: break-word;
         }
 
@@ -191,76 +202,74 @@ def app_style():
 
         .points {
             background: linear-gradient(135deg, #9d0000, #ff2b2b);
-            border-radius: 24px;
-            padding: 28px 18px;
+            border-radius: 28px;
+            padding: 34px 18px;
             text-align: center;
-            margin-bottom: 28px;
-            box-shadow: 0 12px 30px rgba(255,43,43,0.22);
+            margin-bottom: 32px;
+            box-shadow: 0 12px 30px rgba(255,43,43,0.25);
         }
 
         .points .number {
-            font-size: 82px;
+            font-size: 120px;
             line-height: 0.95;
             font-weight: 900;
         }
 
         .points .text {
-            margin-top: 8px;
-            font-size: 22px;
+            margin-top: 10px;
+            font-size: 32px;
             color: #ffe2e2;
-            font-weight: 800;
+            font-weight: 900;
             letter-spacing: 1px;
             text-transform: uppercase;
         }
 
         .qr-box {
             background: white;
-            border-radius: 26px;
-            padding: 22px;
+            border-radius: 30px;
+            padding: 24px;
             text-align: center;
-            margin: 24px auto;
-            max-width: 390px;
+            margin: 28px auto;
+            max-width: 500px;
         }
 
         .qr-box img {
-            width: 330px;
+            width: 430px;
             max-width: 100%;
         }
 
         .hint {
             background: #252525;
             border: 1px solid #444;
-            border-radius: 18px;
-            padding: 18px;
+            border-radius: 20px;
+            padding: 22px;
             color: #ddd;
-            font-size: 19px;
+            font-size: 24px;
             line-height: 1.45;
-            margin-bottom: 22px;
+            margin-bottom: 26px;
         }
 
         input {
             width: 100%;
-            padding: 22px;
-            border-radius: 18px;
+            padding: 28px;
+            border-radius: 20px;
             border: 1px solid #444;
             background: #0f0f0f;
             color: #fff;
-            font-size: 28px;
-            margin-top: 10px;
-            margin-bottom: 22px;
+            font-size: 38px;
+            margin-top: 12px;
+            margin-bottom: 28px;
             outline: none;
         }
 
-        input:focus {
-            border-color: #ff2b2b;
-        }
+        input:focus { border-color: #ff2b2b; }
 
         button, .btn {
             width: 100%;
             border: none;
-            border-radius: 18px;
-            padding: 22px;
-            font-size: 24px;
+            border-radius: 20px;
+            padding: 28px;
+            font-size: 34px;
             font-weight: 900;
             cursor: pointer;
             text-decoration: none;
@@ -277,7 +286,7 @@ def app_style():
             background: #2b2b2b;
             color: white;
             border: 1px solid #444;
-            margin-top: 16px;
+            margin-top: 18px;
         }
 
         .btn-green {
@@ -291,138 +300,120 @@ def app_style():
         }
 
         .message {
-            padding: 18px;
-            border-radius: 18px;
-            margin-bottom: 22px;
+            padding: 24px;
+            border-radius: 20px;
+            margin-bottom: 26px;
             background: #252525;
             border: 1px solid #444;
             text-align: center;
-            font-size: 20px;
-            font-weight: 800;
+            font-size: 28px;
+            font-weight: 900;
         }
 
         .section-title {
-            font-size: 28px;
+            font-size: 38px;
             font-weight: 900;
-            margin-bottom: 14px;
+            margin-bottom: 18px;
         }
 
         .divider {
             height: 1px;
             background: #333;
-            margin: 30px 0;
+            margin: 36px 0;
         }
 
         .small-link {
             display: block;
             text-align: center;
             color: #aaa;
-            margin-top: 22px;
+            margin-top: 26px;
             text-decoration: none;
-            font-size: 18px;
+            font-size: 24px;
         }
 
         .danger-note {
             color: #ffb3b3;
             background: #351818;
             border: 1px solid #6b2222;
-            padding: 16px;
-            border-radius: 18px;
-            margin-bottom: 20px;
-            font-size: 18px;
+            padding: 22px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            font-size: 24px;
             line-height: 1.4;
-        }
-
-        .success-title {
-            text-align: center;
-            font-size: 34px;
-            margin-bottom: 10px;
-        }
-
-        .success-subtitle {
-            text-align: center;
-            color: #bbb;
-            font-size: 20px;
-            margin-bottom: 26px;
         }
 
         @media (max-width: 600px) {
             .page {
-                padding: 10px;
+                padding: 6px;
             }
 
             .card {
                 max-width: none;
                 width: 100%;
-                border-radius: 22px;
-                padding: 24px;
+                border-radius: 24px;
+                padding: 28px;
             }
 
             .logo {
-                font-size: 34px;
+                font-size: 42px;
             }
 
             .subtitle {
-                font-size: 21px;
-                margin-bottom: 26px;
+                font-size: 28px;
+                margin-bottom: 30px;
             }
 
             .success-icon {
-                width: 88px;
-                height: 88px;
-                font-size: 48px;
+                width: 104px;
+                height: 104px;
+                font-size: 60px;
             }
 
             .success-title {
-                font-size: 31px;
+                font-size: 40px;
             }
 
             .success-subtitle {
-                font-size: 19px;
+                font-size: 26px;
             }
 
             .label {
-                font-size: 18px;
+                font-size: 24px;
             }
 
             .value {
-                font-size: 32px;
-            }
-
-            .points {
-                padding: 28px 16px;
-                margin-bottom: 26px;
+                font-size: 44px;
             }
 
             .points .number {
-                font-size: 86px;
+                font-size: 118px;
             }
 
             .points .text {
-                font-size: 22px;
+                font-size: 32px;
             }
 
             .section-title {
-                font-size: 29px;
+                font-size: 38px;
             }
 
             input {
-                font-size: 29px;
-                padding: 22px;
+                font-size: 38px;
+                padding: 28px;
             }
 
             button, .btn {
-                font-size: 25px;
-                padding: 23px;
+                font-size: 34px;
+                padding: 28px;
             }
 
             .qr-box {
-                max-width: 360px;
-                padding: 20px;
+                max-width: 430px;
+                padding: 22px;
             }
 
             .qr-box img {
-                width: 315px;
+                width: 385px;
             }
         }
     </style>
@@ -490,6 +481,7 @@ def register():
 
         qr_data = url_for("kunde", kunden_id=kunden_id, _external=True)
         qr_code = make_qr_code(qr_data)
+        punktestand = get_punktestand(kunde_db_id)
 
         return f"""
         {app_style()}
@@ -506,8 +498,16 @@ def register():
                 </p>
 
                 <div class="info-box">
-                    <div class="label">Deine Kunden-ID</div>
+                    <div class="label">Kunden-ID</div>
                     <div class="value">{kunden_id}</div>
+
+                    <div class="label">Name</div>
+                    <div class="value">{vorname} {nachname}</div>
+                </div>
+
+                <div class="points">
+                    <div class="number">{punktestand}</div>
+                    <div class="text">Punkte</div>
                 </div>
 
                 <div class="qr-box">
@@ -516,10 +516,9 @@ def register():
 
                 <div class="hint">
                     Bitte speichere diesen QR-Code oder mache einen Screenshot.
-                    Der QR-Code wird beim Sammeln und Einlösen von Punkten benötigt.
+                    Dieser QR-Code wird im Laden zum Sammeln und Einlösen der Punkte benötigt.
                 </div>
 
-                <a class="btn btn-red" href="/kunde/{kunden_id}">Meine Kundenkarte öffnen</a>
                 <a class="small-link" href="/">Neuen Kunden registrieren</a>
             </div>
         </div>
@@ -555,7 +554,7 @@ def kunde(kunden_id):
         <div class="page">
             <div class="card">
                 <div class="logo">KEBAB HÖHLE</div>
-                <div class="subtitle">Kundenkarte</div>
+                <div class="subtitle">Bonusprogramm</div>
                 <div class="message">❌ Kunde nicht gefunden.</div>
                 <a class="btn btn-red" href="/">Zur Registrierung</a>
             </div>
@@ -563,13 +562,15 @@ def kunde(kunden_id):
         """
 
     punktestand = get_punktestand(kunde[0])
+    qr_data = url_for("kunde", kunden_id=kunde[1], _external=True)
+    qr_code = make_qr_code(qr_data)
 
     return f"""
     {app_style()}
     <div class="page">
         <div class="card">
             <div class="logo">KEBAB HÖHLE</div>
-            <div class="subtitle">Kundenkarte</div>
+            <div class="subtitle">Bonusprogramm</div>
 
             <div class="info-box">
                 <div class="label">Kunden-ID</div>
@@ -582,6 +583,14 @@ def kunde(kunden_id):
             <div class="points">
                 <div class="number">{punktestand}</div>
                 <div class="text">Punkte</div>
+            </div>
+
+            <div class="qr-box">
+                <img src="data:image/png;base64,{qr_code}">
+            </div>
+
+            <div class="hint">
+                Zeige diesen QR-Code im Laden vor, um Punkte zu sammeln oder einzulösen.
             </div>
         </div>
     </div>
