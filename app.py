@@ -419,6 +419,9 @@ def register():
 def kunde(kunden_id):
     kunden_id = kunden_id.strip().upper()
 
+    if ist_mitarbeiter():
+        return redirect(f"/mitarbeiter/{kunden_id}")
+
     conn = get_db_connection()
     cur = conn.cursor()
 
