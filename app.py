@@ -658,16 +658,99 @@ def mitarbeiter():
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Mitarbeiterbereich</div>
 
+            <a class="btn btn-red" href="/scanner">QR-Code scannen</a>
+
+            <div class="divider"></div>
+
             <form method="POST">
-                <div class="section-title">Kunden suchen</div>
+                <div class="section-title">Kunden manuell suchen</div>
                 <label class="label">Kunden-ID eingeben</label>
-                <input type="text" name="kunden_id" placeholder="KH-30001" required>
+                <input type="text" name="kunden_id" placeholder="KH-30001" required oninput="this.value = this.value.toUpperCase()">
                 <button class="btn-red" type="submit">Kunden öffnen</button>
             </form>
 
             <a class="btn btn-dark" href="/mitarbeiter-logout">Abmelden</a>
         </div>
     </div>
+    """
+
+
+@app.route("/scanner")
+def scanner():
+    if not ist_mitarbeiter():
+        return redirect("/mitarbeiter-login?next=/scanner")
+
+    return f"""
+    {app_style()}
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">QR-Code Scanner</div>
+
+            <div class="hint">
+                Kunden-QR-Code vor die Kamera halten. Der Kunde wird automatisch geöffnet.
+            </div>
+
+            <div id="reader" style="width:100%; max-width:620px; margin:0 auto 26px auto; overflow:hidden; border-radius:24px;"></div>
+            <div id="scan-message" class="message" style="display:none;"></div>
+
+            <a class="btn btn-dark" href="/mitarbeiter">Manuell suchen</a>
+            <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
+        </div>
+    </div>
+
+    <script>
+        let alreadyScanned = false;
+
+        function showMessage(text) {{
+            const box = document.getElementById("scan-message");
+            box.style.display = "block";
+            box.innerText = text;
+        }}
+
+        function onScanSuccess(decodedText) {{
+            if (alreadyScanned) return;
+
+            let kundenId = null;
+            decodedText = decodedText.trim();
+
+            const matchUrl = decodedText.match(/\\/kunde\\/(KH-\\d+)/i);
+            const matchPlain = decodedText.match(/^(KH-\\d+)$/i);
+
+            if (matchUrl) {{
+                kundenId = matchUrl[1].toUpperCase();
+            }} else if (matchPlain) {{
+                kundenId = matchPlain[1].toUpperCase();
+            }}
+
+            if (kundenId) {{
+                alreadyScanned = true;
+                showMessage("✅ Kunde erkannt: " + kundenId);
+                window.location.href = "/mitarbeiter/" + kundenId;
+            }} else {{
+                showMessage("❌ Kein gültiger Kebab-Höhle Kunden-QR-Code.");
+            }}
+        }}
+
+        function onScanFailure(error) {{
+            // Absichtlich leer, damit keine dauernden Fehlermeldungen angezeigt werden.
+        }}
+
+        const scanner = new Html5QrcodeScanner(
+            "reader",
+            {{
+                fps: 10,
+                qrbox: {{ width: 300, height: 300 }},
+                rememberLastUsedCamera: true,
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+            }},
+            false
+        );
+
+        scanner.render(onScanSuccess, onScanFailure);
+    </script>
     """
 
 
@@ -702,6 +785,7 @@ def mitarbeiter_kunde(kunden_id):
                 <div class="subtitle">Kunde nicht gefunden</div>
                 <div class="message">❌ Diese Kunden-ID wurde nicht gefunden.</div>
                 <a class="btn btn-red" href="/mitarbeiter">Zurück</a>
+                <a class="btn btn-dark" href="/scanner">QR-Code scannen</a>
             </div>
         </div>
         """
@@ -765,7 +849,8 @@ def mitarbeiter_kunde(kunden_id):
             <div class="divider"></div>
 
             <a class="btn btn-orange" href="/mitarbeiter/{kunde[1]}/einloesen">Punkte einlösen</a>
-            <a class="btn btn-dark" href="/mitarbeiter">Anderen Kunden suchen</a>
+            <a class="btn btn-red" href="/scanner">Nächsten Kunden scannen</a>
+            <a class="btn btn-dark" href="/mitarbeiter">Manuell suchen</a>
             <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
         </div>
     </div>
@@ -803,6 +888,7 @@ def punkte_einloesen(kunden_id):
                 <div class="subtitle">Kunde nicht gefunden</div>
                 <div class="message">❌ Diese Kunden-ID wurde nicht gefunden.</div>
                 <a class="btn btn-red" href="/mitarbeiter">Zurück</a>
+                <a class="btn btn-dark" href="/scanner">QR-Code scannen</a>
             </div>
         </div>
         """
@@ -871,6 +957,7 @@ def punkte_einloesen(kunden_id):
             </form>
 
             <a class="btn btn-dark" href="/mitarbeiter/{kunde[1]}">Zurück zur Kundenseite</a>
+            <a class="btn btn-red" href="/scanner">Nächsten Kunden scannen</a>
             <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
         </div>
     </div>
