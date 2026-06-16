@@ -277,6 +277,10 @@ def app_style():
             text-align: center;
         }
 
+        .btn + .btn {
+            margin-top: 18px;
+        }
+
         .btn-red {
             background: #ff2b2b;
             color: white;
@@ -340,6 +344,19 @@ def app_style():
             margin-bottom: 24px;
             font-size: 24px;
             line-height: 1.4;
+        }
+
+        #reader {
+            background: #0f0f0f;
+            border: 1px solid #444;
+            border-radius: 24px;
+            overflow: hidden;
+            margin-bottom: 22px;
+        }
+
+        #reader video {
+            width: 100% !important;
+            border-radius: 24px;
         }
 
         @media (max-width: 600px) {
@@ -693,16 +710,21 @@ def scanner():
                 Kunden-QR-Code vor die Kamera halten. Der Kunde wird automatisch geöffnet.
             </div>
 
-            <div id="reader" style="width:100%; max-width:620px; margin:0 auto 26px auto; overflow:hidden; border-radius:24px;"></div>
+            <div id="reader" style="width:100%; max-width:620px; margin:0 auto 26px auto;"></div>
             <div id="scan-message" class="message" style="display:none;"></div>
 
+            <button class="btn btn-green" onclick="switchCamera()" type="button">Kamera wechseln</button>
             <a class="btn btn-dark" href="/mitarbeiter">Manuell suchen</a>
             <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
         </div>
     </div>
 
     <script>
+        let html5QrCode = null;
+        let cameras = [];
+        let currentCameraIndex = 0;
         let alreadyScanned = false;
+        let isRunning = false;
 
         function showMessage(text) {{
             const box = document.getElementById("scan-message");
@@ -735,21 +757,115 @@ def scanner():
         }}
 
         function onScanFailure(error) {{
-            // Absichtlich leer, damit keine dauernden Fehlermeldungen angezeigt werden.
+            // Keine dauernden Fehlermeldungen anzeigen.
         }}
 
-        const scanner = new Html5QrcodeScanner(
-            "reader",
-            {{
-                fps: 10,
-                qrbox: {{ width: 300, height: 300 }},
-                rememberLastUsedCamera: true,
-                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
-            }},
-            false
-        );
+        async function stopScanner() {{
+            if (html5QrCode && isRunning) {{
+                try {{
+                    await html5QrCode.stop();
+                    isRunning = false;
+                }} catch (e) {{
+                    isRunning = false;
+                }}
+            }}
+        }}
 
-        scanner.render(onScanSuccess, onScanFailure);
+        async function startScannerWithCamera(cameraId) {{
+            if (!html5QrCode) {{
+                html5QrCode = new Html5Qrcode("reader");
+            }}
+
+            await stopScanner();
+
+            try {{
+                await html5QrCode.start(
+                    cameraId,
+                    {{
+                        fps: 10,
+                        qrbox: {{ width: 300, height: 300 }}
+                    }},
+                    onScanSuccess,
+                    onScanFailure
+                );
+                isRunning = true;
+            }} catch (err) {{
+                showMessage("❌ Kamera konnte nicht gestartet werden. Bitte Kamera erlauben oder Kamera wechseln.");
+            }}
+        }}
+
+        async function startScannerDefault() {{
+            if (!html5QrCode) {{
+                html5QrCode = new Html5Qrcode("reader");
+            }}
+
+            try {{
+                await html5QrCode.start(
+                    {{ facingMode: {{ ideal: "environment" }} }},
+                    {{
+                        fps: 10,
+                        qrbox: {{ width: 300, height: 300 }}
+                    }},
+                    onScanSuccess,
+                    onScanFailure
+                );
+                isRunning = true;
+            }} catch (err) {{
+                showMessage("❌ Rückkamera konnte nicht automatisch gestartet werden. Bitte Kamera wechseln drücken.");
+            }}
+        }}
+
+        async function loadCameras() {{
+            try {{
+                cameras = await Html5Qrcode.getCameras();
+
+                if (cameras && cameras.length > 0) {{
+                    let backIndex = cameras.findIndex(function(cam) {{
+                        const label = (cam.label || "").toLowerCase();
+                        return label.includes("back") ||
+                               label.includes("rear") ||
+                               label.includes("environment") ||
+                               label.includes("rück");
+                    }});
+
+                    if (backIndex >= 0) {{
+                        currentCameraIndex = backIndex;
+                    }} else {{
+                        currentCameraIndex = cameras.length - 1;
+                    }}
+                }}
+            }} catch (e) {{
+                cameras = [];
+            }}
+        }}
+
+        async function switchCamera() {{
+            alreadyScanned = false;
+
+            await loadCameras();
+
+            if (!cameras || cameras.length === 0) {{
+                showMessage("❌ Keine Kamera gefunden oder Kamera-Berechtigung fehlt.");
+                return;
+            }}
+
+            currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
+            await startScannerWithCamera(cameras[currentCameraIndex].id);
+        }}
+
+        async function initScanner() {{
+            showMessage("📷 Kamera wird gestartet...");
+            await startScannerDefault();
+            await loadCameras();
+
+            if (cameras && cameras.length > 0 && !isRunning) {{
+                await startScannerWithCamera(cameras[currentCameraIndex].id);
+            }} else {{
+                document.getElementById("scan-message").style.display = "none";
+            }}
+        }}
+
+        initScanner();
     </script>
     """
 
