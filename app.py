@@ -359,6 +359,23 @@ def app_style():
             border-radius: 24px;
         }
 
+        #reader select {
+            font-size: 18px !important;
+            padding: 10px !important;
+            height: auto !important;
+            min-height: 42px !important;
+            border-radius: 10px !important;
+            margin-top: 10px !important;
+            margin-bottom: 10px !important;
+        }
+
+        #reader button {
+            font-size: 22px !important;
+            padding: 16px !important;
+            border-radius: 14px !important;
+            font-weight: 900 !important;
+        }
+
         @media (max-width: 600px) {
             .page {
                 padding: 6px;
@@ -431,6 +448,21 @@ def app_style():
 
             .qr-box img {
                 width: 385px;
+            }
+
+            #reader {
+                max-width: 100% !important;
+            }
+
+            #reader select {
+                font-size: 20px !important;
+                padding: 12px !important;
+                min-height: 48px !important;
+            }
+
+            #reader button {
+                font-size: 24px !important;
+                padding: 18px !important;
             }
         }
     </style>
@@ -710,7 +742,7 @@ def scanner():
                 Kunden-QR-Code vor die Kamera halten. Der Kunde wird automatisch geöffnet.
             </div>
 
-            <div id="reader" style="width:100%; max-width:620px; margin:0 auto 26px auto; overflow:hidden; border-radius:24px;"></div>
+            <div id="reader" style="width:100%; max-width:720px; margin:0 auto 26px auto; overflow:hidden; border-radius:24px;"></div>
             <div id="scan-message" class="message" style="display:none;"></div>
 
             <a class="btn btn-dark" href="/mitarbeiter">Manuell suchen</a>
@@ -759,7 +791,7 @@ def scanner():
             "reader",
             {{
                 fps: 10,
-                qrbox: {{ width: 300, height: 300 }},
+                qrbox: {{ width: 340, height: 340 }},
                 rememberLastUsedCamera: true,
                 supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
             }},
