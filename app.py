@@ -1,5 +1,7 @@
 import os
 import base64
+import urllib.parse
+import urllib.request
 from io import BytesIO
 from datetime import timedelta
 
@@ -14,6 +16,10 @@ app.permanent_session_lifetime = timedelta(hours=12)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 MITARBEITER_PIN = os.environ.get("MITARBEITER_PIN", "1234")
+CHEF_PIN = os.environ.get("CHEF_PIN", "9999")
+
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 
 def get_db_connection():
@@ -99,6 +105,31 @@ def get_punktestand(kunde_id):
 
 def ist_mitarbeiter():
     return session.get("mitarbeiter_angemeldet") is True
+
+
+def ist_chef():
+    return session.get("chef_angemeldet") is True
+
+
+def send_telegram_message(text):
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        return False, "Telegram ist nicht eingerichtet. TELEGRAM_BOT_TOKEN oder TELEGRAM_CHAT_ID fehlt."
+
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+
+    data = urllib.parse.urlencode({
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": text
+    }).encode("utf-8")
+
+    try:
+        req = urllib.request.Request(url, data=data, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            if response.status == 200:
+                return True, "Nachricht wurde erfolgreich an Telegram gesendet."
+            return False, f"Telegram Fehler: Status {response.status}"
+    except Exception as e:
+        return False, f"Telegram Fehler: {str(e)}"
 
 
 def app_style():
@@ -249,7 +280,7 @@ def app_style():
             margin-bottom: 26px;
         }
 
-        input {
+        input, textarea {
             width: 100%;
             padding: 28px;
             border-radius: 20px;
@@ -260,9 +291,16 @@ def app_style():
             margin-top: 12px;
             margin-bottom: 28px;
             outline: none;
+            font-family: Arial, Helvetica, sans-serif;
         }
 
-        input:focus { border-color: #ff2b2b; }
+        textarea {
+            min-height: 260px;
+            resize: vertical;
+            line-height: 1.35;
+        }
+
+        input:focus, textarea:focus { border-color: #ff2b2b; }
 
         button, .btn {
             width: 100%;
@@ -431,7 +469,7 @@ def app_style():
                 font-size: 38px;
             }
 
-            input {
+            input, textarea {
                 font-size: 38px;
                 padding: 28px;
             }
@@ -1008,6 +1046,101 @@ def punkte_einloesen(kunden_id):
             <a class="btn btn-dark" href="/mitarbeiter/{kunde[1]}">Zurück zur Kundenseite</a>
             <a class="btn btn-red" href="/scanner">Nächsten Kunden scannen</a>
             <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
+        </div>
+    </div>
+    """
+
+
+@app.route("/chef-login", methods=["GET", "POST"])
+def chef_login():
+    meldung = ""
+
+    if request.method == "POST":
+        pin = request.form.get("pin", "").strip()
+
+        if pin == CHEF_PIN:
+            session.permanent = True
+            session["chef_angemeldet"] = True
+            return redirect("/chef-nachrichten")
+        else:
+            meldung = "❌ Falscher Chef-PIN."
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Chef Login</div>
+
+            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+
+            <form method="POST">
+                <div class="section-title">Chef-PIN eingeben</div>
+                <label class="label">PIN</label>
+                <input type="password" name="pin" placeholder="Chef-PIN eingeben" required>
+                <button class="btn-red" type="submit">Einloggen</button>
+            </form>
+
+            <a class="small-link" href="/">Zur Registrierung</a>
+        </div>
+    </div>
+    """
+
+
+@app.route("/chef-logout")
+def chef_logout():
+    session.pop("chef_angemeldet", None)
+    return redirect("/chef-login")
+
+
+@app.route("/chef-nachrichten", methods=["GET", "POST"])
+def chef_nachrichten():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    meldung = ""
+    alte_nachricht = ""
+
+    if request.method == "POST":
+        nachricht = request.form.get("nachricht", "").strip()
+        alte_nachricht = nachricht
+
+        if not nachricht:
+            meldung = "❌ Bitte eine Nachricht eingeben."
+        elif len(nachricht) > 1000:
+            meldung = "❌ Die Nachricht ist zu lang. Maximal 1000 Zeichen."
+        else:
+            text = f"📢 Kebab Höhle Angebot\\n\\n{nachricht}"
+            ok, info = send_telegram_message(text)
+
+            if ok:
+                meldung = "✅ " + info
+                alte_nachricht = ""
+            else:
+                meldung = "❌ " + info
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Chef Nachrichten</div>
+
+            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+
+            <div class="hint">
+                Hier kann der Chef eine Angebotsnachricht schreiben und als Telegram-Test senden.
+                Die Mitarbeiterseite bleibt unverändert.
+            </div>
+
+            <form method="POST">
+                <div class="section-title">Angebotsnachricht</div>
+                <label class="label">Nachricht</label>
+                <textarea name="nachricht" placeholder="z.B. Nächste Woche Pizza Mexico XL nur 10 € bei deiner Kebab Höhle." required>{alte_nachricht}</textarea>
+                <button class="btn-red" type="submit">Telegram-Test senden</button>
+            </form>
+
+            <a class="btn btn-dark" href="/chef-logout">Chef abmelden</a>
         </div>
     </div>
     """
