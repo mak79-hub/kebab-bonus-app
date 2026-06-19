@@ -1216,7 +1216,38 @@ def datenschutz():
         </div>
     </div>
     """
+@app.route("/impressum")
+def impressum():
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE XXL</div>
+            <div class="subtitle">Impressum</div>
 
+            <p>
+                <strong>Kebab Höhle XXL</strong><br>
+                Inhaber: Mustafa Erdogan<br>
+                Darmstädter Str. 81<br>
+                65474 Bischofsheim
+            </p>
+
+            <p>
+                Telefon: 06144 2079485<br>
+                E-Mail: mustafaerdugulu@outlook.de
+            </p>
+
+            <p>
+                Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV:
+                Mustafa Erdogan,
+                Darmstädter Str. 81,
+                65474 Bischofsheim
+            </p>
+
+            <a class="btn btn-red" href="/">Zurück</a>
+        </div>
+    </div>
+    """
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
