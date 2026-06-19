@@ -181,3 +181,16 @@ button:hover {
 .privacy-link:hover {
     color: #ffffff;
 }
+.privacy-link {
+    color: #ff2b2b;
+    font-weight: 900;
+    text-decoration: underline;
+}
+
+.privacy-link:visited {
+    color: #ff2b2b;
+}
+
+.privacy-link:hover {
+    color: #ffffff;
+}
