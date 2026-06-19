@@ -1148,14 +1148,73 @@ def chef_nachrichten():
 
 @app.route("/datenschutz")
 def datenschutz():
-    return """
-    <h1>Datenschutzhinweise</h1>
-    <p>Diese Seite ist aktuell nur eine Testversion.</p>
-    <p>
-    Vor dem Live-Betrieb wird hier eine vollständige DSGVO-konforme
-    Datenschutzerklärung eingebunden.
-    </p>
-    <a href="/">Zurück</a>
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE XXL</div>
+            <div class="subtitle">Datenschutzerklärung</div>
+
+            <div class="hint">
+                Wir verarbeiten personenbezogene Daten ausschließlich zur Durchführung
+                unseres Bonusprogramms und zur Verwaltung von Kundenkonten.
+            </div>
+
+            <h2>Verantwortlicher</h2>
+
+            <p>
+                Kebab Höhle XXL<br>
+                Mustafa Erdogan<br>
+                Darmstädter Str. 81<br>
+                65474 Bischofsheim<br><br>
+
+                Telefon: 06144 2079485<br>
+                E-Mail: mustafaerdugulu@outlook.de
+            </p>
+
+            <h2>Gespeicherte Daten</h2>
+
+            <p>
+                Vorname<br>
+                Nachname<br>
+                Geburtsdatum<br>
+                Telefonnummer<br>
+                Adresse<br>
+                Kunden-ID<br>
+                Punktestand<br>
+                Punktebewegungen
+            </p>
+
+            <h2>Zweck der Speicherung</h2>
+
+            <p>
+                Teilnahme am Bonusprogramm,
+                Verwaltung von Punkten,
+                Verhinderung von Doppelregistrierungen,
+                Kundenservice sowie zukünftige Bestell- und Lieferfunktionen.
+            </p>
+
+            <h2>Werbeeinwilligung</h2>
+
+            <p>
+                Kunden können freiwillig zustimmen,
+                Informationen zu Angeboten und Aktionen zu erhalten.
+                Diese Einwilligung kann jederzeit widerrufen werden.
+            </p>
+
+            <h2>Ihre Rechte</h2>
+
+            <p>
+                Auskunft,
+                Berichtigung,
+                Löschung,
+                Einschränkung der Verarbeitung
+                sowie Widerruf erteilter Einwilligungen.
+            </p>
+
+            <a class="btn btn-red" href="/">Zurück</a>
+        </div>
+    </div>
     """
 
 
