@@ -25,6 +25,7 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 def get_db_connection():
     if DATABASE_URL:
         return psycopg2.connect(DATABASE_URL)
+
     return psycopg2.connect(
         host="localhost",
         database="kebab_assistent",
@@ -113,7 +114,7 @@ def ist_chef():
 
 def send_telegram_message(text):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        return False, "Telegram ist nicht eingerichtet. TELEGRAM_BOT_TOKEN oder TELEGRAM_CHAT_ID fehlt."
+        return False, "Telegram ist nicht eingerichtet."
 
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
@@ -160,6 +161,10 @@ def app_style():
             border-radius: 28px;
             padding: 34px;
             box-shadow: 0 20px 55px rgba(0,0,0,0.55);
+        }
+
+        .wide-card {
+            max-width: 1150px;
         }
 
         .logo {
@@ -386,32 +391,96 @@ def app_style():
 
         #reader {
             background: #0f0f0f;
-            border: 1px solid #444;
-            border-radius: 24px;
+            border: 2px solid #555;
+            border-radius: 30px;
             overflow: hidden;
-            margin-bottom: 22px;
+            margin-bottom: 26px;
+            min-height: 620px;
         }
 
         #reader video {
             width: 100% !important;
-            border-radius: 24px;
+            min-height: 560px !important;
+            object-fit: cover !important;
+            border-radius: 30px;
         }
 
         #reader select {
-            font-size: 18px !important;
-            padding: 10px !important;
+            font-size: 24px !important;
+            padding: 16px !important;
             height: auto !important;
-            min-height: 42px !important;
-            border-radius: 10px !important;
-            margin-top: 10px !important;
-            margin-bottom: 10px !important;
+            min-height: 58px !important;
+            border-radius: 14px !important;
+            margin-top: 12px !important;
+            margin-bottom: 12px !important;
         }
 
         #reader button {
-            font-size: 22px !important;
-            padding: 16px !important;
-            border-radius: 14px !important;
+            font-size: 30px !important;
+            padding: 22px !important;
+            border-radius: 18px !important;
             font-weight: 900 !important;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: #252525;
+            border: 1px solid #444;
+            border-radius: 22px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #bbb;
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 46px;
+            font-weight: 900;
+            color: #fff;
+        }
+
+        .history-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 850px;
+        }
+
+        .history-table th,
+        .history-table td {
+            padding: 16px;
+            border-bottom: 1px solid #444;
+            text-align: left;
+            font-size: 18px;
+        }
+
+        .history-table th {
+            background: #111;
+            color: #ffb3b3;
+            font-size: 18px;
+        }
+
+        .history-table tr:last-child td {
+            border-bottom: none;
         }
 
         @media (max-width: 600px) {
@@ -489,21 +558,54 @@ def app_style():
             }
 
             #reader {
+                min-height: 650px !important;
                 max-width: 100% !important;
             }
 
+            #reader video {
+                min-height: 590px !important;
+            }
+
             #reader select {
-                font-size: 20px !important;
-                padding: 12px !important;
-                min-height: 48px !important;
+                font-size: 24px !important;
+                padding: 16px !important;
+                min-height: 58px !important;
             }
 
             #reader button {
-                font-size: 24px !important;
-                padding: 18px !important;
+                font-size: 30px !important;
+                padding: 22px !important;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
+    """
+
+
+def auto_back_to_scanner_page(titel, text):
+    return f"""
+    {app_style()}
+    <meta http-equiv="refresh" content="2;url=/scanner">
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">{titel}</div>
+
+            <div class="success-icon">✓</div>
+
+            <div class="message">{text}</div>
+
+            <div class="hint">
+                Du wirst automatisch zurück zum Scanner geleitet.
+            </div>
+
+            <a class="btn btn-red" href="/scanner">Sofort zurück zum Scanner</a>
+            <a class="btn btn-dark" href="/mitarbeiter">Manuell suchen</a>
+        </div>
+    </div>
     """
 
 
@@ -630,12 +732,12 @@ def kunde(kunden_id):
         WHERE kunden_id = %s
     """, (kunden_id,))
 
-    kunde = cur.fetchone()
+    kunde_daten = cur.fetchone()
 
     cur.close()
     conn.close()
 
-    if not kunde:
+    if not kunde_daten:
         return f"""
         {app_style()}
         <div class="page">
@@ -648,8 +750,8 @@ def kunde(kunden_id):
         </div>
         """
 
-    punktestand = get_punktestand(kunde[0])
-    qr_data = url_for("kunde", kunden_id=kunde[1], _external=True)
+    punktestand = get_punktestand(kunde_daten[0])
+    qr_data = url_for("kunde", kunden_id=kunde_daten[1], _external=True)
     qr_code = make_qr_code(qr_data)
 
     return f"""
@@ -661,10 +763,10 @@ def kunde(kunden_id):
 
             <div class="info-box">
                 <div class="label">Kunden-ID</div>
-                <div class="value">{kunde[1]}</div>
+                <div class="value">{kunde_daten[1]}</div>
 
                 <div class="label">Name</div>
-                <div class="value">{kunde[2]} {kunde[3]}</div>
+                <div class="value">{kunde_daten[2]} {kunde_daten[3]}</div>
             </div>
 
             <div class="points">
@@ -780,7 +882,7 @@ def scanner():
                 Kunden-QR-Code vor die Kamera halten. Der Kunde wird automatisch geöffnet.
             </div>
 
-            <div id="reader" style="width:100%; max-width:720px; margin:0 auto 26px auto; overflow:hidden; border-radius:24px;"></div>
+            <div id="reader" style="width:100%; max-width:780px; margin:0 auto 26px auto;"></div>
             <div id="scan-message" class="message" style="display:none;"></div>
 
             <a class="btn btn-dark" href="/mitarbeiter">Manuell suchen</a>
@@ -829,7 +931,7 @@ def scanner():
             "reader",
             {{
                 fps: 10,
-                qrbox: {{ width: 340, height: 340 }},
+                qrbox: {{ width: 460, height: 460 }},
                 rememberLastUsedCamera: true,
                 supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
             }},
@@ -859,9 +961,9 @@ def mitarbeiter_kunde(kunden_id):
         WHERE kunden_id = %s
     """, (kunden_id,))
 
-    kunde = cur.fetchone()
+    kunde_daten = cur.fetchone()
 
-    if not kunde:
+    if not kunde_daten:
         cur.close()
         conn.close()
         return f"""
@@ -877,7 +979,7 @@ def mitarbeiter_kunde(kunden_id):
         </div>
         """
 
-    kunde_db_id = kunde[0]
+    kunde_db_id = kunde_daten[0]
 
     if request.method == "POST":
         betrag_text = request.form.get("betrag", "0").replace(",", ".")
@@ -895,9 +997,15 @@ def mitarbeiter_kunde(kunden_id):
             """, (kunde_db_id, "GUTSCHRIFT", punkte))
 
             conn.commit()
-            meldung = f"✅ {punkte} Punkte erfolgreich gutgeschrieben."
-        else:
-            meldung = "❌ Bitte gültigen Einkaufsbetrag eingeben."
+            cur.close()
+            conn.close()
+
+            return auto_back_to_scanner_page(
+                "Punkte gutgeschrieben",
+                f"✅ {punkte} Punkte wurden erfolgreich gutgeschrieben."
+            )
+
+        meldung = "❌ Bitte gültigen Einkaufsbetrag eingeben."
 
     cur.close()
     conn.close()
@@ -915,10 +1023,10 @@ def mitarbeiter_kunde(kunden_id):
 
             <div class="info-box">
                 <div class="label">Kunden-ID</div>
-                <div class="value">{kunde[1]}</div>
+                <div class="value">{kunde_daten[1]}</div>
 
                 <div class="label">Name</div>
-                <div class="value">{kunde[2]} {kunde[3]}</div>
+                <div class="value">{kunde_daten[2]} {kunde_daten[3]}</div>
             </div>
 
             <div class="points">
@@ -935,7 +1043,7 @@ def mitarbeiter_kunde(kunden_id):
 
             <div class="divider"></div>
 
-            <a class="btn btn-orange" href="/mitarbeiter/{kunde[1]}/einloesen">Punkte einlösen</a>
+            <a class="btn btn-orange" href="/mitarbeiter/{kunde_daten[1]}/einloesen">Punkte einlösen</a>
             <a class="btn btn-red" href="/scanner">Nächsten Kunden scannen</a>
             <a class="btn btn-dark" href="/mitarbeiter">Manuell suchen</a>
             <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
@@ -962,9 +1070,9 @@ def punkte_einloesen(kunden_id):
         WHERE kunden_id = %s
     """, (kunden_id,))
 
-    kunde = cur.fetchone()
+    kunde_daten = cur.fetchone()
 
-    if not kunde:
+    if not kunde_daten:
         cur.close()
         conn.close()
         return f"""
@@ -980,7 +1088,7 @@ def punkte_einloesen(kunden_id):
         </div>
         """
 
-    kunde_db_id = kunde[0]
+    kunde_db_id = kunde_daten[0]
     punktestand = get_punktestand(kunde_db_id)
 
     if request.method == "POST":
@@ -1004,11 +1112,18 @@ def punkte_einloesen(kunden_id):
             """, (kunde_db_id, "EINLOESUNG", -punkte_einloesen))
 
             conn.commit()
-            meldung = f"✅ {punkte_einloesen} Punkte erfolgreich eingelöst."
-            punktestand = get_punktestand(kunde_db_id)
+            cur.close()
+            conn.close()
+
+            return auto_back_to_scanner_page(
+                "Punkte eingelöst",
+                f"✅ {punkte_einloesen} Punkte wurden erfolgreich eingelöst."
+            )
 
     cur.close()
     conn.close()
+
+    punktestand = get_punktestand(kunde_db_id)
 
     return f"""
     {app_style()}
@@ -1021,10 +1136,10 @@ def punkte_einloesen(kunden_id):
 
             <div class="info-box">
                 <div class="label">Kunden-ID</div>
-                <div class="value">{kunde[1]}</div>
+                <div class="value">{kunde_daten[1]}</div>
 
                 <div class="label">Name</div>
-                <div class="value">{kunde[2]} {kunde[3]}</div>
+                <div class="value">{kunde_daten[2]} {kunde_daten[3]}</div>
             </div>
 
             <div class="points">
@@ -1043,7 +1158,7 @@ def punkte_einloesen(kunden_id):
                 <button class="btn-orange" type="submit">Punkte jetzt einlösen</button>
             </form>
 
-            <a class="btn btn-dark" href="/mitarbeiter/{kunde[1]}">Zurück zur Kundenseite</a>
+            <a class="btn btn-dark" href="/mitarbeiter/{kunde_daten[1]}">Zurück zur Kundenseite</a>
             <a class="btn btn-red" href="/scanner">Nächsten Kunden scannen</a>
             <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
         </div>
@@ -1061,7 +1176,7 @@ def chef_login():
         if pin == CHEF_PIN:
             session.permanent = True
             session["chef_angemeldet"] = True
-            return redirect("/chef-nachrichten")
+            return redirect("/chef-dashboard")
         else:
             meldung = "❌ Falscher Chef-PIN."
 
@@ -1091,6 +1206,134 @@ def chef_login():
 def chef_logout():
     session.pop("chef_angemeldet", None)
     return redirect("/chef-login")
+
+
+@app.route("/chef-dashboard")
+def chef_dashboard():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM kunden")
+    kunden_gesamt = cur.fetchone()[0]
+
+    cur.execute("""
+        SELECT COALESCE(SUM(punkte), 0)
+        FROM punkte_bewegungen
+        WHERE typ = 'GUTSCHRIFT'
+          AND erstellt_am::date = CURRENT_DATE
+    """)
+    punkte_heute = cur.fetchone()[0]
+
+    cur.execute("""
+        SELECT COALESCE(SUM(ABS(punkte)), 0)
+        FROM punkte_bewegungen
+        WHERE typ = 'EINLOESUNG'
+          AND erstellt_am::date = CURRENT_DATE
+    """)
+    einloesungen_heute = cur.fetchone()[0]
+
+    cur.execute("""
+        SELECT COUNT(*)
+        FROM punkte_bewegungen
+        WHERE erstellt_am::date = CURRENT_DATE
+    """)
+    buchungen_heute = cur.fetchone()[0]
+
+    cur.execute("""
+        SELECT
+            p.id,
+            k.kunden_id,
+            k.vorname,
+            k.nachname,
+            p.typ,
+            p.punkte,
+            p.erstellt_am
+        FROM punkte_bewegungen p
+        JOIN kunden k ON p.kunde_id = k.id
+        ORDER BY p.id DESC
+        LIMIT 100
+    """)
+    bewegungen = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    rows = ""
+    for b in bewegungen:
+        typ_text = "Einlösung" if b[4] == "EINLOESUNG" else "Gutschrift"
+        rows += f"""
+            <tr>
+                <td>{b[0]}</td>
+                <td>{b[1]}</td>
+                <td>{b[2]} {b[3]}</td>
+                <td>{typ_text}</td>
+                <td>{b[5]}</td>
+                <td>{b[6]}</td>
+            </tr>
+        """
+
+    if not rows:
+        rows = "<tr><td colspan='6'>Noch keine Bewegungen vorhanden.</td></tr>"
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card wide-card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Chef Dashboard</div>
+
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Kunden gesamt</div>
+                    <div class="stat-value">{kunden_gesamt}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Buchungen heute</div>
+                    <div class="stat-value">{buchungen_heute}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Gutgeschriebene Punkte heute</div>
+                    <div class="stat-value">{punkte_heute}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Eingelöste Punkte heute</div>
+                    <div class="stat-value">{einloesungen_heute}</div>
+                </div>
+            </div>
+
+            <div class="section-title">Letzte Punktebewegungen</div>
+            <div class="hint">
+                Diese Historie ist nur für Chef/Admin gedacht.
+                Mitarbeiter sehen weiterhin keine Gesamthistorie.
+            </div>
+
+            <div class="history-table-wrap">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Kunden-ID</th>
+                            <th>Kunde</th>
+                            <th>Aktion</th>
+                            <th>Punkte</th>
+                            <th>Zeitpunkt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows}
+                    </tbody>
+                </table>
+            </div>
+
+            <a class="btn btn-red" href="/chef-nachrichten">Telegram-Angebot senden</a>
+            <a class="btn btn-dark" href="/chef-logout">Chef abmelden</a>
+            <a class="small-link" href="/">Zur Registrierung</a>
+        </div>
+    </div>
+    """
 
 
 @app.route("/chef-nachrichten", methods=["GET", "POST"])
@@ -1140,6 +1383,7 @@ def chef_nachrichten():
                 <button class="btn-red" type="submit">Telegram-Test senden</button>
             </form>
 
+            <a class="btn btn-dark" href="/chef-dashboard">Zum Chef Dashboard</a>
             <a class="btn btn-dark" href="/chef-logout">Chef abmelden</a>
         </div>
     </div>
@@ -1216,6 +1460,8 @@ def datenschutz():
         </div>
     </div>
     """
+
+
 @app.route("/impressum")
 def impressum():
     return f"""
@@ -1248,6 +1494,7 @@ def impressum():
         </div>
     </div>
     """
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
