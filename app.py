@@ -1353,7 +1353,7 @@ def chef_nachrichten():
         elif len(nachricht) > 1000:
             meldung = "❌ Die Nachricht ist zu lang. Maximal 1000 Zeichen."
         else:
-            text = f"🔥Kebab Höhle Angebot:\n\n{nachricht}"
+            text = f"🔊‼Kebab Höhle Angebot:\n\n{nachricht}"
             ok, info = send_telegram_message(text)
 
             if ok:
