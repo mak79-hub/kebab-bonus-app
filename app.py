@@ -1372,7 +1372,7 @@ def chef_nachrichten():
             {"<div class='message'>" + meldung + "</div>" if meldung else ""}
 
             <div class="hint">
-                Hier kann der Chef eine Angebotsnachricht schreiben und als Telegram-Test senden.
+                Hier kann der Chef eine Angebotsnachricht schreiben und als Telegram senden.
                 Die Mitarbeiterseite bleibt unverändert.
             </div>
 
@@ -1380,7 +1380,7 @@ def chef_nachrichten():
                 <div class="section-title">Angebotsnachricht</div>
                 <label class="label">Nachricht</label>
                 <textarea name="nachricht" placeholder="z.B. Nächste Woche Pizza Mexico XL nur 10 € bei deiner Kebab Höhle." required>{alte_nachricht}</textarea>
-                <button class="btn-red" type="submit">Telegram-Test senden</button>
+                <button class="btn-red" type="submit">Telegram senden</button>
             </form>
 
             <a class="btn btn-dark" href="/chef-dashboard">Zum Chef Dashboard</a>
