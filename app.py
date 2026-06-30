@@ -797,6 +797,7 @@ def kunde(kunden_id):
             <div class="hint">
                 Zeige diesen QR-Code im Laden vor, um Punkte zu sammeln oder einzulösen.
             </div>
+            <a class="btn btn-red" href="/kunde/{kunde_daten[1]}/praemien">🎁 Prämien ansehen</a>
         </div>
     </div>
     """
