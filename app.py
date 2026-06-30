@@ -21,6 +21,22 @@ CHEF_PIN = os.environ.get("CHEF_PIN", "9999")
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
+PRAEMIEN = [
+    {"name": "Ayran 0,25l", "punkte": 100, "icon": "🥤"},
+    {"name": "Softdrink 0,33l", "punkte": 250, "icon": "🥤"},
+    {"name": "Pommes Classic", "punkte": 400, "icon": "🍟"},
+    {"name": "Pommes XXL", "punkte": 500, "icon": "🍟"},
+    {"name": "Döner Sandwich Chicken Classic", "punkte": 800, "icon": "🥙"},
+    {"name": "Döner Sandwich Beef Classic", "punkte": 1000, "icon": "🥙"},
+    {"name": "Wrap Chicken Classic", "punkte": 800, "icon": "🌯"},
+    {"name": "Lahmacun Beef Classic", "punkte": 1100, "icon": "🌮"},
+    {"name": "Pizza Margherita 32cm", "punkte": 800, "icon": "🍕"},
+    {"name": "Pizza Döner Chicken 32cm", "punkte": 1050, "icon": "🍕"},
+    {"name": "Pizza Mexicano 32cm", "punkte": 1250, "icon": "🍕"},
+    {"name": "Döner Teller Chicken Classic", "punkte": 1200, "icon": "🍽️"},
+    {"name": "Döner Teller Beef Classic", "punkte": 1400, "icon": "🍽️"},
+]
+
 
 def get_db_connection():
     if DATABASE_URL:
