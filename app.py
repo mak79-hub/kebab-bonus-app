@@ -834,26 +834,43 @@ def kunde_praemien(kunden_id):
 
     punktestand = get_punktestand(kunde_daten[0])
 
-    praemien_html = ""
+    einloesbar_html = ""
+    nicht_einloesbar_html = ""
 
     for praemie in PRAEMIEN:
-        fehlt = praemie["punkte"] - punktestand
-
         if punktestand >= praemie["punkte"]:
-            status = "✅ Einlösbar"
-            status_text = "Du kannst diese Prämie jetzt einlösen."
-        else:
-            status = "🔒 Noch nicht genug Punkte"
-            status_text = f"Dir fehlen noch {fehlt} Punkte."
-
-        praemien_html += f"""
-        <div class="info-box">
-            <div class="value">{praemie["icon"]} {praemie["name"]}</div>
-            <div class="label">{praemie["punkte"]} Punkte</div>
-            <div class="hint">
-                <strong>{status}</strong><br>
-                {status_text}
+            einloesbar_html += f"""
+            <div class="info-box">
+                <div class="value">{praemie["icon"]} {praemie["name"]}</div>
+                <div class="label">{praemie["punkte"]} Punkte</div>
+                <div class="hint">
+                    ✅ Sofort einlösbar
+                </div>
             </div>
+            """
+        else:
+            fehlt = praemie["punkte"] - punktestand
+            nicht_einloesbar_html += f"""
+            <div class="info-box">
+                <div class="value">{praemie["icon"]} {praemie["name"]}</div>
+                <div class="label">{praemie["punkte"]} Punkte</div>
+                <div class="hint">
+                    🔒 Noch {fehlt} Punkte bis zu dieser Prämie.
+                </div>
+            </div>
+            """
+
+    if not einloesbar_html:
+        einloesbar_html = """
+        <div class="hint">
+            Aktuell ist noch keine Prämie einlösbar.
+        </div>
+        """
+
+    if not nicht_einloesbar_html:
+        nicht_einloesbar_html = """
+        <div class="hint">
+            Du kannst aktuell alle verfügbaren Prämien einlösen.
         </div>
         """
 
@@ -872,7 +889,13 @@ def kunde_praemien(kunden_id):
                 <div class="value">{punktestand}</div>
             </div>
 
-            {praemien_html}
+            <div class="section-title">✅ Sofort einlösbar</div>
+            {einloesbar_html}
+
+            <div class="divider"></div>
+
+            <div class="section-title">🔒 Noch nicht einlösbar</div>
+            {nicht_einloesbar_html}
 
             <a class="btn btn-dark" href="/kunde/{kunde_daten[1]}">Zurück zur Kundenkarte</a>
         </div>
