@@ -801,7 +801,83 @@ def kunde(kunden_id):
         </div>
     </div>
     """
+@app.route("/kunde/<kunden_id>/praemien")
+def kunde_praemien(kunden_id):
+    kunden_id = kunden_id.strip().upper()
 
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, kunden_id, vorname, nachname
+        FROM kunden
+        WHERE kunden_id = %s
+    """, (kunden_id,))
+
+    kunde_daten = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if not kunde_daten:
+        return f"""
+        {app_style()}
+        <div class="page">
+            <div class="card">
+                <div class="logo">KEBAB HÖHLE</div>
+                <div class="subtitle">Prämien</div>
+                <div class="message">❌ Kunde nicht gefunden.</div>
+                <a class="btn btn-red" href="/">Zur Registrierung</a>
+            </div>
+        </div>
+        """
+
+    punktestand = get_punktestand(kunde_daten[0])
+
+    praemien_html = ""
+
+    for praemie in PRAEMIEN:
+        fehlt = praemie["punkte"] - punktestand
+
+        if punktestand >= praemie["punkte"]:
+            status = "✅ Einlösbar"
+            status_text = "Du kannst diese Prämie jetzt einlösen."
+        else:
+            status = "🔒 Noch nicht genug Punkte"
+            status_text = f"Dir fehlen noch {fehlt} Punkte."
+
+        praemien_html += f"""
+        <div class="info-box">
+            <div class="value">{praemie["icon"]} {praemie["name"]}</div>
+            <div class="label">{praemie["punkte"]} Punkte</div>
+            <div class="hint">
+                <strong>{status}</strong><br>
+                {status_text}
+            </div>
+        </div>
+        """
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Deine Prämien</div>
+
+            <div class="info-box">
+                <div class="label">Kunde</div>
+                <div class="value">{kunde_daten[2]} {kunde_daten[3]}</div>
+
+                <div class="label">Aktuelle Punkte</div>
+                <div class="value">{punktestand}</div>
+            </div>
+
+            {praemien_html}
+
+            <a class="btn btn-dark" href="/kunde/{kunde_daten[1]}">Zurück zur Kundenkarte</a>
+        </div>
+    </div>
+    """
 
 @app.route("/mitarbeiter-login", methods=["GET", "POST"])
 def mitarbeiter_login():
