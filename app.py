@@ -22,19 +22,19 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 PRAEMIEN = [
-    {"name": "Ayran 0,25l", "punkte": 100, "icon": "🥤"},
-    {"name": "Softdrink 0,33l", "punkte": 250, "icon": "🥤"},
-    {"name": "Pommes Classic", "punkte": 400, "icon": "🍟"},
-    {"name": "Pommes XXL", "punkte": 500, "icon": "🍟"},
-    {"name": "Döner Sandwich Chicken Classic", "punkte": 800, "icon": "🥙"},
-    {"name": "Döner Sandwich Beef Classic", "punkte": 1000, "icon": "🥙"},
-    {"name": "Wrap Chicken Classic", "punkte": 800, "icon": "🌯"},
-    {"name": "Lahmacun Beef Classic", "punkte": 1100, "icon": "🌮"},
-    {"name": "Pizza Margherita 32cm", "punkte": 800, "icon": "🍕"},
-    {"name": "Pizza Döner Chicken 32cm", "punkte": 1050, "icon": "🍕"},
-    {"name": "Pizza Mexicano 32cm", "punkte": 1250, "icon": "🍕"},
-    {"name": "Döner Teller Chicken Classic", "punkte": 1200, "icon": "🍽️"},
-    {"name": "Döner Teller Beef Classic", "punkte": 1400, "icon": "🍽️"},
+    {"name": "Ayran 0,25l", "punkte": 100, "bild": "🥤"},
+    {"name": "Softdrink 0,33l", "punkte": 250, "bild": "🥤"},
+    {"name": "Pommes Classic", "punkte": 400, "bild": "🍟"},
+    {"name": "Pommes XXL", "punkte": 500, "bild": "🍟"},
+    {"name": "Döner Sandwich Chicken Classic", "punkte": 800, "bild": "🥙"},
+    {"name": "Döner Sandwich Beef Classic", "punkte": 1000, "bild": "🥙"},
+    {"name": "Wrap Chicken Classic", "punkte": 800, "bild": "🌯"},
+    {"name": "Lahmacun Beef Classic", "punkte": 1100, "bild": "🌮"},
+    {"name": "Pizza Margherita 32cm", "punkte": 800, "bild": "🍕"},
+    {"name": "Pizza Döner Chicken 32cm", "punkte": 1050, "bild": "🍕"},
+    {"name": "Pizza Mexicano 32cm", "punkte": 1250, "bild": "🍕"},
+    {"name": "Döner Teller Chicken Classic", "punkte": 1200, "bild": "🍽️"},
+    {"name": "Döner Teller Beef Classic", "punkte": 1400, "bild": "🍽️"},
 ]
 
 
