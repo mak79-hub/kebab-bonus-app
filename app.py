@@ -596,7 +596,23 @@ def app_style():
             .stat-grid {
                 grid-template-columns: 1fr;
             }
-        }
+        }.status-banner{
+    background:linear-gradient(90deg,#0d5f16,#1dbb35);
+    color:#fff;
+    padding:20px;
+    border-radius:18px;
+    margin:25px 0;
+    box-shadow:0 0 20px rgba(0,255,100,.35);
+    font-size:34px;
+    font-weight:900;
+}
+
+.status-sub{
+    font-size:18px;
+    font-weight:600;
+    margin-top:8px;
+    color:#eaffea;
+}
     </style>
     """
 
