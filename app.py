@@ -837,7 +837,10 @@ def kunde_praemien(kunden_id):
     einloesbar_html = ""
     nicht_einloesbar_html = ""
 
-    for praemie in PRAEMIEN:
+    for praemie in sorted(
+    PRAEMIEN,
+    key=lambda p: 0 if punktestand >= p["punkte"] else p["punkte"] - punktestand
+):
         if punktestand >= praemie["punkte"]:
             einloesbar_html += f"""
             <div class="info-box">
