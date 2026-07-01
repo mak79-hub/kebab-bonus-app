@@ -917,9 +917,13 @@ def kunde_praemien(kunden_id):
             </div>
 
             <div class="status-banner">
-    🎁 SOFORT EINLÖSBAR
-    <div class="status-sub">
-        Wähle deine Prämie und löse sie direkt ein.
+    <div class="status-icon">🎁</div>
+
+    <div class="status-text">
+        <div class="status-title">SOFORT EINLÖSBAR</div>
+        <div class="status-sub">
+            Wähle deine Prämie und löse sie direkt ein.
+        </div>
     </div>
 </div>
             {einloesbar_html}
