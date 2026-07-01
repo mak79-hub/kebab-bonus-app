@@ -846,7 +846,7 @@ def kunde_praemien(kunden_id):
             <div class="info-box">
                 <div class="value">
     <img src="/static/images/{praemie['bild']}"
-         style="width:80px;height:80px;object-fit:cover;border-radius:14px;vertical-align:middle;margin-right:15px;">
+         style="width:100px;height:100px;object-fit:cover;border-radius:14px;vertical-align:middle;margin-right:15px;">
     {praemie["name"]}
 </div>
                 <div class="label">{praemie["punkte"]} Punkte</div>
@@ -861,7 +861,7 @@ def kunde_praemien(kunden_id):
             <div class="info-box">
                 <div class="value">
     <img src="/static/images/{praemie['bild']}"
-         style="width:80px;height:80px;object-fit:cover;border-radius:14px;vertical-align:middle;margin-right:15px;">
+         style="width:100px;height:100px;object-fit:cover;border-radius:14px;vertical-align:middle;margin-right:15px;">
     {praemie["name"]}
 </div>
                 <div class="label">{praemie["punkte"]} Punkte</div>
