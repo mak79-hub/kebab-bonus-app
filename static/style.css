@@ -194,3 +194,23 @@ button:hover {
 .privacy-link:hover {
     color: #ffffff;
 }
+.status-banner{
+    background:linear-gradient(90deg,#0d5f16,#1dbb35);
+    color:#fff;
+    padding:20px;
+    border-radius:18px;
+    margin:25px 0;
+    box-shadow:0 0 20px rgba(0,255,100,.35);
+}
+
+.status-banner{
+    font-size:34px;
+    font-weight:700;
+}
+
+.status-sub{
+    font-size:18px;
+    font-weight:400;
+    margin-top:8px;
+    opacity:.95;
+}
