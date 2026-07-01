@@ -844,7 +844,7 @@ def kunde_praemien(kunden_id):
         if punktestand >= praemie["punkte"]:
             einloesbar_html += f"""
             <div class="info-box">
-                <div class="value">{praemie["icon"]} {praemie["name"]}</div>
+                <div class="value"><img src="/static/images/{praemie['bild']}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;vertical-align:middle;margin-right:15px;">{praemie["name"]}</div>
                 <div class="label">{praemie["punkte"]} Punkte</div>
                 <div class="hint">
                     ✅ Sofort einlösbar
@@ -855,7 +855,7 @@ def kunde_praemien(kunden_id):
             fehlt = praemie["punkte"] - punktestand
             nicht_einloesbar_html += f"""
             <div class="info-box">
-                <div class="value">{praemie["icon"]} {praemie["name"]}</div>
+                <div class="value"><img src="/static/images/{praemie['bild']}" style="width:80px;height:80px;object-fit:cover;border-radius:14px;vertical-align:middle;margin-right:15px;">{praemie["name"]}</div>
                 <div class="label">{praemie["punkte"]} Punkte</div>
                 <div class="hint">
                     🔒 Noch {fehlt} Punkte bis zu dieser Prämie.
