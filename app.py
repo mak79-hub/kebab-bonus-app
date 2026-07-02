@@ -947,9 +947,7 @@ def kunde_praemien(kunden_id):
     </div>
 
     <div class="status-ok">
-    ✅
-    <br>
-    Einlösbar
+    ✅ Einlösbar
 </div>
 
 </div>    
@@ -977,10 +975,8 @@ def kunde_praemien(kunden_id):
     </div>
 
     <div class="status-no">
-        🔒
-        <br>
-        {fehlt}
-    </div>
+    🔒 Noch {fehlt} Punkte
+</div>
 
 </div>
                 
