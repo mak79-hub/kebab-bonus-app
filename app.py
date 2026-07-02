@@ -883,7 +883,7 @@ def kunde_praemien(kunden_id):
 
     </div>
 
-    <div class="status-no">
+    <div class="status-ok">
         🔒
         <br>
         {fehlt}
