@@ -866,31 +866,61 @@ def kunde_praemien(kunden_id):
         if punktestand >= praemie["punkte"]:
             einloesbar_html += f"""
             <div class="info-box">
-                <div class="value">
+            <div class="product-row">
+
     <img src="/static/images/{praemie['bild']}"
-         style="width:100px;height:100px;object-fit:cover;border-radius:14px;vertical-align:middle;margin-right:15px;">
-    {praemie["name"]}
-</div>
-                <div class="label">{praemie["punkte"]} Punkte</div>
-                <div class="hint">
-                    ✅ Sofort einlösbar
-                </div>
-            </div>
+         class="product-image">
+
+    <div class="product-info">
+
+        <div class="product-name">
+            {praemie["name"]}
+        </div>
+
+        <div class="points-badge">
+            🪙 {praemie["punkte"]} Punkte
+        </div>
+
+    </div>
+
+    <div class="status-no">
+        🔒
+        <br>
+        {fehlt}
+    </div>
+
+</div>    
+                
             """
         else:
             fehlt = praemie["punkte"] - punktestand
             nicht_einloesbar_html += f"""
             <div class="info-box">
-                <div class="value">
+               <div class="product-row">
+
     <img src="/static/images/{praemie['bild']}"
-         style="width:100px;height:100px;object-fit:cover;border-radius:14px;vertical-align:middle;margin-right:15px;">
-    {praemie["name"]}
+         class="product-image">
+
+    <div class="product-info">
+
+        <div class="product-name">
+            {praemie["name"]}
+        </div>
+
+        <div class="points-badge">
+            🪙 {praemie["punkte"]} Punkte
+        </div>
+
+    </div>
+
+    <div class="status-no">
+        🔒
+        <br>
+        {fehlt}
+    </div>
+
 </div>
-                <div class="label">{praemie["punkte"]} Punkte</div>
-                <div class="hint">
-                    🔒 Noch {fehlt} Punkte bis zu dieser Prämie.
-                </div>
-            </div>
+                
             """
 
     if not einloesbar_html:
