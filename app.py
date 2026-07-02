@@ -227,12 +227,18 @@ def app_style():
         }
 
         .info-box {
-            background: #252525;
-            border-radius: 24px;
-            padding: 30px;
-            margin-bottom: 30px;
-            border: 1px solid #3a3a3a;
-        }
+    background: linear-gradient(180deg,#262626,#1d1d1d);
+    border-radius: 28px;
+    padding: 24px;
+    margin-bottom: 24px;
+
+    border: 2px solid #3a3a3a;
+    border-left: 6px solid #ff2b2b;
+
+    box-shadow: 0 10px 28px rgba(0,0,0,.45);
+
+    transition: .25s;
+}
 
         .label {
             color: #aaa;
