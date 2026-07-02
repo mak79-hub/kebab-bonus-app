@@ -619,6 +619,69 @@ def app_style():
     margin-top:8px;
     color:#eaffea;
 }
+.product-row{
+    display:flex;
+    align-items:center;
+    gap:18px;
+}
+
+.product-image{
+    width:110px;
+    height:110px;
+    object-fit:cover;
+    border-radius:18px;
+    flex-shrink:0;
+    box-shadow:0 0 18px rgba(255,43,43,.25);
+}
+
+.product-info{
+    flex:1;
+}
+
+.product-name{
+    font-size:34px;
+    font-weight:900;
+    line-height:1.15;
+    margin-bottom:14px;
+}
+
+.points-badge{
+    display:inline-block;
+    background:linear-gradient(135deg,#9d0000,#ff2b2b);
+    color:#fff;
+    padding:10px 16px;
+    border-radius:16px;
+    font-size:22px;
+    font-weight:900;
+    box-shadow:0 0 14px rgba(255,43,43,.35);
+}
+
+.status-ok{
+    background:linear-gradient(135deg,#0b7a15,#20d63a);
+    color:#fff;
+    padding:12px 16px;
+    border-radius:16px;
+    font-size:18px;
+    font-weight:900;
+    text-align:center;
+    min-width:105px;
+    box-shadow:0 0 14px rgba(0,255,80,.35);
+}
+
+.status-no{
+    background:#333;
+    color:#ffcc66;
+    padding:12px 16px;
+    border-radius:16px;
+    font-size:18px;
+    font-weight:900;
+    text-align:center;
+    min-width:90px;
+}
+
+.info-box{
+    overflow:hidden;
+}
     </style>
     """
 
