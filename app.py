@@ -884,10 +884,10 @@ def kunde_praemien(kunden_id):
     </div>
 
     <div class="status-ok">
-        🔒
-        <br>
-        {fehlt}
-    </div>
+    ✅
+    <br>
+    Einlösbar
+</div>
 
 </div>    
                 
