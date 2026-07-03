@@ -926,61 +926,37 @@ def kunde_praemien(kunden_id):
     PRAEMIEN,
     key=lambda p: 0 if punktestand >= p["punkte"] else p["punkte"] - punktestand
 ):
-        if punktestand >= praemie["punkte"]:
-            einloesbar_html += f"""
-            <div class="info-box">
+    if punktestand >= praemie["punkte"]:
+        einloesbar_html += f"""
+        <div class="info-box">
             <div class="product-row">
+                <img src="/static/images/{praemie['bild']}" class="product-image">
 
-    <img src="/static/images/{praemie['bild']}"
-         class="product-image">
+                <div class="product-info">
+                    <div class="product-name">{praemie["name"]}</div>
+                    <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                </div>
 
-    <div class="product-info">
-
-        <div class="product-name">
-            {praemie["name"]}
+                <div class="status-ok">✅ Einlösbar</div>
+            </div>
         </div>
+        """
+    else:
+        fehlt = praemie["punkte"] - punktestand
+        nicht_einloesbar_html += f"""
+        <div class="info-box">
+            <div class="product-row">
+                <img src="/static/images/{praemie['bild']}" class="product-image">
 
-        <div class="points-badge">
-            🪙 {praemie["punkte"]} Punkte
+                <div class="product-info">
+                    <div class="product-name">{praemie["name"]}</div>
+                    <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                </div>
+
+                <div class="status-no">🔒 Noch {fehlt}</div>
+            </div>
         </div>
-
-    </div>
-
-    <div class="status-ok">
-    ✅ Einlösbar
-</div>
-
-</div>    
-                
-            """
-        else:
-            fehlt = praemie["punkte"] - punktestand
-            nicht_einloesbar_html += f"""
-            <div class="info-box">
-               <div class="product-row">
-
-    <img src="/static/images/{praemie['bild']}"
-         class="product-image">
-
-    <div class="product-info">
-
-        <div class="product-name">
-            {praemie["name"]}
-        </div>
-
-        <div class="points-badge">
-            🪙 {praemie["punkte"]} Punkte
-        </div>
-
-    </div>
-
-    <div class="status-no">
-    🔒 Noch {fehlt} Punkte
-</div>
-
-</div>
-                
-            """
+        """
 
     if not einloesbar_html:
         einloesbar_html = """
