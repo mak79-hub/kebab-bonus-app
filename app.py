@@ -922,7 +922,7 @@ def kunde_praemien(kunden_id):
     einloesbar_html = ""
     nicht_einloesbar_html = ""
 
-    for praemie in sorted(
+for praemie in sorted(
     PRAEMIEN,
     key=lambda p: 0 if punktestand >= p["punkte"] else p["punkte"] - punktestand
 ):
