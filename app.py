@@ -957,14 +957,6 @@ for praemie in sorted(
             </div>
         </div>
         """
-
-    if not einloesbar_html:
-        einloesbar_html = """
-        <div class="hint">
-            Aktuell ist noch keine Prämie einlösbar.
-        </div>
-        """
-
     if not nicht_einloesbar_html:
         nicht_einloesbar_html = """
         <div class="hint">
