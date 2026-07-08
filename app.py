@@ -624,10 +624,6 @@ def app_style():
     align-items:center;
     gap:18px;
 }
-.product-row.locked{
-    background:#fff3e0;
-    border:2px solid #ff9800;
-}
 .product-image{
     width:110px;
     height:110px;
