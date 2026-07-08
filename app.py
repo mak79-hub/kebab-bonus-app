@@ -390,7 +390,15 @@ def app_style():
             background: #333;
             margin: 36px 0;
         }
-
+        .section-title-locked{
+            background:#ff9800;
+            color:white;
+            padding:12px 22px;
+            border-radius:14px;
+            display:inline-block;
+            width:fit-content;
+            box-shadow:0 0 15px rgba(255,152,0,.5);
+        }
         .small-link {
             display: block;
             text-align: center;
@@ -1000,8 +1008,10 @@ def kunde_praemien(kunden_id):
             {einloesbar_html}
 
             <div class="divider"></div>
+            <div class="section-title section-title-locked">
+                🔒 Noch nicht einlösbar
+            </div>
 
-            <div class="section-title">🔒 Noch nicht einlösbar</div>
             {nicht_einloesbar_html}
 
             <a class="btn btn-dark" href="/kunde/{kunde_daten[1]}">Zurück zur Kundenkarte</a>
