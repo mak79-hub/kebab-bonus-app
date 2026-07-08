@@ -391,13 +391,17 @@ def app_style():
             margin: 36px 0;
         }
         .section-title-locked{
-            background:#ff9800;
+            background:linear-gradient(90deg,#ff9800,#ffb300);
             color:white;
-            padding:12px 22px;
-            border-radius:14px;
-            display:inline-block;
-            width:fit-content;
-            box-shadow:0 0 15px rgba(255,152,0,.5);
+            padding:28px 32px;
+            border-radius:18px;
+            display:block;
+            width:100%;
+            box-sizing:border-box;
+            font-size:34px;
+            font-weight:900;
+            box-shadow:0 0 25px rgba(255,152,0,.45);
+            margin:28px 0 24px 0;
         }
         .small-link {
             display: block;
