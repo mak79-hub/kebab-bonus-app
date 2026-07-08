@@ -921,13 +921,12 @@ def kunde_praemien(kunden_id):
 
     einloesbar_html = ""
     nicht_einloesbar_html = ""
-
-for praemie in sorted(
-    PRAEMIEN,
-    key=lambda p: 0 if punktestand >= p["punkte"] else p["punkte"] - punktestand
-):
-    if punktestand >= praemie["punkte"]:
-        einloesbar_html += f"""
+        for praemie in sorted(
+        PRAEMIEN,
+        key=lambda p: 0 if punktestand >= p["punkte"] else p["punkte"] - punktestand
+    ):
+        if punktestand >= praemie["punkte"]:
+            einloesbar_html += f"""
         <div class="info-box">
             <div class="product-row">
                 <img src="/static/images/{praemie['bild']}" class="product-image">
@@ -941,6 +940,23 @@ for praemie in sorted(
             </div>
         </div>
         """
+        else:
+            fehlt = praemie["punkte"] - punktestand
+            nicht_einloesbar_html += f"""
+        <div class="info-box">
+            <div class="product-row">
+                <img src="/static/images/{praemie['bild']}" class="product-image">
+
+                <div class="product-info">
+                    <div class="product-name">{praemie["name"]}</div>
+                    <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                </div>
+
+                <div class="status-no">🔒 Noch {fehlt}</div>
+            </div>
+        </div>
+        """
+ 
     else:
         fehlt = praemie["punkte"] - punktestand
         nicht_einloesbar_html += f"""
