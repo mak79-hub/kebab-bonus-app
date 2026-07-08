@@ -22,19 +22,19 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 PRAEMIEN = [
-    {"name": "Ayran 0,25l", "punkte": 100, "bild": "ayran.png"},
-    {"name": "Softdrink 0,33l", "punkte": 250, "bild": "cola.png"},
-    {"name": "Pommes Classic", "punkte": 400, "bild": "pommes.png"},
-    {"name": "Pommes XXL", "punkte": 500, "bild": "pommes.png"},
-    {"name": "Döner Sandwich Chicken Classic", "punkte": 800, "bild": "doener.png"},
-    {"name": "Döner Sandwich Beef Classic", "punkte": 1000, "bild": "doener.png"},
-    {"name": "Wrap Chicken Classic", "punkte": 800, "bild": "durum.png"},
-    {"name": "Lahmacun Beef Classic", "punkte": 1100, "bild": "lahmacun.png"},
-    {"name": "Pizza Margherita 32cm", "punkte": 800, "bild": "pizza.png"},
-    {"name": "Pizza Döner Chicken 32cm", "punkte": 1050, "bild": "pizza.png"},
-    {"name": "Pizza Mexicano 32cm", "punkte": 1250, "bild": "pizza.png"},
-    {"name": "Döner Teller Chicken Classic", "punkte": 1200, "bild": "doenerteller.png"},
-    {"name": "Döner Teller Beef Classic", "punkte": 1400, "bild": "doenerteller.png"},
+    {"name": "Ayran 0,25l", "punkte": 100, "bild": "ayran.png", "farbe": "#22c55e"},
+    {"name": "Softdrink 0,33l", "punkte": 250, "bild": "cola.png", "farbe": "#ef4444"},
+    {"name": "Pommes Classic", "punkte": 400, "bild": "pommes.png", "farbe": "#facc15"},
+    {"name": "Pommes XXL", "punkte": 500, "bild": "pommes.png", "farbe": "#a855f7"},
+    {"name": "Döner Sandwich Chicken Classic", "punkte": 800, "bild": "doener.png", "farbe": "#f97316"},
+    {"name": "Döner Sandwich Beef Classic", "punkte": 1000, "bild": "doener.png", "farbe": "#dc2626"},
+    {"name": "Wrap Chicken Classic", "punkte": 800, "bild": "durum.png", "farbe": "#06b6d4"},
+    {"name": "Lahmacun Beef Classic", "punkte": 1100, "bild": "lahmacun.png", "farbe": "#8b5a2b"},
+    {"name": "Pizza Margherita 32cm", "punkte": 800, "bild": "pizza.png", "farbe": "#3b82f6"},
+    {"name": "Pizza Döner Chicken 32cm", "punkte": 1050, "bild": "pizza.png", "farbe": "#14b8a6"},
+    {"name": "Pizza Mexicano 32cm", "punkte": 1250, "bild": "pizza.png", "farbe": "#ec4899"},
+    {"name": "Döner Teller Chicken Classic", "punkte": 1200, "bild": "doenerteller.png", "farbe": "#eab308"},
+    {"name": "Döner Teller Beef Classic", "punkte": 1400, "bild": "doenerteller.png", "farbe": "#6366f1"},
 ]
 
 
