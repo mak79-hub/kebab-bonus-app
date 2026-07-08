@@ -170,8 +170,8 @@ def app_style():
         }
 
         .card {
-            width: 90%;
-            max-width: 1150px;
+            width: 75%;
+            max-width: 2400px;
             background: #171717;
             border: 1px solid #333;
             border-radius: 28px;
