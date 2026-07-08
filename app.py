@@ -921,58 +921,50 @@ def kunde_praemien(kunden_id):
 
     einloesbar_html = ""
     nicht_einloesbar_html = ""
-        for praemie in sorted(
+
+    for praemie in sorted(
         PRAEMIEN,
         key=lambda p: 0 if punktestand >= p["punkte"] else p["punkte"] - punktestand
     ):
         if punktestand >= praemie["punkte"]:
             einloesbar_html += f"""
-        <div class="info-box">
-            <div class="product-row">
-                <img src="/static/images/{praemie['bild']}" class="product-image">
+            <div class="info-box">
+                <div class="product-row">
+                    <img src="/static/images/{praemie['bild']}" class="product-image">
 
-                <div class="product-info">
-                    <div class="product-name">{praemie["name"]}</div>
-                    <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                    <div class="product-info">
+                        <div class="product-name">{praemie["name"]}</div>
+                        <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                    </div>
+
+                    <div class="status-ok">✅ Einlösbar</div>
                 </div>
-
-                <div class="status-ok">✅ Einlösbar</div>
             </div>
-        </div>
-        """
+            """
         else:
             fehlt = praemie["punkte"] - punktestand
             nicht_einloesbar_html += f"""
-        <div class="info-box">
-            <div class="product-row">
-                <img src="/static/images/{praemie['bild']}" class="product-image">
+            <div class="info-box">
+                <div class="product-row">
+                    <img src="/static/images/{praemie['bild']}" class="product-image">
 
-                <div class="product-info">
-                    <div class="product-name">{praemie["name"]}</div>
-                    <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                    <div class="product-info">
+                        <div class="product-name">{praemie["name"]}</div>
+                        <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                    </div>
+
+                    <div class="status-no">🔒 Noch {fehlt}</div>
                 </div>
-
-                <div class="status-no">🔒 Noch {fehlt}</div>
             </div>
+            """
+
+    if not einloesbar_html:
+        einloesbar_html = """
+        <div class="hint">
+            Aktuell ist noch keine Prämie einlösbar.
         </div>
         """
- 
-    else:
-        fehlt = praemie["punkte"] - punktestand
-        nicht_einloesbar_html += f"""
-        <div class="info-box">
-            <div class="product-row">
-                <img src="/static/images/{praemie['bild']}" class="product-image">
 
-                <div class="product-info">
-                    <div class="product-name">{praemie["name"]}</div>
-                    <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
-                </div>
-
-                <div class="status-no">🔒 Noch {fehlt}</div>
-            </div>
-        </div>
-        """
     if not nicht_einloesbar_html:
         nicht_einloesbar_html = """
         <div class="hint">
@@ -996,15 +988,16 @@ def kunde_praemien(kunden_id):
             </div>
 
             <div class="status-banner">
-    <div class="status-icon">🎁</div>
+                <div class="status-icon">🎁</div>
 
-    <div class="status-text">
-        <div class="status-title">SOFORT EINLÖSBAR</div>
-        <div class="status-sub">
-            Wähle deine Prämie und löse sie direkt ein.
-        </div>
-    </div>
-</div>
+                <div class="status-text">
+                    <div class="status-title">SOFORT EINLÖSBAR</div>
+                    <div class="status-sub">
+                        Wähle deine Prämie und löse sie direkt ein.
+                    </div>
+                </div>
+            </div>
+
             {einloesbar_html}
 
             <div class="divider"></div>
