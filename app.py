@@ -1736,7 +1736,80 @@ def chef_kunden():
         </div>
     </div>
     """
+@app.route("/chef-gutschriften")
+def chef_gutschriften():
+    if not ist_chef():
+        return redirect("/chef-login")
 
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            p.id,
+            k.kunden_id,
+            k.vorname || ' ' || k.nachname,
+            p.punkte,
+            p.zeitpunkt
+        FROM punkte_bewegungen p
+        JOIN kunden k ON k.id = p.kunde_id
+        WHERE p.punkte > 0
+        ORDER BY p.zeitpunkt DESC;
+    """)
+
+    daten = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    rows = ""
+
+    for d in daten:
+        rows += f"""
+        <tr>
+            <td>{d[0]}</td>
+            <td>{d[1]}</td>
+            <td>{d[2]}</td>
+            <td>{d[3]}</td>
+            <td>{d[4]}</td>
+        </tr>
+        """
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card wide-card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Gutschriften</div>
+
+            <div class="history-table-wrap">
+                <table class="history-table">
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Kunden-ID</th>
+                            <th>Kunde</th>
+                            <th>Punkte</th>
+                            <th>Zeitpunkt</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {rows}
+                    </tbody>
+
+                </table>
+            </div>
+
+            <a class="btn btn-dark" href="/chef-dashboard">
+                Zurück
+            </a>
+
+        </div>
+    </div>
+    """
 @app.route("/chef-nachrichten", methods=["GET", "POST"])
 def chef_nachrichten():
     if not ist_chef():
