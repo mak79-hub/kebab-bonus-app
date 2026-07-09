@@ -1750,11 +1750,11 @@ def chef_gutschriften():
             k.kunden_id,
             k.vorname || ' ' || k.nachname,
             p.punkte,
-            p.zeitpunkt
+            p.erstellt_am
         FROM punkte_bewegungen p
         JOIN kunden k ON k.id = p.kunde_id
         WHERE p.punkte > 0
-        ORDER BY p.zeitpunkt DESC;
+        ORDER BY p.erstellt_am DESC;
     """)
 
     daten = cur.fetchall()
