@@ -1741,61 +1741,44 @@ def chef_kunden():
 def chef_gutschriften():
     if not ist_chef():
         return redirect("/chef-login")
-            von = request.args.get("von", "")
-        bis = request.args.get("bis", "")
-    von = request.args.get("von", "")
-bis = request.args.get("bis", "")
 
-conn = get_db_connection()
-cur = conn.cursor()
+    von = request.args.get("von", "").strip()
+    bis = request.args.get("bis", "").strip()
 
-sql = """
-SELECT
-    p.id,
-    k.kunden_id,
-    k.vorname || ' ' || k.nachname,
-    p.punkte,
-    p.erstellt_am
-FROM punkte_bewegungen p
-JOIN kunden k ON k.id = p.kunde_id
-WHERE p.typ='GUTSCHRIFT'
-"""
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-params = []
+    sql = """
+        SELECT
+            p.id,
+            k.kunden_id,
+            k.vorname || ' ' || k.nachname,
+            p.punkte,
+            p.erstellt_am
+        FROM punkte_bewegungen p
+        JOIN kunden k ON k.id = p.kunde_id
+        WHERE p.typ = 'GUTSCHRIFT'
+    """
 
-if von:
-    sql += " AND DATE(p.erstellt_am) >= %s"
-    params.append(von)
+    params = []
 
-if bis:
-    sql += " AND DATE(p.erstellt_am) <= %s"
-    params.append(bis)
+    if von:
+        sql += " AND DATE(p.erstellt_am) >= %s"
+        params.append(von)
 
-sql += " ORDER BY p.erstellt_am DESC"
+    if bis:
+        sql += " AND DATE(p.erstellt_am) <= %s"
+        params.append(bis)
 
-cur.execute(sql, params)
+    sql += " ORDER BY p.erstellt_am DESC"
 
-params = []
-
-if von:
-    sql += " AND DATE(p.erstellt_am) >= %s"
-    params.append(von)
-
-if bis:
-    sql += " AND DATE(p.erstellt_am) <= %s"
-    params.append(bis)
-
-sql += " ORDER BY p.erstellt_am DESC"
-
-cur.execute(sql, params)
-
+    cur.execute(sql, params)
     daten = cur.fetchall()
 
     cur.close()
     conn.close()
 
     rows = ""
-
     for d in daten:
         rows += f"""
         <tr>
@@ -1807,6 +1790,9 @@ cur.execute(sql, params)
         </tr>
         """
 
+    if not rows:
+        rows = "<tr><td colspan='5'>Keine Gutschriften gefunden.</td></tr>"
+
     return f"""
     {app_style()}
     <div class="page">
@@ -1815,9 +1801,18 @@ cur.execute(sql, params)
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Gutschriften</div>
 
+            <form method="GET">
+                <label class="label">Von</label>
+                <input type="date" name="von" value="{von}">
+
+                <label class="label">Bis</label>
+                <input type="date" name="bis" value="{bis}">
+
+                <button class="btn-red" type="submit">Filtern</button>
+            </form>
+
             <div class="history-table-wrap">
                 <table class="history-table">
-
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -1827,17 +1822,13 @@ cur.execute(sql, params)
                             <th>Zeitpunkt</th>
                         </tr>
                     </thead>
-
                     <tbody>
                         {rows}
                     </tbody>
-
                 </table>
             </div>
 
-            <a class="btn btn-dark" href="/chef-dashboard">
-                Zurück
-            </a>
+            <a class="btn btn-dark" href="/chef-dashboard">Zurück</a>
 
         </div>
     </div>
