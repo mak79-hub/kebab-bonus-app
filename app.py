@@ -1567,7 +1567,21 @@ def chef_dashboard():
                     <div class="stat-value">{einloesungen_heute}</div>
                 </div>
             </div>
-            <a class="btn btn-red" href="/chef-kunden">👥 Kundenverwaltung</a>
+            <div class="menu-grid">
+
+            <a class="menu-box" href="/chef-kunden">👥 Kunden</a>
+
+            <a class="menu-box" href="#">💰 Gutschriften</a>
+
+            <a class="menu-box" href="#">🎁 Einlösungen</a>
+
+            <a class="menu-box" href="#">📊 Statistiken</a>
+
+            <a class="menu-box" href="/chef-nachrichten">📢 Nachrichten</a>
+
+            <a class="menu-box" href="#">⚙️ Einstellungen</a>
+
+            </div>
             <div class="section-title">Letzte Punktebewegungen</div>
             <div class="hint">
                 Diese Historie ist nur für Chef/Admin gedacht.
@@ -1592,7 +1606,7 @@ def chef_dashboard():
                 </table>
             </div>
 
-            <a class="btn btn-red" href="/chef-nachrichten">Telegram-Angebot senden</a>
+    
             <a class="btn btn-dark" href="/chef-logout">Chef abmelden</a>
             <a class="small-link" href="/">Zur Registrierung</a>
         </div>
