@@ -680,14 +680,15 @@ def app_style():
 }
 
 .status-no{
-    background:#333;
-    color:#ffcc66;
+    background:linear-gradient(135deg,#ff9800,#ffb300);
+    color:white;
     padding:12px 16px;
     border-radius:16px;
     font-size:18px;
     font-weight:900;
     text-align:center;
-    min-width:90px;
+    min-width:105px;
+    box-shadow:0 0 14px rgba(255,152,0,.35);
 }
 
 .info-box{
