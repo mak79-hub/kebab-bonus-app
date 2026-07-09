@@ -940,7 +940,7 @@ def kunde_praemien(kunden_id):
         if punktestand >= praemie["punkte"]:
             einloesbar_html += f"""
             <div class="info-box">
-                <div class="product-row" style="border-left-color:{praemie.get('farbe', '#ff2b2b')};">
+                <div class="product-row" style="border-left:8px solid {praemie['farbe']};">
                     <img src="/static/images/{praemie['bild']}" class="product-image">
 
                     <div class="product-info">
@@ -956,7 +956,7 @@ def kunde_praemien(kunden_id):
             fehlt = praemie["punkte"] - punktestand
             nicht_einloesbar_html += f"""
             <div class="info-box">
-                <div class="product-row locked" style="border-left-color:{praemie.get('farbe', '#ff2b2b')};">
+                <div class="product-row locked" style="border-left:8px solid {praemie['farbe']};">
                     <img src="/static/images/{praemie['bild']}" class="product-image">
 
                     <div class="product-info">
