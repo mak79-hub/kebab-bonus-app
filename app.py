@@ -1743,10 +1743,13 @@ def chef_gutschriften():
         return redirect("/chef-login")
             von = request.args.get("von", "")
         bis = request.args.get("bis", "")
-    conn = get_db_connection()
-    cur = conn.cursor()
+    von = request.args.get("von", "")
+bis = request.args.get("bis", "")
 
-    sql = """
+conn = get_db_connection()
+cur = conn.cursor()
+
+sql = """
 SELECT
     p.id,
     k.kunden_id,
@@ -1757,6 +1760,20 @@ FROM punkte_bewegungen p
 JOIN kunden k ON k.id = p.kunde_id
 WHERE p.typ='GUTSCHRIFT'
 """
+
+params = []
+
+if von:
+    sql += " AND DATE(p.erstellt_am) >= %s"
+    params.append(von)
+
+if bis:
+    sql += " AND DATE(p.erstellt_am) <= %s"
+    params.append(bis)
+
+sql += " ORDER BY p.erstellt_am DESC"
+
+cur.execute(sql, params)
 
 params = []
 
