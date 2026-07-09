@@ -1506,7 +1506,8 @@ def chef_logout():
 def chef_dashboard():
     if not ist_chef():
         return redirect("/chef-login")
-
+    von = request.args.get("von", "").strip()
+    bis = request.args.get("bis", "").strip()
     conn = get_db_connection()
     cur = conn.cursor()
 
