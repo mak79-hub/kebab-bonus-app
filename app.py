@@ -345,7 +345,33 @@ def app_style():
         .btn + .btn {
             margin-top: 18px;
         }
+        .menu-grid{
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:18px;
+        margin:30px 0;
+        }
 
+        .menu-box{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:linear-gradient(180deg,#2a2a2a,#1d1d1d);
+        border:2px solid #3a3a3a;
+        border-radius:22px;
+        color:white;
+        text-decoration:none;
+        font-size:28px;
+        font-weight:900;
+        min-height:110px;
+        transition:.2s;
+        }
+
+        .menu-box:hover{
+        border-color:#ff2b2b;
+        box-shadow:0 0 20px rgba(255,43,43,.35);
+        transform:translateY(-2px);
+        }
         .btn-red {
             background: #ff2b2b;
             color: white;
