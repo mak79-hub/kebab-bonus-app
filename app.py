@@ -372,6 +372,36 @@ def app_style():
         box-shadow:0 0 20px rgba(255,43,43,.35);
         transform:translateY(-2px);
         }
+        
+        .menu-blue{
+        border-color:#3b82f6;
+        background:linear-gradient(180deg,#1e293b,#172033);
+        }
+
+        .menu-green{
+        border-color:#22c55e;
+        background:linear-gradient(180deg,#12351f,#10281a);
+        }
+
+        .menu-orange{
+        border-color:#f59e0b;
+        background:linear-gradient(180deg,#3a2710,#261a0b);
+        }
+
+        .menu-purple{
+        border-color:#a855f7;
+        background:linear-gradient(180deg,#2b1d3a,#1d1328);
+        }
+
+        .menu-red{
+        border-color:#ef4444;
+        background:linear-gradient(180deg,#3a1616,#261010);
+        }
+
+        .menu-gray{
+        border-color:#6b7280;
+        background:linear-gradient(180deg,#2a2a2a,#1c1c1c);
+        }
         .btn-red {
             background: #ff2b2b;
             color: white;
@@ -1569,17 +1599,12 @@ def chef_dashboard():
             </div>
             <div class="menu-grid">
 
-            <a class="menu-box" href="/chef-kunden">👥 Kunden</a>
-
-            <a class="menu-box" href="#">💰 Gutschriften</a>
-
-            <a class="menu-box" href="#">🎁 Einlösungen</a>
-
-            <a class="menu-box" href="#">📊 Statistiken</a>
-
-            <a class="menu-box" href="/chef-nachrichten">📢 Nachrichten</a>
-
-            <a class="menu-box" href="#">⚙️ Einstellungen</a>
+            <a class="menu-box menu-blue" href="/chef-kunden">👥 Kunden</a>
+            <a class="menu-box menu-green" href="#">💰 Gutschriften</a>
+            <a class="menu-box menu-orange" href="#">🎁 Einlösungen</a>
+            <a class="menu-box menu-purple" href="#">📊 Statistiken</a>
+            <a class="menu-box menu-red" href="/chef-nachrichten">📢 Nachrichten</a>
+            <a class="menu-box menu-gray" href="#">⚙️ Einstellungen</a>
 
             </div>
             <div class="section-title">Letzte Punktebewegungen</div>
