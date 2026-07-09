@@ -1572,7 +1572,105 @@ def chef_dashboard():
         </div>
     </div>
     """
+@app.route("/chef-kunden")
+def chef_kunden():
+    if not ist_chef():
+        return redirect("/chef-login")
 
+    suche = request.args.get("suche", "").strip()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if suche:
+        cur.execute("""
+            SELECT
+                k.id,
+                k.kunden_id,
+                k.vorname,
+                k.nachname,
+                k.geburtsdatum,
+                k.telefon,
+                COALESCE(SUM(p.punkte), 0) AS punktestand
+            FROM kunden k
+            LEFT JOIN punkte_bewegungen p ON k.id = p.kunde_id
+            WHERE
+                k.kunden_id ILIKE %s
+                OR k.vorname ILIKE %s
+                OR k.nachname ILIKE %s
+                OR k.telefon ILIKE %s
+            GROUP BY k.id, k.kunden_id, k.vorname, k.nachname, k.geburtsdatum, k.telefon
+            ORDER BY k.id DESC
+        """, (f"%{suche}%", f"%{suche}%", f"%{suche}%", f"%{suche}%"))
+    else:
+        cur.execute("""
+            SELECT
+                k.id,
+                k.kunden_id,
+                k.vorname,
+                k.nachname,
+                k.geburtsdatum,
+                k.telefon,
+                COALESCE(SUM(p.punkte), 0) AS punktestand
+            FROM kunden k
+            LEFT JOIN punkte_bewegungen p ON k.id = p.kunde_id
+            GROUP BY k.id, k.kunden_id, k.vorname, k.nachname, k.geburtsdatum, k.telefon
+            ORDER BY k.id DESC
+        """)
+
+    kunden = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    rows = ""
+    for k in kunden:
+        rows += f"""
+        <tr>
+            <td>{k[1]}</td>
+            <td>{k[2]} {k[3]}</td>
+            <td>{k[4]}</td>
+            <td>{k[5] or ""}</td>
+            <td>{k[6]}</td>
+        </tr>
+        """
+
+    if not rows:
+        rows = "<tr><td colspan='5'>Keine Kunden gefunden.</td></tr>"
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card wide-card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Kundenverwaltung</div>
+
+            <form method="GET">
+                <label class="label">Kunde suchen</label>
+                <input type="text" name="suche" value="{suche}" placeholder="Name, Kunden-ID oder Telefon">
+                <button class="btn-red" type="submit">Suchen</button>
+            </form>
+
+            <div class="history-table-wrap">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Kunden-ID</th>
+                            <th>Name</th>
+                            <th>Geburtsdatum</th>
+                            <th>Telefon</th>
+                            <th>Punkte</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows}
+                    </tbody>
+                </table>
+            </div>
+
+            <a class="btn btn-dark" href="/chef-dashboard">Zurück zum Dashboard</a>
+        </div>
+    </div>
+    """
 
 @app.route("/chef-nachrichten", methods=["GET", "POST"])
 def chef_nachrichten():
