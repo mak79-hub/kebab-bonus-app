@@ -1600,7 +1600,7 @@ def chef_dashboard():
             <div class="menu-grid">
 
             <a class="menu-box menu-blue" href="/chef-kunden">👥 Kunden</a>
-            <a class="menu-box menu-green" href="#">💰 Gutschriften</a>
+            <a class="menu-box menu-green" href="/chef-gutschriften">💰 Gutschriften</a>
             <a class="menu-box menu-orange" href="#">🎁 Einlösungen</a>
             <a class="menu-box menu-purple" href="#">📊 Statistiken</a>
             <a class="menu-box menu-red" href="/chef-nachrichten">📢 Nachrichten</a>
