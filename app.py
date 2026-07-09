@@ -1541,7 +1541,7 @@ def chef_dashboard():
                     <div class="stat-value">{einloesungen_heute}</div>
                 </div>
             </div>
-
+            <a class="btn btn-red" href="/chef-kunden">👥 Kundenverwaltung</a>
             <div class="section-title">Letzte Punktebewegungen</div>
             <div class="hint">
                 Diese Historie ist nur für Chef/Admin gedacht.
