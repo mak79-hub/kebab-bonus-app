@@ -2666,92 +2666,92 @@ def chef_pin_verwaltung():
 
                <form method="POST">
 
-    <label class="label">Chef-PIN</label>
-
-    <div style="display:flex; gap:12px; align-items:center;">
-        <input
-            id="chefPin"
-            type="password"
-            name="chef_pin"
-            value="{chef_pin}"
-            inputmode="numeric"
-            minlength="4"
-            required
-            style="flex:1;"
-        >
-
-        <button
-            type="button"
-            onclick="togglePin('chefPin', this)"
-            style="
-                width:auto;
-                padding:18px 22px;
-                font-size:22px;
-                border-radius:16px;
-            "
-        >
-            👁
-        </button>
-    </div>
-
-    <label class="label">Mitarbeiter-PIN</label>
-
-    <div style="display:flex; gap:12px; align-items:center;">
-        <input
-            id="mitarbeiterPin"
-            type="password"
-            name="mitarbeiter_pin"
-            value="{mitarbeiter_pin}"
-            inputmode="numeric"
-            minlength="4"
-            required
-            style="flex:1;"
-        >
-
-        <button
-            type="button"
-            onclick="togglePin('mitarbeiterPin', this)"
-            style="
-                width:auto;
-                padding:18px 22px;
-                font-size:22px;
-                border-radius:16px;
-            "
-        >
-            👁
-        </button>
-    </div>
-
-    <button class="btn-red" type="submit">
-        💾 PINs speichern
-    </button>
-
-</form>
-
-<div class="hint">
-    Nur der Chef kann diese PINs ändern.
-    Die gespeicherten PINs werden beim nächsten Login verwendet.
-</div>
-
-<a class="btn btn-dark" href="/chef-einstellungen">
-    Zurück zu den Einstellungen
-</a>
-
-<script>
-function togglePin(inputId, button){
-    const input = document.getElementById(inputId);
-
-    if(input.type === "password"){
-        input.type = "text";
-        button.textContent = "🙈";
-    }else{
-        input.type = "password";
-        button.textContent = "👁";
-    }
-}
-</script>
-
-        </div>
+                    <label class="label">Chef-PIN</label>
+                
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <input
+                            id="chefPin"
+                            type="password"
+                            name="chef_pin"
+                            value="{chef_pin}"
+                            inputmode="numeric"
+                            minlength="4"
+                            required
+                            style="flex:1;"
+                        >
+                
+                        <button
+                            type="button"
+                            onclick="togglePin('chefPin', this)"
+                            style="
+                                width:auto;
+                                padding:18px 22px;
+                                font-size:22px;
+                                border-radius:16px;
+                            "
+                        >
+                            👁
+                        </button>
+                    </div>
+                
+                    <label class="label">Mitarbeiter-PIN</label>
+                
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <input
+                            id="mitarbeiterPin"
+                            type="password"
+                            name="mitarbeiter_pin"
+                            value="{mitarbeiter_pin}"
+                            inputmode="numeric"
+                            minlength="4"
+                            required
+                            style="flex:1;"
+                        >
+                
+                        <button
+                            type="button"
+                            onclick="togglePin('mitarbeiterPin', this)"
+                            style="
+                                width:auto;
+                                padding:18px 22px;
+                                font-size:22px;
+                                border-radius:16px;
+                            "
+                        >
+                            👁
+                        </button>
+                    </div>
+                
+                    <button class="btn-red" type="submit">
+                        💾 PINs speichern
+                    </button>
+                
+                </form>
+                
+                <div class="hint">
+                    Nur der Chef kann diese PINs ändern.
+                    Die gespeicherten PINs werden beim nächsten Login verwendet.
+                </div>
+                
+                <a class="btn btn-dark" href="/chef-einstellungen">
+                    Zurück zu den Einstellungen
+                </a>
+                
+                <script>
+                function togglePin(inputId, button){
+                    const input = document.getElementById(inputId);
+                
+                    if(input.type === "password"){
+                        input.type = "text";
+                        button.textContent = "🙈";
+                    }else{
+                        input.type = "password";
+                        button.textContent = "👁";
+                    }
+                }
+                </script>
+                
+                        
     </div>
     """
 
