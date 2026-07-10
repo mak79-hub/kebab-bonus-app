@@ -2179,6 +2179,138 @@ def chef_statistiken():
     </div>
     """
 
+@app.route("/chef-praemien")
+def chef_praemien():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            id,
+            name,
+            punkte,
+            bild,
+            farbe,
+            aktiv,
+            reihenfolge
+        FROM praemien
+        ORDER BY reihenfolge, id
+    """)
+
+    praemien = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    rows = ""
+
+    for p in praemien:
+        status = "✅ Aktiv" if p[5] else "⛔ Inaktiv"
+
+        rows += f"""
+        <tr>
+            <td>{p[0]}</td>
+
+            <td>
+                <img
+                    src="/static/images/{p[3]}"
+                    alt="{p[1]}"
+                    style="
+                        width:70px;
+                        height:70px;
+                        object-fit:cover;
+                        border-radius:12px;
+                    "
+                >
+            </td>
+
+            <td>{p[1]}</td>
+            <td>{p[2]}</td>
+
+            <td>
+                <span style="
+                    display:inline-block;
+                    width:28px;
+                    height:28px;
+                    border-radius:8px;
+                    background:{p[4]};
+                    border:1px solid #777;
+                "></span>
+            </td>
+
+            <td>{status}</td>
+            <td>{p[6]}</td>
+
+            <td>
+                <a
+                    class="btn btn-dark"
+                    href="/chef-praemien/{p[0]}/bearbeiten"
+                    style="
+                        padding:12px 16px;
+                        font-size:18px;
+                        margin:0;
+                    "
+                >
+                    ✏️ Bearbeiten
+                </a>
+            </td>
+        </tr>
+        """
+
+    if not rows:
+        rows = """
+        <tr>
+            <td colspan="8">Keine Prämien vorhanden.</td>
+        </tr>
+        """
+
+    return f"""
+    {app_style()}
+
+    <div class="page">
+        <div class="card wide-card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Prämien verwalten</div>
+
+            <div class="history-table-wrap">
+                <table class="history-table">
+
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Bild</th>
+                            <th>Prämie</th>
+                            <th>Punkte</th>
+                            <th>Farbe</th>
+                            <th>Status</th>
+                            <th>Reihenfolge</th>
+                            <th>Aktion</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {rows}
+                    </tbody>
+
+                </table>
+            </div>
+
+            <a class="btn btn-red" href="#">
+                ➕ Neue Prämie
+            </a>
+
+            <a class="btn btn-dark" href="/chef-einstellungen">
+                Zurück zu den Einstellungen
+            </a>
+
+        </div>
+    </div>
+    """
+
 @app.route("/chef-einstellungen")
 def chef_einstellungen():
     if not ist_chef():
