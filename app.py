@@ -903,6 +903,19 @@ def kunde(kunden_id):
 
     kunde_daten = cur.fetchone()
 
+    cur.execute("""
+        SELECT
+            name,
+            punkte,
+            bild,
+            farbe
+        FROM praemien
+        WHERE aktiv = TRUE
+        ORDER BY reihenfolge, id
+    """)
+
+    praemien_daten = cur.fetchall()
+
     cur.close()
     conn.close()
 
