@@ -1603,7 +1603,7 @@ def chef_dashboard():
             <a class="menu-box menu-blue" href="/chef-kunden">👥 Kunden</a>
             <a class="menu-box menu-green" href="/chef-gutschriften">💰 Gutschriften</a>
             <a class="menu-box menu-orange" href="/chef-einloesungen">🎁 Einlösungen</a>
-            <a class="menu-box menu-purple" href="#">📊 Statistiken</a>
+            <a class="menu-box menu-purple" href="/chef-statistiken">📊 Statistiken</a>
             <a class="menu-box menu-red" href="/chef-nachrichten">📢 Nachrichten</a>
             <a class="menu-box menu-gray" href="#">⚙️ Einstellungen</a>
 
@@ -1934,6 +1934,251 @@ def chef_einloesungen():
         </div>
     </div>
     """
+
+@app.route("/chef-statistiken")
+def chef_statistiken():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    von = request.args.get("von", "").strip()
+    bis = request.args.get("bis", "").strip()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    bedingungen = []
+    params = []
+
+    if von:
+        bedingungen.append("erstellt_am::date >= %s")
+        params.append(von)
+
+    if bis:
+        bedingungen.append("erstellt_am::date <= %s")
+        params.append(bis)
+
+    datum_filter = ""
+    if bedingungen:
+        datum_filter = " WHERE " + " AND ".join(bedingungen)
+
+    cur.execute(
+        "SELECT COUNT(*) FROM punkte_bewegungen" + datum_filter,
+        params
+    )
+    buchungen_gesamt = cur.fetchone()[0]
+
+    gutschrift_bedingungen = ["typ = 'GUTSCHRIFT'"]
+    gutschrift_params = []
+
+    if von:
+        gutschrift_bedingungen.append("erstellt_am::date >= %s")
+        gutschrift_params.append(von)
+
+    if bis:
+        gutschrift_bedingungen.append("erstellt_am::date <= %s")
+        gutschrift_params.append(bis)
+
+    cur.execute(
+        """
+        SELECT
+            COUNT(*),
+            COALESCE(SUM(punkte), 0)
+        FROM punkte_bewegungen
+        WHERE
+        """ + " AND ".join(gutschrift_bedingungen),
+        gutschrift_params
+    )
+
+    gutschriften_anzahl, gutschriften_punkte = cur.fetchone()
+
+    einloesung_bedingungen = ["typ = 'EINLOESUNG'"]
+    einloesung_params = []
+
+    if von:
+        einloesung_bedingungen.append("erstellt_am::date >= %s")
+        einloesung_params.append(von)
+
+    if bis:
+        einloesung_bedingungen.append("erstellt_am::date <= %s")
+        einloesung_params.append(bis)
+
+    cur.execute(
+        """
+        SELECT
+            COUNT(*),
+            COALESCE(SUM(ABS(punkte)), 0)
+        FROM punkte_bewegungen
+        WHERE
+        """ + " AND ".join(einloesung_bedingungen),
+        einloesung_params
+    )
+
+    einloesungen_anzahl, einloesungen_punkte = cur.fetchone()
+
+    kunden_bedingungen = []
+    kunden_params = []
+
+    if von:
+        kunden_bedingungen.append("erstellt_am::date >= %s")
+        kunden_params.append(von)
+
+    if bis:
+        kunden_bedingungen.append("erstellt_am::date <= %s")
+        kunden_params.append(bis)
+
+    kunden_filter = ""
+    if kunden_bedingungen:
+        kunden_filter = " WHERE " + " AND ".join(kunden_bedingungen)
+
+    cur.execute(
+        "SELECT COUNT(*) FROM kunden" + kunden_filter,
+        kunden_params
+    )
+    neue_kunden = cur.fetchone()[0]
+
+    aktiv_bedingungen = []
+    aktiv_params = []
+
+    if von:
+        aktiv_bedingungen.append("p.erstellt_am::date >= %s")
+        aktiv_params.append(von)
+
+    if bis:
+        aktiv_bedingungen.append("p.erstellt_am::date <= %s")
+        aktiv_params.append(bis)
+
+    aktiv_filter = ""
+    if aktiv_bedingungen:
+        aktiv_filter = " WHERE " + " AND ".join(aktiv_bedingungen)
+
+    cur.execute(
+        """
+        SELECT
+            k.kunden_id,
+            k.vorname,
+            k.nachname,
+            COUNT(p.id) AS buchungen
+        FROM punkte_bewegungen p
+        JOIN kunden k ON k.id = p.kunde_id
+        """ + aktiv_filter + """
+        GROUP BY k.id, k.kunden_id, k.vorname, k.nachname
+        ORDER BY buchungen DESC
+        LIMIT 10
+        """,
+        aktiv_params
+    )
+
+    aktive_kunden = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    kunden_rows = ""
+
+    for kunde in aktive_kunden:
+        kunden_rows += f"""
+        <tr>
+            <td>{kunde[0]}</td>
+            <td>{kunde[1]} {kunde[2]}</td>
+            <td>{kunde[3]}</td>
+        </tr>
+        """
+
+    if not kunden_rows:
+        kunden_rows = """
+        <tr>
+            <td colspan="3">Keine Buchungen im ausgewählten Zeitraum.</td>
+        </tr>
+        """
+
+    zeitraum_text = "Gesamter Zeitraum"
+
+    if von and bis:
+        zeitraum_text = f"{von} bis {bis}"
+    elif von:
+        zeitraum_text = f"Ab {von}"
+    elif bis:
+        zeitraum_text = f"Bis {bis}"
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card wide-card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Statistiken</div>
+
+            <form method="GET">
+                <label class="label">Von</label>
+                <input type="date" name="von" value="{von}">
+
+                <label class="label">Bis</label>
+                <input type="date" name="bis" value="{bis}">
+
+                <button class="btn-red" type="submit">Zeitraum anzeigen</button>
+            </form>
+
+            <div class="hint">
+                Ausgewählter Zeitraum: {zeitraum_text}
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Neue Kunden</div>
+                    <div class="stat-value">{neue_kunden}</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Buchungen</div>
+                    <div class="stat-value">{buchungen_gesamt}</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Gutschriften</div>
+                    <div class="stat-value">{gutschriften_anzahl}</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Vergebene Punkte</div>
+                    <div class="stat-value">{gutschriften_punkte}</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Einlösungen</div>
+                    <div class="stat-value">{einloesungen_anzahl}</div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-label">Eingelöste Punkte</div>
+                    <div class="stat-value">{einloesungen_punkte}</div>
+                </div>
+            </div>
+
+            <div class="section-title">Aktivste Kunden</div>
+
+            <div class="history-table-wrap">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Kunden-ID</th>
+                            <th>Kunde</th>
+                            <th>Buchungen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {kunden_rows}
+                    </tbody>
+                </table>
+            </div>
+
+            <a class="btn btn-dark" href="/chef-dashboard">
+                Zurück zum Dashboard
+            </a>
+
+        </div>
+    </div>
+    """
+
 @app.route("/chef-nachrichten", methods=["GET", "POST"])
 def chef_nachrichten():
     if not ist_chef():
