@@ -979,9 +979,22 @@ def kunde_praemien(kunden_id):
         FROM kunden
         WHERE kunden_id = %s
     """, (kunden_id,))
-
+    
     kunde_daten = cur.fetchone()
-
+    
+    cur.execute("""
+        SELECT
+            name,
+            punkte,
+            bild,
+            farbe
+        FROM praemien
+        WHERE aktiv = TRUE
+        ORDER BY reihenfolge, id
+    """)
+    
+    praemien_daten = cur.fetchall()
+    
     cur.close()
     conn.close()
 
@@ -1003,9 +1016,22 @@ def kunde_praemien(kunden_id):
     einloesbar_html = ""
     nicht_einloesbar_html = ""
 
+    praemien = []
+
+    for p in praemien_daten:
+        praemien.append({
+            "name": p[0],
+            "punkte": p[1],
+            "bild": p[2],
+            "farbe": p[3]
+        })
+    
     for praemie in sorted(
-        PRAEMIEN,
-        key=lambda p: 0 if punktestand >= p["punkte"] else p["punkte"] - punktestand
+        praemien,
+        key=lambda p: (
+            0 if punktestand >= p["punkte"] else 1,
+            0 if punktestand >= p["punkte"] else p["punkte"] - punktestand
+        )
     ):
         if punktestand >= praemie["punkte"]:
             einloesbar_html += f"""
