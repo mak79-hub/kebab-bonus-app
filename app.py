@@ -2502,7 +2502,96 @@ def chef_praemie_bearbeiten(praemie_id):
         </div>
     </div>
     """
+@app.route("/chef-punkte-regel", methods=["GET", "POST"])
+def chef_punkte_regel():
+    if not ist_chef():
+        return redirect("/chef-login")
 
+    meldung = ""
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        wert_text = request.form.get("punkte_pro_euro", "").strip()
+
+        try:
+            punkte_pro_euro = int(wert_text)
+        except ValueError:
+            punkte_pro_euro = 0
+
+        if punkte_pro_euro < 1:
+            meldung = "❌ Der Wert muss mindestens 1 sein."
+        else:
+            cur.execute("""
+                INSERT INTO einstellungen (schluessel, wert)
+                VALUES ('punkte_pro_euro', %s)
+                ON CONFLICT (schluessel)
+                DO UPDATE SET wert = EXCLUDED.wert
+            """, (str(punkte_pro_euro),))
+
+            conn.commit()
+            meldung = "✅ Punkteregel wurde gespeichert."
+
+    cur.execute("""
+        SELECT wert
+        FROM einstellungen
+        WHERE schluessel = 'punkte_pro_euro'
+    """)
+
+    ergebnis = cur.fetchone()
+    punkte_pro_euro = ergebnis[0] if ergebnis else "1"
+
+    cur.close()
+    conn.close()
+
+    return f"""
+    {app_style()}
+
+    <div class="page">
+        <div class="card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Punkte-Regel</div>
+
+            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+
+            <div class="info-box">
+                <div class="section-title">Aktuelle Regel</div>
+
+                <div class="value">
+                    1 € = {punkte_pro_euro} Punkt
+                </div>
+
+                <div class="hint">
+                    Nachkommastellen werden nicht berücksichtigt.
+                    Beispiel: 12,50 € ergeben bei der Einstellung 1 genau 12 Punkte.
+                </div>
+            </div>
+
+            <form method="POST">
+                <label class="label">Punkte pro vollem Euro</label>
+
+                <input
+                    type="number"
+                    name="punkte_pro_euro"
+                    value="{punkte_pro_euro}"
+                    min="1"
+                    required
+                >
+
+                <button class="btn-red" type="submit">
+                    💾 Punkteregel speichern
+                </button>
+            </form>
+
+            <a class="btn btn-dark" href="/chef-einstellungen">
+                Zurück zu den Einstellungen
+            </a>
+
+        </div>
+    </div>
+    """
 
 @app.route("/chef-einstellungen")
 def chef_einstellungen():
@@ -2523,8 +2612,9 @@ def chef_einstellungen():
                     🎁 Prämien verwalten
                 </a>
 
-                <a class="menu-box menu-green" href="#">
+                <a class="menu-box menu-green" href="/chef-punkte-regel">
                     🔢 Punkte-Regel
+                </a>
                 </a>
 
                 <a class="menu-box menu-purple" href="#">
