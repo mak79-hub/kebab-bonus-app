@@ -2736,17 +2736,18 @@ def chef_pin_verwaltung():
             </a>
             
             <script>
-            function togglePin(inputId, button){
+            function togglePin(inputId, button){{
                 const input = document.getElementById(inputId);
             
-                if(input.type === "password"){
+                if(input.type === "password"){{
                     input.type = "text";
                     button.textContent = "🙈";
-                }else{
+                }}else{{
+                
                     input.type = "password";
                     button.textContent = "👁";
-                }
-            }
+                }}
+            }}
             </script>
 
             
