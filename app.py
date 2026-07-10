@@ -2593,6 +2593,116 @@ def chef_punkte_regel():
     </div>
     """
 
+@app.route("/chef-pin-verwaltung", methods=["GET", "POST"])
+def chef_pin_verwaltung():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    meldung = ""
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        neue_chef_pin = request.form.get("chef_pin", "").strip()
+        neue_mitarbeiter_pin = request.form.get("mitarbeiter_pin", "").strip()
+
+        if not neue_chef_pin.isdigit() or len(neue_chef_pin) < 4:
+            meldung = "❌ Die Chef-PIN muss mindestens 4 Ziffern haben."
+
+        elif not neue_mitarbeiter_pin.isdigit() or len(neue_mitarbeiter_pin) < 4:
+            meldung = "❌ Die Mitarbeiter-PIN muss mindestens 4 Ziffern haben."
+
+        else:
+            cur.execute("""
+                INSERT INTO einstellungen (schluessel, wert)
+                VALUES ('chef_pin', %s)
+                ON CONFLICT (schluessel)
+                DO UPDATE SET wert = EXCLUDED.wert
+            """, (neue_chef_pin,))
+
+            cur.execute("""
+                INSERT INTO einstellungen (schluessel, wert)
+                VALUES ('mitarbeiter_pin', %s)
+                ON CONFLICT (schluessel)
+                DO UPDATE SET wert = EXCLUDED.wert
+            """, (neue_mitarbeiter_pin,))
+
+            conn.commit()
+            meldung = "✅ PINs wurden gespeichert."
+
+    cur.execute("""
+        SELECT schluessel, wert
+        FROM einstellungen
+        WHERE schluessel IN ('chef_pin', 'mitarbeiter_pin')
+    """)
+
+    eintraege = cur.fetchall()
+
+    chef_pin = ""
+    mitarbeiter_pin = ""
+
+    for schluessel, wert in eintraege:
+        if schluessel == "chef_pin":
+            chef_pin = wert
+        elif schluessel == "mitarbeiter_pin":
+            mitarbeiter_pin = wert
+
+    cur.close()
+    conn.close()
+
+    return f"""
+    {app_style()}
+
+    <div class="page">
+        <div class="card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">PIN-Verwaltung</div>
+
+            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+
+            <form method="POST">
+
+                <label class="label">Chef-PIN</label>
+                <input
+                    type="password"
+                    name="chef_pin"
+                    value="{chef_pin}"
+                    inputmode="numeric"
+                    minlength="4"
+                    required
+                >
+
+                <label class="label">Mitarbeiter-PIN</label>
+                <input
+                    type="password"
+                    name="mitarbeiter_pin"
+                    value="{mitarbeiter_pin}"
+                    inputmode="numeric"
+                    minlength="4"
+                    required
+                >
+
+                <button class="btn-red" type="submit">
+                    💾 PINs speichern
+                </button>
+
+            </form>
+
+            <div class="hint">
+                Die neuen PINs gelten erst vollständig,
+                sobald Chef- und Mitarbeiterlogin auf die Datenbank umgestellt wurden.
+            </div>
+
+            <a class="btn btn-dark" href="/chef-einstellungen">
+                Zurück zu den Einstellungen
+            </a>
+
+        </div>
+    </div>
+    """
+
 @app.route("/chef-einstellungen")
 def chef_einstellungen():
     if not ist_chef():
@@ -2615,11 +2725,12 @@ def chef_einstellungen():
                 <a class="menu-box menu-green" href="/chef-punkte-regel">
                     🔢 Punkte-Regel
                 </a>
-                </a>
+               
 
-                <a class="menu-box menu-purple" href="#">
+                <a class="menu-box menu-purple" href="/chef-pin-verwaltung">
                     🔐 PIN-Verwaltung
                 </a>
+                
 
                 <a class="menu-box menu-blue" href="#">
                     🔔 Push-Nachrichten
