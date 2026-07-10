@@ -2194,7 +2194,7 @@ def chef_einstellungen():
 
             <div class="menu-grid">
 
-                <a class="menu-box menu-orange" href="#">
+                <a class="menu-box menu-orange" href="/chef-praemien">
                     🎁 Prämien verwalten
                 </a>
 
