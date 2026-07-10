@@ -2311,6 +2311,160 @@ def chef_praemien():
     </div>
     """
 
+@app.route("/chef-praemien/<int:praemie_id>/bearbeiten", methods=["GET", "POST"])
+def chef_praemie_bearbeiten(praemie_id):
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        punkte_text = request.form.get("punkte", "").strip()
+        aktiv = request.form.get("aktiv") == "on"
+
+        if not name:
+            cur.close()
+            conn.close()
+            return "Name darf nicht leer sein.", 400
+
+        try:
+            punkte = int(punkte_text)
+        except ValueError:
+            cur.close()
+            conn.close()
+            return "Punkte müssen eine ganze Zahl sein.", 400
+
+        if punkte <= 0:
+            cur.close()
+            conn.close()
+            return "Punkte müssen größer als 0 sein.", 400
+
+        cur.execute("""
+            UPDATE praemien
+            SET
+                name = %s,
+                punkte = %s,
+                aktiv = %s
+            WHERE id = %s
+        """, (name, punkte, aktiv, praemie_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return redirect("/chef-praemien")
+
+    cur.execute("""
+        SELECT
+            id,
+            name,
+            punkte,
+            bild,
+            farbe,
+            aktiv,
+            reihenfolge
+        FROM praemien
+        WHERE id = %s
+    """, (praemie_id,))
+
+    praemie = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if not praemie:
+        return "Prämie wurde nicht gefunden.", 404
+
+    aktiv_checked = "checked" if praemie[5] else ""
+
+    return f"""
+    {app_style()}
+
+    <div class="page">
+        <div class="card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Prämie bearbeiten</div>
+
+            <div class="info-box">
+                <img
+                    src="/static/images/{praemie[3]}"
+                    alt="{praemie[1]}"
+                    style="
+                        width:140px;
+                        height:140px;
+                        object-fit:cover;
+                        border-radius:20px;
+                        display:block;
+                        margin:0 auto 20px auto;
+                        border:4px solid {praemie[4]};
+                    "
+                >
+
+                <div class="hint">
+                    Bild, Farbe und Reihenfolge werden vom Systembetreiber verwaltet.
+                </div>
+            </div>
+
+            <form method="POST">
+
+                <label class="label">Name der Prämie</label>
+                <input
+                    type="text"
+                    name="name"
+                    value="{praemie[1]}"
+                    required
+                >
+
+                <label class="label">Benötigte Punkte</label>
+                <input
+                    type="number"
+                    name="punkte"
+                    value="{praemie[2]}"
+                    min="1"
+                    required
+                >
+
+                <label
+                    style="
+                        display:flex;
+                        align-items:center;
+                        gap:14px;
+                        margin:24px 0;
+                        font-size:24px;
+                        font-weight:800;
+                    "
+                >
+                    <input
+                        type="checkbox"
+                        name="aktiv"
+                        {aktiv_checked}
+                        style="
+                            width:26px;
+                            height:26px;
+                            margin:0;
+                        "
+                    >
+                    Prämie aktiv
+                </label>
+
+                <button class="btn-red" type="submit">
+                    💾 Änderungen speichern
+                </button>
+
+            </form>
+
+            <a class="btn btn-dark" href="/chef-praemien">
+                Abbrechen
+            </a>
+
+        </div>
+    </div>
+    """
+
+
 @app.route("/chef-einstellungen")
 def chef_einstellungen():
     if not ist_chef():
