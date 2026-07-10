@@ -1605,7 +1605,7 @@ def chef_dashboard():
             <a class="menu-box menu-orange" href="/chef-einloesungen">🎁 Einlösungen</a>
             <a class="menu-box menu-purple" href="/chef-statistiken">📊 Statistiken</a>
             <a class="menu-box menu-red" href="/chef-nachrichten">📢 Nachrichten</a>
-            <a class="menu-box menu-gray" href="#">⚙️ Einstellungen</a>
+            <a class="menu-box menu-gray" href="/chef-einstellungen">⚙️ Einstellungen</a>
 
             </div>
             <div class="section-title">Letzte Punktebewegungen</div>
@@ -2169,6 +2169,55 @@ def chef_statistiken():
                         {kunden_rows}
                     </tbody>
                 </table>
+            </div>
+
+            <a class="btn btn-dark" href="/chef-dashboard">
+                Zurück zum Dashboard
+            </a>
+
+        </div>
+    </div>
+    """
+
+@app.route("/chef-einstellungen")
+def chef_einstellungen():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card wide-card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Einstellungen</div>
+
+            <div class="menu-grid">
+
+                <a class="menu-box menu-orange" href="#">
+                    🎁 Prämien verwalten
+                </a>
+
+                <a class="menu-box menu-green" href="#">
+                    🔢 Punkte-Regel
+                </a>
+
+                <a class="menu-box menu-purple" href="#">
+                    🔐 PIN-Verwaltung
+                </a>
+
+                <a class="menu-box menu-blue" href="#">
+                    🔔 Push-Nachrichten
+                </a>
+
+                <a class="menu-box menu-red" href="#">
+                    🏪 Firmendaten
+                </a>
+
+                <a class="menu-box menu-gray" href="/chef-logout">
+                    🚪 Chef abmelden
+                </a>
+
             </div>
 
             <a class="btn btn-dark" href="/chef-dashboard">
