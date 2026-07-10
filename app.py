@@ -1602,7 +1602,7 @@ def chef_dashboard():
 
             <a class="menu-box menu-blue" href="/chef-kunden">👥 Kunden</a>
             <a class="menu-box menu-green" href="/chef-gutschriften">💰 Gutschriften</a>
-            <a class="menu-box menu-orange" href="#">🎁 Einlösungen</a>
+            <a class="menu-box menu-orange" href="/chef-einloesungen">🎁 Einlösungen</a>
             <a class="menu-box menu-purple" href="#">📊 Statistiken</a>
             <a class="menu-box menu-red" href="/chef-nachrichten">📢 Nachrichten</a>
             <a class="menu-box menu-gray" href="#">⚙️ Einstellungen</a>
@@ -1829,6 +1829,107 @@ def chef_gutschriften():
             </div>
 
             <a class="btn btn-dark" href="/chef-dashboard">Zurück</a>
+
+        </div>
+    </div>
+    """
+
+
+@app.route("/chef-einloesungen")
+def chef_einloesungen():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    von = request.args.get("von", "").strip()
+    bis = request.args.get("bis", "").strip()
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    sql = """
+        SELECT
+            p.id,
+            k.kunden_id,
+            k.vorname || ' ' || k.nachname,
+            ABS(p.punkte),
+            p.erstellt_am
+        FROM punkte_bewegungen p
+        JOIN kunden k ON k.id = p.kunde_id
+        WHERE p.typ = 'EINLOESUNG'
+    """
+
+    params = []
+
+    if von:
+        sql += " AND DATE(p.erstellt_am) >= %s"
+        params.append(von)
+
+    if bis:
+        sql += " AND DATE(p.erstellt_am) <= %s"
+        params.append(bis)
+
+    sql += " ORDER BY p.erstellt_am DESC"
+
+    cur.execute(sql, params)
+    daten = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    rows = ""
+
+    for d in daten:
+        rows += f"""
+        <tr>
+            <td>{d[0]}</td>
+            <td>{d[1]}</td>
+            <td>{d[2]}</td>
+            <td>{d[3]}</td>
+            <td>{d[4]}</td>
+        </tr>
+        """
+
+    if not rows:
+        rows = "<tr><td colspan='5'>Keine Einlösungen gefunden.</td></tr>"
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card wide-card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Einlösungen</div>
+
+            <form method="GET">
+                <label class="label">Von</label>
+                <input type="date" name="von" value="{von}">
+
+                <label class="label">Bis</label>
+                <input type="date" name="bis" value="{bis}">
+
+                <button class="btn-red" type="submit">Filtern</button>
+            </form>
+
+            <div class="history-table-wrap">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Kunden-ID</th>
+                            <th>Kunde</th>
+                            <th>Punkte</th>
+                            <th>Zeitpunkt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows}
+                    </tbody>
+                </table>
+            </div>
+
+            <a class="btn btn-dark" href="/chef-dashboard">
+                Zurück
+            </a>
 
         </div>
     </div>
