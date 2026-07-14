@@ -1517,10 +1517,24 @@ def punkte_einloesen(kunden_id):
         elif punkte_einloesen > aktueller_stand:
             meldung = "❌ Nicht genug Punkte vorhanden."
         else:
-            cur.execute("""
-                INSERT INTO punkte_bewegungen (kunde_id, typ, punkte)
-                VALUES (%s, %s, %s)
-            """, (kunde_db_id, "EINLOESUNG", -punkte_einloesen))
+            mitarbeiter_id = session.get("mitarbeiter_id")
+
+        if not mitarbeiter_id:
+            cur.close()
+            conn.close()
+            return redirect("/mitarbeiter-login")
+
+        cur.execute("""
+            INSERT INTO punkte_bewegungen
+                (kunde_id, typ, punkte, mitarbeiter_id)
+        VALUES
+            (%s, %s, %s, %s)
+        """, (
+            kunde_db_id,
+            "EINLOESUNG",
+            -punkte_einloesen,
+            mitarbeiter_id
+        ))
 
             conn.commit()
             cur.close()
