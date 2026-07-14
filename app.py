@@ -1143,7 +1143,7 @@ def mitarbeiter_login():
     if request.method == "POST":
         pin = request.form.get("pin", "").strip()
         next_url = request.form.get("next", "/mitarbeiter")
-
+        mitarbeiter_pin = get_einstellung("mitarbeiter_pin", MITARBEITER_PIN)
         if pin == MITARBEITER_PIN:
             session.permanent = True
             session["mitarbeiter_angemeldet"] = True
@@ -1518,10 +1518,10 @@ def punkte_einloesen(kunden_id):
 @app.route("/chef-login", methods=["GET", "POST"])
 def chef_login():
     meldung = ""
-
+    
     if request.method == "POST":
         pin = request.form.get("pin", "").strip()
-
+        chef_pin = get_einstellung("chef_pin", CHEF_PIN)
         if pin == CHEF_PIN:
             session.permanent = True
             session["chef_angemeldet"] = True
