@@ -1240,7 +1240,8 @@ def mitarbeiter_logout():
 def mitarbeiter():
     if not ist_mitarbeiter():
         return redirect("/mitarbeiter-login?next=/mitarbeiter")
-
+    mitarbeiter_name = session.get("mitarbeiter_name", "Unbekannter Mitarbeiter")
+   
     if request.method == "POST":
         kunden_id = request.form.get("kunden_id", "").strip().upper()
         return redirect(f"/mitarbeiter/{kunden_id}")
@@ -1251,6 +1252,11 @@ def mitarbeiter():
         <div class="card">
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Mitarbeiterbereich</div>
+
+            <div class="info-box">
+                <div class="label">Angemeldet als</div>
+                <div class="value">👤 {mitarbeiter_name}</div>
+            </div>
 
             <a class="btn btn-red" href="/scanner">QR-Code scannen</a>
 
