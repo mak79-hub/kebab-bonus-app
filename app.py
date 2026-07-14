@@ -1518,7 +1518,7 @@ def punkte_einloesen(kunden_id):
             meldung = "❌ Nicht genug Punkte vorhanden."
     else:
         mitarbeiter_id = session.get("mitarbeiter_id")
-    
+        print("SESSION MITARBEITER-ID:", mitarbeiter_id)
         if not mitarbeiter_id:
             cur.close()
             conn.close()
