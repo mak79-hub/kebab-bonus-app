@@ -1402,10 +1402,24 @@ def mitarbeiter_kunde(kunden_id):
             punkte = 0
 
         if punkte > 0:
+            mitarbeiter_id = session.get("mitarbeiter_id")
+        
+            if not mitarbeiter_id:
+                cur.close()
+                conn.close()
+                return redirect("/mitarbeiter-login")
+        
             cur.execute("""
-                INSERT INTO punkte_bewegungen (kunde_id, typ, punkte)
-                VALUES (%s, %s, %s)
-            """, (kunde_db_id, "GUTSCHRIFT", punkte))
+                INSERT INTO punkte_bewegungen
+                    (kunde_id, typ, punkte, mitarbeiter_id)
+                VALUES
+                    (%s, %s, %s, %s)
+            """, (
+                kunde_db_id,
+                "GUTSCHRIFT",
+                punkte,
+                mitarbeiter_id
+            ))
 
             conn.commit()
             cur.close()
