@@ -1143,13 +1143,15 @@ def mitarbeiter_login():
     if request.method == "POST":
         pin = request.form.get("pin", "").strip()
         next_url = request.form.get("next", "/mitarbeiter")
+        
         mitarbeiter_pin = get_einstellung("mitarbeiter_pin", MITARBEITER_PIN)
-        if pin == MITARBEITER_PIN:
-            session.permanent = True
-            session["mitarbeiter_angemeldet"] = True
-            return redirect(next_url)
-        else:
-            meldung = "❌ Falscher PIN."
+
+    if pin == mitarbeiter_pin:
+        session.permanent = True
+        session["mitarbeiter_angemeldet"] = True
+        return redirect(next_url)
+    else:
+        meldung = "❌ Falscher PIN."
 
     return f"""
     {app_style()}
@@ -1521,8 +1523,10 @@ def chef_login():
     
     if request.method == "POST":
         pin = request.form.get("pin", "").strip()
+        
         chef_pin = get_einstellung("chef_pin", CHEF_PIN)
-        if pin == CHEF_PIN:
+
+        if pin == chef_pin:
             session.permanent = True
             session["chef_angemeldet"] = True
             return redirect("/chef-dashboard")
