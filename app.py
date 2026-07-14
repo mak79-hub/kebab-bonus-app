@@ -49,6 +49,22 @@ def get_db_connection():
         password="Auto2026!"
     )
 
+def get_einstellung(schluessel, standardwert=""):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT wert
+        FROM einstellungen
+        WHERE schluessel = %s
+    """, (schluessel,))
+
+    ergebnis = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return ergebnis[0] if ergebnis else standardwert
 
 def init_db():
     conn = get_db_connection()
