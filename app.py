@@ -1516,7 +1516,7 @@ def punkte_einloesen(kunden_id):
             meldung = "❌ Bitte gültige Punkte eingeben."
         elif punkte_einloesen > aktueller_stand:
             meldung = "❌ Nicht genug Punkte vorhanden."
-        else:
+    else:
             mitarbeiter_id = session.get("mitarbeiter_id")
 
         if not mitarbeiter_id:
