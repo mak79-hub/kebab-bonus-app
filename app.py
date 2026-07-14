@@ -2776,6 +2776,125 @@ def chef_pin_verwaltung():
                         
     </div>
     """
+
+@app.route("/chef-mitarbeiter/neu", methods=["GET", "POST"])
+def chef_mitarbeiter_neu():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    meldung = ""
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        pin = request.form.get("pin", "").strip()
+        aktiv = request.form.get("aktiv") == "on"
+
+        if not name:
+            meldung = "❌ Bitte einen Namen eingeben."
+
+        elif not pin.isdigit() or len(pin) < 4:
+            meldung = "❌ Die PIN muss aus mindestens 4 Ziffern bestehen."
+
+        else:
+            conn = get_db_connection()
+            cur = conn.cursor()
+
+            cur.execute("""
+                SELECT id
+                FROM mitarbeiter
+                WHERE pin = %s
+                LIMIT 1
+            """, (pin,))
+
+            vorhandener_mitarbeiter = cur.fetchone()
+
+            if vorhandener_mitarbeiter:
+                meldung = "❌ Diese PIN wird bereits von einem Mitarbeiter verwendet."
+            else:
+                cur.execute("""
+                    INSERT INTO mitarbeiter
+                        (name, pin, aktiv)
+                    VALUES
+                        (%s, %s, %s)
+                """, (name, pin, aktiv))
+
+                conn.commit()
+                cur.close()
+                conn.close()
+
+                return redirect("/chef-mitarbeiter")
+
+            cur.close()
+            conn.close()
+
+    return f"""
+    {app_style()}
+
+    <div class="page">
+        <div class="card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Neuer Mitarbeiter</div>
+
+            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+
+            <form method="POST">
+
+                <label class="label">Name</label>
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="Name des Mitarbeiters"
+                    required
+                >
+
+                <label class="label">Persönliche PIN</label>
+                <input
+                    type="password"
+                    name="pin"
+                    placeholder="Mindestens 4 Ziffern"
+                    inputmode="numeric"
+                    minlength="4"
+                    required
+                >
+
+                <label
+                    style="
+                        display:flex;
+                        align-items:center;
+                        gap:14px;
+                        margin:24px 0;
+                        font-size:24px;
+                        font-weight:800;
+                    "
+                >
+                    <input
+                        type="checkbox"
+                        name="aktiv"
+                        checked
+                        style="
+                            width:26px;
+                            height:26px;
+                            margin:0;
+                        "
+                    >
+                    Mitarbeiter aktiv
+                </label>
+
+                <button class="btn-red" type="submit">
+                    ➕ Mitarbeiter speichern
+                </button>
+
+            </form>
+
+            <a class="btn btn-dark" href="/chef-mitarbeiter">
+                Abbrechen
+            </a>
+
+        </div>
+    </div>
+    """
+
 @app.route("/chef-mitarbeiter")
 def chef_mitarbeiter():
     if not ist_chef():
