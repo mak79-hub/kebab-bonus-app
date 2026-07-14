@@ -1230,6 +1230,9 @@ def mitarbeiter_login():
 @app.route("/mitarbeiter-logout")
 def mitarbeiter_logout():
     session.pop("mitarbeiter_angemeldet", None)
+    session.pop("mitarbeiter_id", None)
+    session.pop("mitarbeiter_name", None)
+
     return redirect("/mitarbeiter-login")
 
 
