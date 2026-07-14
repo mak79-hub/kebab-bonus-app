@@ -1143,34 +1143,85 @@ def mitarbeiter_login():
     if request.method == "POST":
         pin = request.form.get("pin", "").strip()
         next_url = request.form.get("next", "/mitarbeiter")
-        
-        mitarbeiter_pin = get_einstellung("mitarbeiter_pin", MITARBEITER_PIN)
 
-    if pin == mitarbeiter_pin:
-        session.permanent = True
-        session["mitarbeiter_angemeldet"] = True
-        return redirect(next_url)
-    else:
-        meldung = "❌ Falscher PIN."
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT id, name
+            FROM mitarbeiter
+            WHERE pin = %s
+              AND aktiv = TRUE
+            LIMIT 1
+        """, (pin,))
+
+        mitarbeiter = cur.fetchone()
+
+        if mitarbeiter:
+            cur.execute("""
+                UPDATE mitarbeiter
+                SET letzter_login = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (mitarbeiter[0],))
+
+            conn.commit()
+            cur.close()
+            conn.close()
+
+            session.permanent = True
+            session["mitarbeiter_angemeldet"] = True
+            session["mitarbeiter_id"] = mitarbeiter[0]
+            session["mitarbeiter_name"] = mitarbeiter[1]
+
+            return redirect(next_url)
+
+        cur.close()
+        conn.close()
+        meldung = "❌ Falsche PIN oder Mitarbeiter ist inaktiv."
 
     return f"""
     {app_style()}
+
     <div class="page">
         <div class="card">
+
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Mitarbeiter Login</div>
 
             {"<div class='message'>" + meldung + "</div>" if meldung else ""}
 
             <form method="POST">
-                <div class="section-title">Mitarbeiter-PIN eingeben</div>
+
+                <div class="section-title">
+                    Persönliche Mitarbeiter-PIN
+                </div>
+
                 <label class="label">PIN</label>
-                <input type="password" name="pin" placeholder="PIN eingeben" required>
-                <input type="hidden" name="next" value="{next_url}">
-                <button class="btn-red" type="submit">Einloggen</button>
+
+                <input
+                    type="password"
+                    name="pin"
+                    placeholder="Persönliche PIN eingeben"
+                    inputmode="numeric"
+                    required
+                >
+
+                <input
+                    type="hidden"
+                    name="next"
+                    value="{next_url}"
+                >
+
+                <button class="btn-red" type="submit">
+                    Einloggen
+                </button>
+
             </form>
 
-            <a class="small-link" href="/">Zur Registrierung</a>
+            <a class="small-link" href="/">
+                Zur Registrierung
+            </a>
+
         </div>
     </div>
     """
