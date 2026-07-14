@@ -2930,7 +2930,7 @@ def chef_mitarbeiter():
             <td>{m[1]}</td>
             <td>••••</td>
             <td>{status}</td>
-            <td>{m[4]}</td>
+            <td>{m[4].strftime("%d.%m.%Y %H:%M")}</td>
             <td>
                 <a
                     class="btn btn-dark"
