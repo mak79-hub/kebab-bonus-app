@@ -3054,6 +3054,198 @@ def chef_mitarbeiter():
     </div>
     """
 
+@app.route("/chef-mitarbeiter/<int:mitarbeiter_id>/bearbeiten", methods=["GET", "POST"])
+def chef_mitarbeiter_bearbeiten(mitarbeiter_id):
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    meldung = ""
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        pin = request.form.get("pin", "").strip()
+        aktiv = request.form.get("aktiv") == "on"
+
+        if not name:
+            meldung = "❌ Bitte einen Namen eingeben."
+
+        elif not pin.isdigit() or len(pin) < 4:
+            meldung = "❌ Die PIN muss aus mindestens 4 Ziffern bestehen."
+
+        else:
+            cur.execute("""
+                SELECT id
+                FROM mitarbeiter
+                WHERE pin = %s
+                  AND id <> %s
+                LIMIT 1
+            """, (pin, mitarbeiter_id))
+
+            andere_person = cur.fetchone()
+
+            if andere_person:
+                meldung = "❌ Diese PIN wird bereits von einem anderen Mitarbeiter verwendet."
+            else:
+                cur.execute("""
+                    UPDATE mitarbeiter
+                    SET
+                        name = %s,
+                        pin = %s,
+                        aktiv = %s
+                    WHERE id = %s
+                """, (name, pin, aktiv, mitarbeiter_id))
+
+                conn.commit()
+                cur.close()
+                conn.close()
+
+                return redirect("/chef-mitarbeiter")
+
+    cur.execute("""
+        SELECT
+            id,
+            name,
+            pin,
+            aktiv,
+            erstellt_am,
+            letzter_login
+        FROM mitarbeiter
+        WHERE id = %s
+    """, (mitarbeiter_id,))
+
+    mitarbeiter = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    if not mitarbeiter:
+        return "Mitarbeiter wurde nicht gefunden.", 404
+
+    aktiv_checked = "checked" if mitarbeiter[3] else ""
+
+    erstellt_am = (
+        mitarbeiter[4].strftime("%d.%m.%Y %H:%M")
+        if mitarbeiter[4]
+        else "Nicht bekannt"
+    )
+
+    letzter_login = (
+        mitarbeiter[5].strftime("%d.%m.%Y %H:%M")
+        if mitarbeiter[5]
+        else "Noch nie angemeldet"
+    )
+
+    return f"""
+    {app_style()}
+
+    <div class="page">
+        <div class="card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Mitarbeiter bearbeiten</div>
+
+            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+
+            <div class="info-box">
+                <div class="label">Erstellt am</div>
+                <div class="value">{erstellt_am}</div>
+
+                <div class="label">Letzter Login</div>
+                <div class="value">{letzter_login}</div>
+            </div>
+
+            <form method="POST">
+
+                <label class="label">Name</label>
+                <input
+                    type="text"
+                    name="name"
+                    value="{mitarbeiter[1]}"
+                    required
+                >
+
+                <label class="label">Persönliche PIN</label>
+
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <input
+                        id="mitarbeiterPin"
+                        type="password"
+                        name="pin"
+                        value="{mitarbeiter[2]}"
+                        inputmode="numeric"
+                        minlength="4"
+                        required
+                        style="flex:1;"
+                    >
+
+                    <button
+                        type="button"
+                        onclick="togglePin('mitarbeiterPin', this)"
+                        style="
+                            width:auto;
+                            padding:18px 22px;
+                            font-size:22px;
+                            border-radius:16px;
+                        "
+                    >
+                        👁
+                    </button>
+                </div>
+
+                <label
+                    style="
+                        display:flex;
+                        align-items:center;
+                        gap:14px;
+                        margin:24px 0;
+                        font-size:24px;
+                        font-weight:800;
+                    "
+                >
+                    <input
+                        type="checkbox"
+                        name="aktiv"
+                        {aktiv_checked}
+                        style="
+                            width:26px;
+                            height:26px;
+                            margin:0;
+                        "
+                    >
+                    Mitarbeiter aktiv
+                </label>
+
+                <button class="btn-red" type="submit">
+                    💾 Änderungen speichern
+                </button>
+
+            </form>
+
+            <a class="btn btn-dark" href="/chef-mitarbeiter">
+                Abbrechen
+            </a>
+
+            <script>
+            function togglePin(inputId, button){{
+                const input = document.getElementById(inputId);
+
+                if(input.type === "password"){{
+                    input.type = "text";
+                    button.textContent = "🙈";
+                }}else{{
+                    input.type = "password";
+                    button.textContent = "👁";
+                }}
+            }}
+            </script>
+
+        </div>
+    </div>
+    """
+
 @app.route("/chef-einstellungen")
 def chef_einstellungen():
     if not ist_chef():
