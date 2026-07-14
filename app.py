@@ -2776,6 +2776,104 @@ def chef_pin_verwaltung():
                         
     </div>
     """
+@app.route("/chef-mitarbeiter")
+def chef_mitarbeiter():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT
+            id,
+            name,
+            pin,
+            aktiv,
+            erstellt_am
+        FROM mitarbeiter
+        ORDER BY id
+    """)
+
+    mitarbeiter_liste = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    rows = ""
+
+    for m in mitarbeiter_liste:
+        status = "✅ Aktiv" if m[3] else "⛔ Inaktiv"
+
+        rows += f"""
+        <tr>
+            <td>{m[0]}</td>
+            <td>{m[1]}</td>
+            <td>••••</td>
+            <td>{status}</td>
+            <td>{m[4]}</td>
+            <td>
+                <a
+                    class="btn btn-dark"
+                    href="/chef-mitarbeiter/{m[0]}/bearbeiten"
+                    style="
+                        padding:12px 16px;
+                        font-size:18px;
+                        margin:0;
+                    "
+                >
+                    ✏️ Bearbeiten
+                </a>
+            </td>
+        </tr>
+        """
+
+    if not rows:
+        rows = """
+        <tr>
+            <td colspan="6">Noch keine Mitarbeiter vorhanden.</td>
+        </tr>
+        """
+
+    return f"""
+    {app_style()}
+
+    <div class="page">
+        <div class="card wide-card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Mitarbeiter verwalten</div>
+
+            <div class="history-table-wrap">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>PIN</th>
+                            <th>Status</th>
+                            <th>Erstellt am</th>
+                            <th>Aktion</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {rows}
+                    </tbody>
+                </table>
+            </div>
+
+            <a class="btn btn-red" href="/chef-mitarbeiter/neu">
+                ➕ Neuer Mitarbeiter
+            </a>
+
+            <a class="btn btn-dark" href="/chef-einstellungen">
+                Zurück zu den Einstellungen
+            </a>
+
+        </div>
+    </div>
+    """
 
 @app.route("/chef-einstellungen")
 def chef_einstellungen():
