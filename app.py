@@ -2810,9 +2810,10 @@ def chef_einstellungen():
                     🔔 Push-Nachrichten
                 </a>
 
-                <a class="menu-box menu-red" href="#">
-                    🏪 Firmendaten
+                <a class="menu-box menu-red" href="/chef-mitarbeiter">
+                    👨‍💼 Mitarbeiter verwalten
                 </a>
+                
 
                 <a class="menu-box menu-gray" href="/chef-logout">
                     🚪 Chef abmelden
