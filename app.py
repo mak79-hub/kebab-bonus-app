@@ -2480,6 +2480,165 @@ def chef_praemien():
     </div>
     """
 
+@app.route("/chef-praemien/neu", methods=["GET", "POST"])
+def chef_praemie_neu():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    meldung = ""
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT COALESCE(MAX(reihenfolge), 0)
+        FROM praemien
+    """)
+    letzte_position = cur.fetchone()[0]
+    vorgeschlagene_position = letzte_position + 1
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        punkte_text = request.form.get("punkte", "").strip()
+        position_text = request.form.get("position", "").strip()
+        aktiv = request.form.get("aktiv") == "on"
+
+        try:
+            punkte = int(punkte_text)
+        except ValueError:
+            punkte = 0
+
+        try:
+            position = int(position_text)
+        except ValueError:
+            position = vorgeschlagene_position
+
+        if not name:
+            meldung = "❌ Bitte einen Namen eingeben."
+
+        elif punkte <= 0:
+            meldung = "❌ Punkte müssen größer als 0 sein."
+
+        elif position <= 0:
+            meldung = "❌ Die Position muss mindestens 1 sein."
+
+        else:
+            cur.execute("""
+                UPDATE praemien
+                SET reihenfolge = reihenfolge + 1
+                WHERE reihenfolge >= %s
+            """, (position,))
+
+            cur.execute("""
+                INSERT INTO praemien
+                    (
+                        name,
+                        punkte,
+                        bild,
+                        farbe,
+                        aktiv,
+                        reihenfolge
+                    )
+                VALUES
+                    (%s, %s, %s, %s, %s, %s)
+            """, (
+                name,
+                punkte,
+                "standard.png",
+                "#ff2b2b",
+                aktiv,
+                position
+            ))
+
+            conn.commit()
+            cur.close()
+            conn.close()
+
+            return redirect("/chef-praemien")
+
+    cur.close()
+    conn.close()
+
+    return f"""
+    {app_style()}
+
+    <div class="page">
+        <div class="card">
+
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Neue Prämie</div>
+
+            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+
+            <div class="hint">
+                Bild und Farbe werden später vom Systembetreiber angepasst.
+            </div>
+
+            <form method="POST">
+
+                <label class="label">Name der Prämie</label>
+                <input
+                    type="text"
+                    name="name"
+                    placeholder="z. B. Baklava"
+                    required
+                >
+
+                <label class="label">Benötigte Punkte</label>
+                <input
+                    type="number"
+                    name="punkte"
+                    placeholder="z. B. 700"
+                    min="1"
+                    required
+                >
+
+                <label class="label">Position</label>
+                <input
+                    type="number"
+                    name="position"
+                    value="{vorgeschlagene_position}"
+                    min="1"
+                    required
+                >
+
+                <label
+                    style="
+                        display:flex;
+                        align-items:center;
+                        gap:14px;
+                        margin:24px 0;
+                        font-size:24px;
+                        font-weight:800;
+                    "
+                >
+                    <input
+                        type="checkbox"
+                        name="aktiv"
+                        checked
+                        style="
+                            width:26px;
+                            height:26px;
+                            margin:0;
+                        "
+                    >
+                    Prämie aktiv
+                </label>
+
+                <button class="btn-red" type="submit">
+                    ➕ Prämie speichern
+                </button>
+
+            </form>
+
+            <a class="btn btn-dark" href="/chef-praemien">
+                Abbrechen
+            </a>
+
+        </div>
+    </div>
+    """
+
 @app.route("/chef-praemien/<int:praemie_id>/bearbeiten", methods=["GET", "POST"])
 def chef_praemie_bearbeiten(praemie_id):
     if not ist_chef():
