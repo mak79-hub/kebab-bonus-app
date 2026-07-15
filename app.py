@@ -2791,6 +2791,25 @@ def chef_praemie_bearbeiten(praemie_id):
         </div>
     </div>
     """
+@app.route("/chef-praemien/<int:praemie_id>/loeschen", methods=["POST"])
+def chef_praemie_loeschen(praemie_id):
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        DELETE FROM praemien
+        WHERE id = %s
+    """, (praemie_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/chef-praemien")
+
 @app.route("/chef-punkte-regel", methods=["GET", "POST"])
 def chef_punkte_regel():
     if not ist_chef():
@@ -3431,12 +3450,30 @@ def chef_mitarbeiter_bearbeiten(mitarbeiter_id):
                 <button class="btn-red" type="submit">
                     💾 Änderungen speichern
                 </button>
-
-            </form>
-
-            <a class="btn btn-dark" href="/chef-mitarbeiter">
-                Abbrechen
-            </a>
+                
+                </form>
+                
+                <form
+                    method="POST"
+                    action="/chef-praemien/{praemie[0]}/loeschen"
+                    onsubmit="return confirm('Soll diese Prämie wirklich endgültig gelöscht werden?');"
+                >
+                    <button
+                        class="btn btn-dark"
+                        type="submit"
+                        style="
+                            background:#8b0000;
+                            border-color:#b91c1c;
+                            margin-top:18px;
+                        "
+                    >
+                        🗑️ Prämie löschen
+                    </button>
+                </form>
+                
+                <a class="btn btn-dark" href="/chef-praemien">
+                    Abbrechen
+                </a>
 
             <script>
             function togglePin(inputId, button){{
