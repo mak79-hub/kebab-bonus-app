@@ -4,6 +4,7 @@ import urllib.parse
 import urllib.request
 from io import BytesIO
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 import psycopg2
 import qrcode
