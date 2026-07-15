@@ -2003,9 +2003,11 @@ def chef_einloesungen():
             k.kunden_id,
             k.vorname || ' ' || k.nachname,
             ABS(p.punkte),
-            p.erstellt_am
+            p.erstellt_am,
+            COALESCE(m.name, 'Nicht erfasst') AS mitarbeiter
         FROM punkte_bewegungen p
         JOIN kunden k ON k.id = p.kunde_id
+        LEFT JOIN mitarbeiter m ON m.id = p.mitarbeiter_id
         WHERE p.typ = 'EINLOESUNG'
     """
 
@@ -2037,11 +2039,12 @@ def chef_einloesungen():
             <td>{d[2]}</td>
             <td>{d[3]}</td>
             <td>{d[4]}</td>
+            <td>{d[5]}</td>
         </tr>
         """
 
     if not rows:
-        rows = "<tr><td colspan='5'>Keine Einlösungen gefunden.</td></tr>"
+        rows = "<tr><td colspan='6'>Keine Einlösungen gefunden.</td></tr>"
 
     return f"""
     {app_style()}
@@ -2070,6 +2073,7 @@ def chef_einloesungen():
                             <th>Kunde</th>
                             <th>Punkte</th>
                             <th>Zeitpunkt</th>
+                            <th>Mitarbeiter</th>
                         </tr>
                     </thead>
                     <tbody>
