@@ -1949,7 +1949,7 @@ def chef_gutschriften():
             <td>{d[1]}</td>
             <td>{d[2]}</td>
             <td>{d[3]}</td>
-            <td>{d[4]}</td>
+            <td>{format_datetime(d[4])}</td>
             <td>{d[5]}</td>
         </tr>
         """
@@ -2052,7 +2052,7 @@ def chef_einloesungen():
             <td>{d[1]}</td>
             <td>{d[2]}</td>
             <td>{d[3]}</td>
-            <td>{d[4]}</td>
+            <td>{format_datetime(d[4])}</td>
             <td>{d[5]}</td>
         </tr>
         """
