@@ -2781,12 +2781,30 @@ def chef_praemie_bearbeiten(praemie_id):
                 <button class="btn-red" type="submit">
                     💾 Änderungen speichern
                 </button>
-
-            </form>
-
-            <a class="btn btn-dark" href="/chef-praemien">
-                Abbrechen
-            </a>
+                
+                </form>
+                
+                <form
+                    method="POST"
+                    action="/chef-praemien/{praemie[0]}/loeschen"
+                    onsubmit="return confirm('Soll diese Prämie wirklich endgültig gelöscht werden?');"
+                >
+                    <button
+                        class="btn btn-dark"
+                        type="submit"
+                        style="
+                            background:#8b0000;
+                            border:1px solid #b91c1c;
+                            margin-top:18px;
+                        "
+                    >
+                        🗑️ Prämie löschen
+                    </button>
+                </form>
+                
+                <a class="btn btn-dark" href="/chef-praemien">
+                    Abbrechen
+                </a>
 
         </div>
     </div>
