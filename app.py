@@ -2468,7 +2468,7 @@ def chef_praemien():
                 </table>
             </div>
 
-            <a class="btn btn-red" href="#">
+            <a class="btn btn-red" href="/chef-praemien/neu">
                 ➕ Neue Prämie
             </a>
 
