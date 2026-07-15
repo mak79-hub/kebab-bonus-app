@@ -165,6 +165,17 @@ def send_telegram_message(text):
     except Exception as e:
         return False, f"Telegram Fehler: {str(e)}"
 
+DE_ZEITZONE = ZoneInfo("Europe/Berlin")
+
+
+def format_datetime(dt):
+    if not dt:
+        return "-"
+
+    return dt.replace(tzinfo=ZoneInfo("UTC")) \
+             .astimezone(DE_ZEITZONE) \
+             .strftime("%d.%m.%Y %H:%M")
+
 
 def app_style():
     return """
