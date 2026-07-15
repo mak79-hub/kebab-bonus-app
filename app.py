@@ -3040,7 +3040,7 @@ def chef_mitarbeiter():
             <td>{m[1]}</td>
             <td>••••</td>
             <td>{status}</td>
-            <td>{m[4].strftime("%d.%m.%Y %H:%M")}</td>
+            <td>{format_datetime(m[4])}</td>
             <td>
                 <a
                     class="btn btn-dark"
@@ -3177,13 +3177,14 @@ def chef_mitarbeiter_bearbeiten(mitarbeiter_id):
     aktiv_checked = "checked" if mitarbeiter[3] else ""
 
     erstellt_am = (
-        mitarbeiter[4].strftime("%d.%m.%Y %H:%M")
+        format_datetime(mitarbeiter[4])
         if mitarbeiter[4]
         else "Nicht bekannt"
     )
+    
 
     letzter_login = (
-        mitarbeiter[5].strftime("%d.%m.%Y %H:%M")
+        format_datetime(mitarbeiter[5])
         if mitarbeiter[5]
         else "Noch nie angemeldet"
     )
