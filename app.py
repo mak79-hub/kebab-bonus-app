@@ -202,7 +202,7 @@ def app_style():
             --shadow-main: rgba(0, 0, 0, 0.55);
         }
         
-        html.light-mode {
+        html[data-theme="light"] {
             --page-bg: #f2f4f7;
             --card-bg: #ffffff;
             --box-bg: #f4f5f7;
