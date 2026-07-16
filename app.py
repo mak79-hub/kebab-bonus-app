@@ -591,8 +591,8 @@ def app_style():
         }
 
         .stat-box {
-            background: #252525;
-            border: 1px solid #444;
+            background: var(--box-bg);
+            border: 1px solid var(--border-soft);
             border-radius: 22px;
             padding: 24px;
             text-align: center;
