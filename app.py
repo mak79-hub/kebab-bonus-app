@@ -855,7 +855,13 @@ def app_style():
         }}
     
         const htmlElement = document.documentElement;
-        const hellIstAktiv = htmlElement.classList.toggle("light-mode");
+        const hellIstAktiv = !htmlElement.classList.contains("light-mode");
+
+        if (hellIstAktiv) {
+            htmlElement.classList.add("light-mode");
+        } else {
+            htmlElement.classList.remove("light-mode");
+        }
     
         localStorage.setItem(
             "farbmodus",
