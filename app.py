@@ -226,8 +226,9 @@ def app_style():
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
-            background: #080808;
-            color: #fff;
+            background: var(--page-bg);
+            color: var(--text-main);
+            transition: background .25s, color .25s;
         }
 
         .page {
