@@ -242,11 +242,12 @@ def app_style():
         .card {
             width: 100%;
             max-width: 820px;
-            background: #171717;
-            border: 1px solid #333;
+            background: var(--card-bg);
+            border: 1px solid var(--border-main);
             border-radius: 28px;
             padding: 34px;
-            box-shadow: 0 20px 55px rgba(0,0,0,0.55);
+            box-shadow: 0 20px 55px var(--shadow-main);
+            transition: background .25s, color .25s, border-color .25s;
         }
 
         .wide-card {
@@ -264,7 +265,7 @@ def app_style():
 
         .subtitle {
             text-align: center;
-            color: #bbb;
+            color: var(--text-muted);
             margin-bottom: 34px;
             font-size: 30px;
             font-weight: 800;
@@ -291,27 +292,27 @@ def app_style():
 
         .success-subtitle {
             text-align: center;
-            color: #bbb;
+            color: var(--text-muted);
             font-size: 28px;
             margin-bottom: 32px;
         }
 
         .info-box {
-    background: linear-gradient(180deg,#262626,#1d1d1d);
-    border-radius: 28px;
-    padding: 24px;
-    margin-bottom: 24px;
-
-    border: 2px solid #3a3a3a;
-    border-left: 6px solid #ff2b2b;
-
-    box-shadow: 0 10px 28px rgba(0,0,0,.45);
-
-    transition: .25s;
-}
+            background: linear-gradient(180deg,#262626,#1d1d1d);
+            border-radius: 28px;
+            padding: 24px;
+            margin-bottom: 24px;
+        
+            border: 2px solid #3a3a3a;
+            border-left: 6px solid #ff2b2b;
+        
+            box-shadow: 0 10px 28px rgba(0,0,0,.45);
+        
+            transition: .25s;
+        }
 
         .label {
-            color: #aaa;
+            color: var(--text-muted);
             font-size: 24px;
             margin-bottom: 8px;
             font-weight: 800;
