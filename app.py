@@ -3585,7 +3585,21 @@ def chef_einstellungen():
 
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Einstellungen</div>
-
+            <button
+                type="button"
+                class="btn btn-dark"
+                onclick="farbmodusWechseln()"
+                style="
+                    max-width:320px;
+                    margin:0 auto 24px auto;
+                    padding:14px 20px;
+                    font-size:22px;
+                "
+            >
+                🌙 / ☀️ Darstellung wechseln
+            </button>
+            
+            
             <div class="menu-grid">
 
                 <a class="menu-box menu-orange" href="/chef-praemien">
