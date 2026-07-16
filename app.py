@@ -854,19 +854,15 @@ def app_style():
             event.stopPropagation();
         }}
     
-        const htmlElement = document.documentElement;
-        const hellIstAktiv = !htmlElement.classList.contains("light-mode");
-
-        if (hellIstAktiv) {
-            htmlElement.classList.add("light-mode");
-        } else {
-            htmlElement.classList.remove("light-mode");
-        }
+        const aktuellerModus =
+            document.documentElement.getAttribute("data-theme") || "dunkel";
     
-        localStorage.setItem(
-            "farbmodus",
-            hellIstAktiv ? "hell" : "dunkel"
-        );
+        const neuerModus =
+            aktuellerModus === "hell" ? "dunkel" : "hell";
+    
+        document.documentElement.setAttribute("data-theme", neuerModus);
+    
+        localStorage.setItem("farbmodus", neuerModus);
     
         return false;
     }}
