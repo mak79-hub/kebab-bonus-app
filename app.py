@@ -599,7 +599,7 @@ def app_style():
         }
 
         .stat-label {
-            color: #bbb;
+            color: var(--text-muted);
             font-size: 20px;
             font-weight: 800;
             margin-bottom: 10px;
@@ -608,14 +608,14 @@ def app_style():
         .stat-value {
             font-size: 46px;
             font-weight: 900;
-            color: #fff;
+            color: var(--text-main);
         }
 
         .history-table-wrap {
             width: 100%;
             overflow-x: auto;
-            background: #222;
-            border: 1px solid #444;
+            background: var(--table-bg);
+            border: 1px solid var(--border-soft);
             border-radius: 20px;
             margin-bottom: 30px;
         }
@@ -629,13 +629,13 @@ def app_style():
         .history-table th,
         .history-table td {
             padding: 16px;
-            border-bottom: 1px solid #444;
+            border-bottom: 1px solid var(--border-soft);
             text-align: left;
             font-size: 18px;
         }
 
         .history-table th {
-            background: #111;
+            background: var(--table-head-bg);
             color: #ffb3b3;
             font-size: 18px;
         }
