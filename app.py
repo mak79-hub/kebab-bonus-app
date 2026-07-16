@@ -202,7 +202,7 @@ def app_style():
             --shadow-main: rgba(0, 0, 0, 0.55);
         }
         
-        body.light-mode {
+        html.light-mode {
             --page-bg: #f2f4f7;
             --card-bg: #ffffff;
             --box-bg: #f4f5f7;
@@ -823,22 +823,31 @@ def app_style():
         }
     </style>
     <script>
-    document.addEventListener("DOMContentLoaded", function() {{
+    (function() {{
         const gespeicherterModus = localStorage.getItem("farbmodus");
     
         if (gespeicherterModus === "hell") {{
-            document.body.classList.add("light-mode");
-        }}
-    }});
-    
-    function farbmodusWechseln() {{
-        document.body.classList.toggle("light-mode");
-    
-        if (document.body.classList.contains("light-mode")) {{
-            localStorage.setItem("farbmodus", "hell");
+            document.documentElement.classList.add("light-mode");
         }} else {{
-            localStorage.setItem("farbmodus", "dunkel");
+            document.documentElement.classList.remove("light-mode");
         }}
+    }})();
+    
+    function farbmodusWechseln(event) {{
+        if (event) {{
+            event.preventDefault();
+            event.stopPropagation();
+        }}
+    
+        const htmlElement = document.documentElement;
+        const hellIstAktiv = htmlElement.classList.toggle("light-mode");
+    
+        localStorage.setItem(
+            "farbmodus",
+            hellIstAktiv ? "hell" : "dunkel"
+        );
+    
+        return false;
     }}
     </script>
     """
@@ -3588,7 +3597,7 @@ def chef_einstellungen():
             <button
                 type="button"
                 class="btn btn-dark"
-                onclick="farbmodusWechseln()"
+                onclick="return farbmodusWechseln(event);"
                 style="
                     max-width:320px;
                     margin:0 auto 24px auto;
