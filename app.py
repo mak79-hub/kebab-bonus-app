@@ -368,11 +368,11 @@ def app_style():
         }
 
         .hint {
-            background: #252525;
-            border: 1px solid #444;
+            background: var(--box-bg);
+            border: 1px solid var(--border-soft);
             border-radius: 20px;
             padding: 22px;
-            color: #ddd;
+            color: var(--text-soft);
             font-size: 24px;
             line-height: 1.45;
             margin-bottom: 26px;
@@ -382,9 +382,9 @@ def app_style():
             width: 100%;
             padding: 28px;
             border-radius: 20px;
-            border: 1px solid #444;
-            background: #0f0f0f;
-            color: #fff;
+            border: 1px solid var(--border-soft);
+            background: var(--input-bg);
+            color: var(--text-main);
             font-size: 38px;
             margin-top: 12px;
             margin-bottom: 28px;
