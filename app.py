@@ -822,6 +822,25 @@ def app_style():
             overflow:hidden;
         }
     </style>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {{
+        const gespeicherterModus = localStorage.getItem("farbmodus");
+    
+        if (gespeicherterModus === "hell") {{
+            document.body.classList.add("light-mode");
+        }}
+    }});
+    
+    function farbmodusWechseln() {{
+        document.body.classList.toggle("light-mode");
+    
+        if (document.body.classList.contains("light-mode")) {{
+            localStorage.setItem("farbmodus", "hell");
+        }} else {{
+            localStorage.setItem("farbmodus", "dunkel");
+        }}
+    }}
+    </script>
     """
 
 
