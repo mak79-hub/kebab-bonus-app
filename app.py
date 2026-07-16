@@ -182,6 +182,47 @@ def app_style():
     <style>
         * { box-sizing: border-box; }
 
+        
+        :root {
+            --page-bg: #080808;
+            --card-bg: #171717;
+            --box-bg: #252525;
+            --box-bg-2: #1d1d1d;
+            --input-bg: #0f0f0f;
+            --table-bg: #222222;
+            --table-head-bg: #111111;
+        
+            --text-main: #ffffff;
+            --text-muted: #bbbbbb;
+            --text-soft: #dddddd;
+        
+            --border-main: #333333;
+            --border-soft: #444444;
+        
+            --shadow-main: rgba(0, 0, 0, 0.55);
+        }
+        
+        body.light-mode {
+            --page-bg: #f2f4f7;
+            --card-bg: #ffffff;
+            --box-bg: #f4f5f7;
+            --box-bg-2: #ffffff;
+            --input-bg: #ffffff;
+            --table-bg: #ffffff;
+            --table-head-bg: #eceff3;
+        
+            --text-main: #171717;
+            --text-muted: #555555;
+            --text-soft: #333333;
+        
+            --border-main: #d1d5db;
+            --border-soft: #c5c9d0;
+        
+            --shadow-main: rgba(0, 0, 0, 0.16);
+        }
+        
+        
+        
         body {
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
