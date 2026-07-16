@@ -58,6 +58,17 @@
     </div>
 
 </div>
+<script>
+(function () {
+    const gespeicherterModus = localStorage.getItem("farbmodus");
+
+    if (gespeicherterModus === "hell") {
+        document.documentElement.classList.add("light-mode");
+    } else {
+        document.documentElement.classList.remove("light-mode");
+    }
+})();
+</script>
 
 </body>
 </html>
