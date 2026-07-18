@@ -839,13 +839,13 @@ def app_style():
     </style>
     <script>
     (function() {{
-        const gespeicherterModus = localStorage.getItem("farbmodus");
+        const gespeicherterModus =
+            localStorage.getItem("farbmodus") || "dunkel";
     
-        if (gespeicherterModus === "hell") {{
-            document.documentElement.classList.add("light-mode");
-        }} else {{
-            document.documentElement.classList.remove("light-mode");
-        }}
+        document.documentElement.setAttribute(
+            "data-theme",
+            gespeicherterModus
+        );
     }})();
     
     function farbmodusWechseln(event) {{
