@@ -311,18 +311,18 @@ def app_style():
             transition: .25s;
         }
 
-        html[data-theme="light"] .info-box {
+        html[data-theme="hell"] .info-box {
             background: linear-gradient(180deg, #ffffff, #f3f4f6);
             border-color: var(--border-main);
             border-left-color: #ff2b2b;
             box-shadow: 0 10px 28px rgba(0,0,0,.12);
         }
 
-        html[data-theme="light"] .info-box .label {
+        html[data-theme="hell"] .info-box .label {
             color: #555555;
         }
         
-        html[data-theme="light"] .info-box .value {
+        html[data-theme="hell"] .info-box .value {
             color: #171717;
         }
         
