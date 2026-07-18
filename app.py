@@ -877,6 +877,15 @@ def app_style():
         return false;
     }}
     </script>
+    
+    <script>
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+            navigator.serviceWorker.register("/sw.js");
+        });
+    }
+    </script>
+    
     """
 
 
