@@ -65,13 +65,8 @@
 </div>
 <script>
 (function () {
-    const gespeicherterModus = localStorage.getItem("farbmodus");
-
-    if (gespeicherterModus === "hell") {
-        document.documentElement.classList.add("light-mode");
-    } else {
-        document.documentElement.classList.remove("light-mode");
-    }
+    const gespeicherterModus = localStorage.getItem("farbmodus") || "dunkel";
+    document.documentElement.setAttribute("data-theme", gespeicherterModus);
 })();
 </script>
 
