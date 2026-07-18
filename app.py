@@ -179,6 +179,8 @@ def format_datetime(dt):
 
 def app_style():
     return """
+    <link rel="manifest" href="/static/manifest.webmanifest">
+    <meta name="theme-color" content="#ff2b2b">
     <style>
         * { box-sizing: border-box; }
 
