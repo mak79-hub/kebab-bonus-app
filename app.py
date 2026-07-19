@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 import psycopg2
 import qrcode
 from flask import Flask, request, render_template, url_for, redirect, session, send_from_directory
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
