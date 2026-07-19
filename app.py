@@ -915,6 +915,25 @@ def auto_back_to_scanner_page(titel, text):
 
 init_db()
 
+@app.route("/")
+def startseite():
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">DÖNI BONUS</div>
+            <div class="subtitle">Willkommen</div>
+
+            <a class="btn btn-red" href="/register">
+                Registrieren
+            </a>
+
+            <a class="btn btn-dark" href="/login">
+                Einloggen
+            </a>
+        </div>
+    </div>
+    """
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
