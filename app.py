@@ -944,8 +944,19 @@ def register():
         geburtsdatum = request.form.get("geburtsdatum")
         telefon = request.form.get("telefon", "").strip()
         adresse = request.form.get("adresse", "").strip()
+        
+        passwort = request.form.get("passwort", "").strip()
+        passwort2 = request.form.get("passwort2", "").strip()
+        
         angebote = request.form.get("angebote") == "on"
-
+        if passwort != passwort2:
+            return "Die Passwörter stimmen nicht überein."
+        
+        if len(passwort) < 4:
+            return "Das Passwort muss mindestens 4 Zeichen lang sein."
+        
+        passwort_hash = generate_password_hash(passwort)
+        
         conn = get_db_connection()
         cur = conn.cursor()
 
