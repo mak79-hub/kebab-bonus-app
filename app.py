@@ -960,6 +960,11 @@ def login():
         
         cur.close()
         conn.close()
+        if kunde and check_password_hash(kunde[5], passwort):
+            return f"Login erfolgreich: {kunde[2]} {kunde[3]}"
+        
+        return "Kundenangaben oder Passwort sind falsch."
+    
     return f"""
     {app_style()}
     <div class="page">
