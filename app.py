@@ -935,7 +935,37 @@ def startseite():
         </div>
     </div>
     """
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">DÖNİ BONUS</div>
+            <div class="subtitle">Einloggen</div>
 
+            <form method="POST">
+
+                <label>Name, Telefon oder Kunden-ID</label>
+                <input type="text" name="kennung" required>
+
+                <label>Passwort</label>
+                <input type="password" name="passwort" required>
+
+                <button class="btn btn-red" type="submit">
+                    Einloggen
+                </button>
+
+                <a class="btn btn-dark" href="/">
+                    Zurück
+                </a>
+
+            </form>
+        </div>
+    </div>
+    """
+
+    
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
