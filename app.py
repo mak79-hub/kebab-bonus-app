@@ -939,8 +939,8 @@ def startseite():
 def login():
     
     if request.method == "POST":
-    kennung = request.form.get("kennung", "").strip()
-    passwort = request.form.get("passwort", "").strip()
+        kennung = request.form.get("kennung", "").strip()
+        passwort = request.form.get("passwort", "").strip()
     
     return f"""
     {app_style()}
