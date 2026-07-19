@@ -978,11 +978,20 @@ def register():
             cur.execute("""
                 INSERT INTO kunden (
                     vorname, nachname, geburtsdatum, telefon, adresse,
+                    passwort,
                     werbeeinwilligung, werbeeinwilligung_am
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
                 RETURNING id
-            """, (vorname, nachname, geburtsdatum, telefon, adresse, angebote))
+            """, (
+                vorname,
+                nachname,
+                geburtsdatum,
+                telefon,
+                adresse,
+                passwort_hash,
+                angebote
+            ))
 
             kunde_db_id = cur.fetchone()[0]
             kunden_id = f"KH-{30000 + kunde_db_id}"
