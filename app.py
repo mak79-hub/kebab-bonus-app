@@ -916,7 +916,7 @@ def auto_back_to_scanner_page(titel, text):
 init_db()
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         vorname = request.form.get("vorname", "").strip()
