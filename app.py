@@ -941,7 +941,25 @@ def login():
     if request.method == "POST":
         kennung = request.form.get("kennung", "").strip()
         passwort = request.form.get("passwort", "").strip()
-    
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            SELECT id, kunden_id, vorname, nachname, telefon, passwort
+            FROM kunden
+            WHERE kunden_id = %s
+               OR telefon = %s
+               OR LOWER(vorname || ' ' || nachname) = LOWER(%s)
+        """, (
+            kennung,
+            kennung,
+            kennung
+        ))
+        
+        kunde = cur.fetchone()
+        
+        cur.close()
+        conn.close()
     return f"""
     {app_style()}
     <div class="page">
