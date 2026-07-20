@@ -23,6 +23,9 @@ CHEF_PIN = os.environ.get("CHEF_PIN", "9999")
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT")
 
 PRAEMIEN = [
     {"name": "Ayran 0,25l", "punkte": 100, "bild": "ayran.png", "farbe": "#22c55e"},
