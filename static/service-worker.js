@@ -54,20 +54,39 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
     event.notification.close();
 
-    const zielUrl =
+    const zielPfad =
         event.notification.data &&
         event.notification.data.url
             ? event.notification.data.url
-            : "/login";
+            : "/";
+
+    const zielUrl = new URL(
+        zielPfad,
+        self.location.origin
+    ).href;
 
     event.waitUntil(
         clients.matchAll({
             type: "window",
             includeUncontrolled: true
-        }).then((fensterListe) => {
-            for (const fenster of fensterListe) {
+        }).then(async (fensterListe) => {
+
+            if (fensterListe.length > 0) {
+                const fenster = fensterListe[0];
+
+                if ("navigate" in fenster) {
+                    const navigiertesFenster =
+                        await fenster.navigate(zielUrl);
+
+                    if (
+                        navigiertesFenster &&
+                        "focus" in navigiertesFenster
+                    ) {
+                        return navigiertesFenster.focus();
+                    }
+                }
+
                 if ("focus" in fenster) {
-                    fenster.navigate(zielUrl);
                     return fenster.focus();
                 }
             }
