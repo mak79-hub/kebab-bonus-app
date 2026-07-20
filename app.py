@@ -4010,7 +4010,8 @@ def chef_nachrichten():
                     ps.id,
                     ps.endpoint,
                     ps.p256dh,
-                    ps.auth
+                    ps.auth,
+                    k.kunden_id
                 FROM push_subscriptions ps
                 JOIN kunden k
                     ON k.id = ps.kunde_id
