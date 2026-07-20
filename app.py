@@ -916,6 +916,14 @@ def auto_back_to_scanner_page(titel, text):
 
 init_db()
 
+@app.route("/service-worker.js")
+def service_worker():
+    return send_from_directory(
+        "static",
+        "service-worker.js",
+        mimetype="application/javascript"
+    )
+    
 @app.route("/")
 def startseite():
     return f"""
