@@ -1,4 +1,4 @@
-const CACHE_NAME = "kebab-bonus-v2";
+const CACHE_NAME = "kebab-bonus-v3";
 
 self.addEventListener("install", () => {
     self.skipWaiting();
