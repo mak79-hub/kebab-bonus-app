@@ -1309,10 +1309,161 @@ def kunde(kunden_id):
             <div class="hint">
                 Zeige diesen QR-Code im Laden vor, um Punkte zu sammeln oder einzulösen.
             </div>
-            <a class="btn btn-red" href="/kunde/{kunde_daten[1]}/praemien">🎁 Prämien ansehen</a>
-        </div>
-    </div>
-    """
+            
+            <a class="btn btn-red" href="/kunde/{kunde_daten[1]}/praemien">
+                🎁 Prämien ansehen
+            </a>
+            
+            <button
+                id="pushButton"
+                class="btn btn-dark"
+                type="button"
+                onclick="pushAktivieren()"
+            >
+                🔔 Benachrichtigungen aktivieren
+            </button>
+            
+            <div
+                id="pushMeldung"
+                class="hint"
+                style="display:none;"
+            ></div>
+            
+            <script>
+            function urlBase64ToUint8Array(base64String) {{
+                const padding = "=".repeat((4 - base64String.length % 4) % 4);
+                const base64 = (base64String + padding)
+                    .replace(/-/g, "+")
+                    .replace(/_/g, "/");
+            
+                const rawData = window.atob(base64);
+                return Uint8Array.from(
+                    [...rawData].map(char => char.charCodeAt(0))
+                );
+            }}
+            
+            function zeigePushMeldung(text, erfolgreich = false) {{
+                const meldung = document.getElementById("pushMeldung");
+            
+                meldung.style.display = "block";
+                meldung.textContent = text;
+            
+                if (erfolgreich) {{
+                    meldung.style.borderColor = "#22c55e";
+                    meldung.style.color = "#22c55e";
+                }} else {{
+                    meldung.style.borderColor = "#ff2b2b";
+                    meldung.style.color = "#ff6b6b";
+                }}
+            }}
+            
+            async function pushAktivieren() {{
+                const button = document.getElementById("pushButton");
+                button.disabled = true;
+                button.textContent = "Bitte warten …";
+            
+                try {{
+                    if (!("serviceWorker" in navigator)) {{
+                        throw new Error(
+                            "Dieser Browser unterstützt keine Benachrichtigungen."
+                        );
+                    }}
+            
+                    if (!("PushManager" in window)) {{
+                        throw new Error(
+                            "Push-Benachrichtigungen werden auf diesem Gerät nicht unterstützt."
+                        );
+                    }}
+            
+                    const erlaubnis = await Notification.requestPermission();
+            
+                    if (erlaubnis !== "granted") {{
+                        throw new Error(
+                            "Die Benachrichtigungen wurden nicht erlaubt."
+                        );
+                    }}
+            
+                    const registration = await navigator.serviceWorker.register(
+                        "/service-worker.js"
+                    );
+            
+                    await navigator.serviceWorker.ready;
+            
+                    const keyAntwort = await fetch("/push-public-key");
+            
+                    if (!keyAntwort.ok) {{
+                        throw new Error(
+                            "Der öffentliche Push-Schlüssel konnte nicht geladen werden."
+                        );
+                    }}
+            
+                    const keyDaten = await keyAntwort.json();
+            
+                    if (!keyDaten.publicKey) {{
+                        throw new Error(
+                            "Der öffentliche Push-Schlüssel fehlt."
+                        );
+                    }}
+            
+                    let subscription =
+                        await registration.pushManager.getSubscription();
+            
+                    if (!subscription) {{
+                        subscription = await registration.pushManager.subscribe({{
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(
+                                keyDaten.publicKey
+                            )
+                        }});
+                    }}
+            
+                    const subscriptionDaten = subscription.toJSON();
+            
+                    const speichernAntwort = await fetch("/push-subscribe", {{
+                        method: "POST",
+                        headers: {{
+                            "Content-Type": "application/json"
+                        }},
+                        body: JSON.stringify({{
+                            kunde_id: {kunde_daten[0]},
+                            endpoint: subscription.endpoint,
+                            keys: subscriptionDaten.keys
+                        }})
+                    }});
+            
+                    const speichernDaten = await speichernAntwort.json();
+            
+                    if (!speichernAntwort.ok || !speichernDaten.success) {{
+                        throw new Error(
+                            speichernDaten.message ||
+                            "Das Abonnement konnte nicht gespeichert werden."
+                        );
+                    }}
+            
+                    zeigePushMeldung(
+                        "✅ Benachrichtigungen wurden aktiviert.",
+                        true
+                    );
+            
+                    button.textContent = "✅ Benachrichtigungen aktiviert";
+                    button.disabled = true;
+            
+                }} catch (fehler) {{
+                    console.error("Push-Fehler:", fehler);
+            
+                    zeigePushMeldung(
+                        "❌ " + fehler.message
+                    );
+            
+                    button.textContent = "🔔 Erneut versuchen";
+                    button.disabled = false;
+                }}
+            }}
+            </script>
+            
+            </div>
+            </div>
+            """
 @app.route("/kunde/<kunden_id>/praemien")
 def kunde_praemien(kunden_id):
     kunden_id = kunden_id.strip().upper()
