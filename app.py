@@ -919,6 +919,8 @@ def service_worker():
         "service-worker.js",
         mimetype="application/javascript"
     )
+
+
 @app.route("/push-public-key")
 def push_public_key():
     return {
@@ -992,10 +994,9 @@ def push_subscribe():
 
     finally:
         cur.close()
-        conn.close() 
-
+        conn.close()
     
-    @app.route("/")
+@app.route("/")
 def startseite():
     return f"""
     {app_style()}
