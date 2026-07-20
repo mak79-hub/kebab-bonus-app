@@ -13,13 +13,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
-@app.route("/sw.js")
-def service_worker():
-    return send_from_directory(
-        os.path.dirname(os.path.abspath(__file__)),
-        "sw.js",
-        mimetype="application/javascript"
-    )
 
 app.secret_key = os.environ.get("SECRET_KEY", "kebab-hoehe-test-secret-key")
 app.permanent_session_lifetime = timedelta(hours=12)
