@@ -10,6 +10,7 @@ import psycopg2
 import qrcode
 from flask import Flask, request, render_template, url_for, redirect, session, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
+from pywebpush import webpush, WebPushException
 
 app = Flask(__name__)
 
@@ -3993,41 +3994,198 @@ def chef_nachrichten():
 
         if not nachricht:
             meldung = "❌ Bitte eine Nachricht eingeben."
-        elif len(nachricht) > 1000:
-            meldung = "❌ Die Nachricht ist zu lang. Maximal 1000 Zeichen."
-        else:
-            text = f"🔊‼Kebab Höhle Angebot:\n\n{nachricht}"
-            ok, info = send_telegram_message(text)
 
-            if ok:
-                meldung = "✅ " + info
-                alte_nachricht = ""
+        elif len(nachricht) > 500:
+            meldung = "❌ Die Nachricht ist zu lang. Maximal 500 Zeichen."
+
+        elif not VAPID_PRIVATE_KEY or not VAPID_SUBJECT:
+            meldung = "❌ Die Push-Schlüssel sind auf Render nicht vollständig eingerichtet."
+
+        else:
+            conn = get_db_connection()
+            cur = conn.cursor()
+
+            cur.execute("""
+                SELECT
+                    ps.id,
+                    ps.endpoint,
+                    ps.p256dh,
+                    ps.auth
+                FROM push_subscriptions ps
+                JOIN kunden k
+                    ON k.id = ps.kunde_id
+                WHERE k.werbeeinwilligung = TRUE
+                ORDER BY ps.id
+            """)
+
+            abonnements = cur.fetchall()
+
+            if not abonnements:
+                meldung = (
+                    "❌ Es gibt noch keine Kunden mit aktivierten "
+                    "Benachrichtigungen und Werbeeinwilligung."
+                )
+
+                cur.close()
+                conn.close()
+
             else:
-                meldung = "❌ " + info
+                erfolgreich = 0
+                fehlgeschlagen = 0
+                abgelaufene_ids = []
+
+                payload = json.dumps({
+                    "title": "KEBAB HÖHLE",
+                    "body": nachricht,
+                    "url": "/login"
+                })
+
+                # Der private PEM-Schlüssel aus Render wird als temporäre
+                # Schlüsseldatei für pywebpush bereitgestellt.
+                private_key_path = "/tmp/vapid_private.pem"
+
+                private_key_text = (
+                    VAPID_PRIVATE_KEY
+                    .replace("\\n", "\n")
+                    .strip()
+                )
+
+                with open(
+                    private_key_path,
+                    "w",
+                    encoding="utf-8"
+                ) as private_key_datei:
+                    private_key_datei.write(private_key_text + "\n")
+
+                for abonnement in abonnements:
+                    subscription_id = abonnement[0]
+
+                    subscription_info = {
+                        "endpoint": abonnement[1],
+                        "keys": {
+                            "p256dh": abonnement[2],
+                            "auth": abonnement[3]
+                        }
+                    }
+
+                    try:
+                        webpush(
+                            subscription_info=subscription_info,
+                            data=payload,
+                            vapid_private_key=private_key_path,
+                            vapid_claims={
+                                "sub": VAPID_SUBJECT
+                            },
+                            ttl=86400
+                        )
+
+                        erfolgreich += 1
+
+                    except WebPushException as fehler:
+                        status_code = None
+
+                        if fehler.response is not None:
+                            status_code = fehler.response.status_code
+
+                        print(
+                            "Push-Versandfehler:",
+                            subscription_id,
+                            status_code,
+                            repr(fehler)
+                        )
+
+                        # 404 oder 410 bedeutet meistens:
+                        # Das Abonnement existiert nicht mehr.
+                        if status_code in (404, 410):
+                            abgelaufene_ids.append(subscription_id)
+                        else:
+                            fehlgeschlagen += 1
+
+                    except Exception as fehler:
+                        fehlgeschlagen += 1
+
+                        print(
+                            "Allgemeiner Push-Fehler:",
+                            subscription_id,
+                            repr(fehler)
+                        )
+
+                if abgelaufene_ids:
+                    cur.execute("""
+                        DELETE FROM push_subscriptions
+                        WHERE id = ANY(%s)
+                    """, (abgelaufene_ids,))
+
+                conn.commit()
+                cur.close()
+                conn.close()
+
+                meldung = (
+                    f"✅ Push-Versand abgeschlossen: "
+                    f"{erfolgreich} erfolgreich"
+                )
+
+                if fehlgeschlagen:
+                    meldung += f", {fehlgeschlagen} fehlgeschlagen"
+
+                if abgelaufene_ids:
+                    meldung += (
+                        f", {len(abgelaufene_ids)} "
+                        f"abgelaufene Anmeldung entfernt"
+                    )
+
+                meldung += "."
+
+                if erfolgreich:
+                    alte_nachricht = ""
 
     return f"""
     {app_style()}
+
     <div class="page">
         <div class="card">
+
             <div class="logo">KEBAB HÖHLE</div>
-            <div class="subtitle">Chef Nachrichten</div>
+            <div class="subtitle">Push-Nachrichten</div>
 
             {"<div class='message'>" + meldung + "</div>" if meldung else ""}
 
             <div class="hint">
-                Hier kann der Chef eine Angebotsnachricht schreiben und als Telegram senden.
-                Die Mitarbeiterseite bleibt unverändert.
+                Hier kann der Chef eine Angebotsnachricht an Kunden senden,
+                die Werbung und Handy-Benachrichtigungen erlaubt haben.
             </div>
 
             <form method="POST">
-                <div class="section-title">Angebotsnachricht</div>
-                <label class="label">Nachricht</label>
-                <textarea name="nachricht" placeholder="z.B. Nächste Woche Pizza Mexico XL nur 10 € bei deiner Kebab Höhle." required>{alte_nachricht}</textarea>
-                <button class="btn-red" type="submit">Telegram senden</button>
+
+                <div class="section-title">
+                    Angebotsnachricht
+                </div>
+
+                <label class="label">
+                    Nachricht
+                </label>
+
+                <textarea
+                    name="nachricht"
+                    maxlength="500"
+                    placeholder="z. B. Heute Pizza Mexico XL nur 10 € bei deiner Kebab Höhle."
+                    required
+                >{alte_nachricht}</textarea>
+
+                <button class="btn-red" type="submit">
+                    🔔 Push-Nachricht senden
+                </button>
+
             </form>
 
-            <a class="btn btn-dark" href="/chef-dashboard">Zum Chef Dashboard</a>
-            <a class="btn btn-dark" href="/chef-logout">Chef abmelden</a>
+            <a class="btn btn-dark" href="/chef-dashboard">
+                Zum Chef Dashboard
+            </a>
+
+            <a class="btn btn-dark" href="/chef-logout">
+                Chef abmelden
+            </a>
+
         </div>
     </div>
     """
