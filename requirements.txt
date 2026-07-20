@@ -3,3 +3,5 @@ psycopg2-binary
 qrcode
 gunicorn
 Pillow
+pywebpush
+cryptography
