@@ -919,8 +919,83 @@ def service_worker():
         "service-worker.js",
         mimetype="application/javascript"
     )
+   @app.route("/push-public-key")
+def push_public_key():
+    return {
+        "publicKey": VAPID_PUBLIC_KEY
+    }
+
+
+@app.route("/push-subscribe", methods=["POST"])
+def push_subscribe():
+    daten = request.get_json(silent=True)
+
+    if not daten:
+        return {
+            "success": False,
+            "message": "Keine Push-Daten empfangen."
+        }, 400
+
+    kunde_id = daten.get("kunde_id")
+    endpoint = daten.get("endpoint")
+    keys = daten.get("keys", {})
+
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+
+    if not kunde_id or not endpoint or not p256dh or not auth:
+        return {
+            "success": False,
+            "message": "Push-Daten sind unvollständig."
+        }, 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            INSERT INTO push_subscriptions (
+                kunde_id,
+                endpoint,
+                p256dh,
+                auth
+            )
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (kunde_id)
+            DO UPDATE SET
+                endpoint = EXCLUDED.endpoint,
+                p256dh = EXCLUDED.p256dh,
+                auth = EXCLUDED.auth,
+                erstellt_am = CURRENT_TIMESTAMP
+        """, (
+            kunde_id,
+            endpoint,
+            p256dh,
+            auth
+        ))
+
+        conn.commit()
+
+        return {
+            "success": True,
+            "message": "Push-Benachrichtigungen wurden aktiviert."
+        }
+
+    except Exception as fehler:
+        conn.rollback()
+        print("Push-Abonnement Fehler:", fehler)
+
+        return {
+            "success": False,
+            "message": "Push-Abonnement konnte nicht gespeichert werden."
+        }, 500
+
+    finally:
+        cur.close()
+        conn.close() 
+
     
-@app.route("/")
+    @app.route("/")
 def startseite():
     return f"""
     {app_style()}
