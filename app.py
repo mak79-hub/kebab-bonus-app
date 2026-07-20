@@ -4035,11 +4035,7 @@ def chef_nachrichten():
                 fehlgeschlagen = 0
                 abgelaufene_ids = []
 
-                payload = json.dumps({
-                    "title": "KEBAB HÖHLE",
-                    "body": nachricht,
-                    "url": "/login"
-                })
+                
 
                 # Der private PEM-Schlüssel aus Render wird als temporäre
                 # Schlüsseldatei für pywebpush bereitgestellt.
