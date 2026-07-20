@@ -919,7 +919,7 @@ def service_worker():
         "service-worker.js",
         mimetype="application/javascript"
     )
-   @app.route("/push-public-key")
+@app.route("/push-public-key")
 def push_public_key():
     return {
         "publicKey": VAPID_PUBLIC_KEY
