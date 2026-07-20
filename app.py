@@ -3169,13 +3169,9 @@ def chef_pin_verwaltung():
 
     if request.method == "POST":
         neue_chef_pin = request.form.get("chef_pin", "").strip()
-        neue_mitarbeiter_pin = request.form.get("mitarbeiter_pin", "").strip()
 
         if not neue_chef_pin.isdigit() or len(neue_chef_pin) < 4:
             meldung = "❌ Die Chef-PIN muss mindestens 4 Ziffern haben."
-
-        elif not neue_mitarbeiter_pin.isdigit() or len(neue_mitarbeiter_pin) < 4:
-            meldung = "❌ Die Mitarbeiter-PIN muss mindestens 4 Ziffern haben."
 
         else:
             cur.execute("""
@@ -3185,32 +3181,18 @@ def chef_pin_verwaltung():
                 DO UPDATE SET wert = EXCLUDED.wert
             """, (neue_chef_pin,))
 
-            cur.execute("""
-                INSERT INTO einstellungen (schluessel, wert)
-                VALUES ('mitarbeiter_pin', %s)
-                ON CONFLICT (schluessel)
-                DO UPDATE SET wert = EXCLUDED.wert
-            """, (neue_mitarbeiter_pin,))
-
             conn.commit()
-            meldung = "✅ PINs wurden gespeichert."
+            meldung = "✅ Chef-PIN wurde gespeichert."
 
     cur.execute("""
-        SELECT schluessel, wert
+        SELECT wert
         FROM einstellungen
-        WHERE schluessel IN ('chef_pin', 'mitarbeiter_pin')
+        WHERE schluessel = 'chef_pin'
+        LIMIT 1
     """)
 
-    eintraege = cur.fetchall()
-
-    chef_pin = ""
-    mitarbeiter_pin = ""
-
-    for schluessel, wert in eintraege:
-        if schluessel == "chef_pin":
-            chef_pin = wert
-        elif schluessel == "mitarbeiter_pin":
-            mitarbeiter_pin = wert
+    eintrag = cur.fetchone()
+    chef_pin = eintrag[0] if eintrag else ""
 
     cur.close()
     conn.close()
@@ -3222,14 +3204,14 @@ def chef_pin_verwaltung():
         <div class="card">
 
             <div class="logo">KEBAB HÖHLE</div>
-            <div class="subtitle">PIN-Verwaltung</div>
+            <div class="subtitle">Chef-PIN verwalten</div>
 
             {"<div class='message'>" + meldung + "</div>" if meldung else ""}
 
             <form method="POST">
 
                 <label class="label">Chef-PIN</label>
-            
+
                 <div style="display:flex; gap:12px; align-items:center;">
                     <input
                         id="chefPin"
@@ -3241,7 +3223,7 @@ def chef_pin_verwaltung():
                         required
                         style="flex:1;"
                     >
-            
+
                     <button
                         type="button"
                         onclick="togglePin('chefPin', this)"
@@ -3255,69 +3237,38 @@ def chef_pin_verwaltung():
                         👁
                     </button>
                 </div>
-            
-                <label class="label">Mitarbeiter-PIN</label>
-            
-                <div style="display:flex; gap:12px; align-items:center;">
-                    <input
-                        id="mitarbeiterPin"
-                        type="password"
-                        name="mitarbeiter_pin"
-                        value="{mitarbeiter_pin}"
-                        inputmode="numeric"
-                        minlength="4"
-                        required
-                        style="flex:1;"
-                    >
-            
-                    <button
-                        type="button"
-                        onclick="togglePin('mitarbeiterPin', this)"
-                        style="
-                            width:auto;
-                            padding:18px 22px;
-                            font-size:22px;
-                            border-radius:16px;
-                        "
-                    >
-                        👁
-                    </button>
-                </div>
-            
+
                 <button class="btn-red" type="submit">
-                    💾 PINs speichern
+                    💾 Chef-PIN speichern
                 </button>
-            
+
             </form>
-            
+
             <div class="hint">
-                Nur der Chef kann diese PINs ändern.
-                Die gespeicherten PINs werden beim nächsten Login verwendet.
+                Hier wird nur die Chef-PIN geändert.
+                Persönliche Mitarbeiter-PINs werden unter
+                „Mitarbeiter verwalten“ bearbeitet.
             </div>
-            
+
             <a class="btn btn-dark" href="/chef-einstellungen">
                 Zurück zu den Einstellungen
             </a>
-            
+
             <script>
             function togglePin(inputId, button){{
                 const input = document.getElementById(inputId);
-            
+
                 if(input.type === "password"){{
                     input.type = "text";
                     button.textContent = "🙈";
                 }}else{{
-                
                     input.type = "password";
                     button.textContent = "👁";
                 }}
             }}
             </script>
 
-            
-
-                    
-                        
+        </div>
     </div>
     """
 
