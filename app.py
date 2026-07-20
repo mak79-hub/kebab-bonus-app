@@ -1262,7 +1262,27 @@ def kunde(kunden_id):
     """)
 
     praemien_daten = cur.fetchall()
+    angebot_id = request.args.get("angebot", type=int)
 
+    if angebot_id:
+        cur.execute("""
+            SELECT id, titel, nachricht, erstellt_am
+            FROM push_nachrichten
+            WHERE id = %s
+              AND aktiv = TRUE
+            LIMIT 1
+        """, (angebot_id,))
+    else:
+        cur.execute("""
+            SELECT id, titel, nachricht, erstellt_am
+            FROM push_nachrichten
+            WHERE aktiv = TRUE
+            ORDER BY erstellt_am DESC, id DESC
+            LIMIT 1
+        """)
+
+    aktuelles_angebot = cur.fetchone()
+    
     cur.close()
     conn.close()
 
@@ -1283,6 +1303,49 @@ def kunde(kunden_id):
     qr_data = url_for("kunde", kunden_id=kunde_daten[1], _external=True)
     qr_code = make_qr_code(qr_data)
 
+    angebot_html = ""
+
+    if aktuelles_angebot:
+        angebot_datum = format_datetime(aktuelles_angebot[3])
+
+        angebot_html = f"""
+        <div class="info-box" style="
+            margin-top:24px;
+            border-left:6px solid #ffcc00;
+        ">
+            <div style="
+                font-size:25px;
+                font-weight:900;
+                margin-bottom:14px;
+            ">
+                📢 Aktuelles Angebot
+            </div>
+
+            <div style="
+                font-size:22px;
+                font-weight:800;
+                margin-bottom:12px;
+            ">
+                {aktuelles_angebot[1]}
+            </div>
+
+            <div style="
+                font-size:20px;
+                line-height:1.5;
+                white-space:pre-wrap;
+            ">{aktuelles_angebot[2]}</div>
+
+            <div style="
+                margin-top:16px;
+                font-size:15px;
+                opacity:0.7;
+            ">
+                Gesendet am {angebot_datum}
+            </div>
+        </div>
+        """
+    
+    
     return f"""
     {app_style()}
     <div class="page">
@@ -1329,7 +1392,7 @@ def kunde(kunden_id):
                 class="hint"
                 style="display:none;"
             ></div>
-            
+            {angebot_html}
             <script>
             function urlBase64ToUint8Array(base64String) {{
                 const padding = "=".repeat((4 - base64String.length % 4) % 4);
@@ -4004,6 +4067,22 @@ def chef_nachrichten():
         else:
             conn = get_db_connection()
             cur = conn.cursor()
+            
+            cur.execute("""
+                INSERT INTO push_nachrichten (nachricht)
+                VALUES (%s)
+                RETURNING id
+            """, (nachricht,))
+            
+            nachricht_id = cur.fetchone()[0]
+            
+            conn.commit()
+            
+            cur.close()
+            conn.close()
+            
+            conn = get_db_connection()
+            cur = conn.cursor()
 
             cur.execute("""
                 SELECT
@@ -4061,7 +4140,7 @@ def chef_nachrichten():
                     payload = json.dumps({
                         "title": "KEBAB HÖHLE",
                         "body": nachricht,
-                        "url": f"/kunde/{kunden_id}"
+                        "url": f"/kunde/{kunden_id}?angebot={nachricht_id}"
                     })
                 
                     subscription_info = {
