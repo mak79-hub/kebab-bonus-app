@@ -4056,7 +4056,14 @@ def chef_nachrichten():
 
                 for abonnement in abonnements:
                     subscription_id = abonnement[0]
-
+                    kunden_id = abonnement[4]
+                
+                    payload = json.dumps({
+                        "title": "KEBAB HÖHLE",
+                        "body": nachricht,
+                        "url": f"/kunde/{kunden_id}"
+                    })
+                
                     subscription_info = {
                         "endpoint": abonnement[1],
                         "keys": {
