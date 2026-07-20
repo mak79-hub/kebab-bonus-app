@@ -3709,25 +3709,7 @@ def chef_mitarbeiter_bearbeiten(mitarbeiter_id):
                 
                 </form>
                 
-                <form
-                    method="POST"
-                    action="/chef-praemien/{praemie[0]}/loeschen"
-                    onsubmit="return confirm('Soll diese Prämie wirklich endgültig gelöscht werden?');"
-                >
-                    <button
-                        class="btn btn-dark"
-                        type="submit"
-                        style="
-                            background:#8b0000;
-                            border-color:#b91c1c;
-                            margin-top:18px;
-                        "
-                    >
-                        🗑️ Prämie löschen
-                    </button>
-                </form>
-                
-                <a class="btn btn-dark" href="/chef-praemien">
+                <a class="btn btn-dark" href="/chef-mitarbeiter">
                     Abbrechen
                 </a>
 
