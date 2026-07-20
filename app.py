@@ -1000,6 +1000,12 @@ def push_subscribe():
 @app.route("/")
 def startseite():
 
+    if session.get("chef_angemeldet"):
+        return redirect("/chef-dashboard")
+
+    if session.get("mitarbeiter_angemeldet"):
+        return redirect("/mitarbeiter")
+
     kunden_id = session.get("kunde_id")
 
     if kunden_id:
