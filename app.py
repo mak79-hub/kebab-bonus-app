@@ -999,6 +999,14 @@ def push_subscribe():
     
 @app.route("/")
 def startseite():
+
+    kunden_id = session.get("kunde_id")
+
+    if kunden_id:
+        return redirect(
+            url_for("kunde", kunden_id=kunden_id)
+        )
+
     return f"""
     {app_style()}
     <div class="page">
@@ -1046,7 +1054,12 @@ def login():
         conn.close()
 
         if kunde and kunde[5] and check_password_hash(kunde[5], passwort):
-            return redirect(url_for("kunde", kunden_id=kunde[1]))
+            session.permanent = True
+            session["kunde_id"] = kunde[1]
+        
+            return redirect(
+                url_for("kunde", kunden_id=kunde[1])
+            )
 
         fehler = "❌ Kundenangaben oder Passwort sind falsch."
 
