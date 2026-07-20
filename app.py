@@ -937,34 +937,56 @@ def startseite():
     """
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    
+    fehler = ""
+
     if request.method == "POST":
         kennung = request.form.get("kennung", "").strip()
         passwort = request.form.get("passwort", "").strip()
+
         conn = get_db_connection()
         cur = conn.cursor()
-        
+
         cur.execute("""
             SELECT id, kunden_id, vorname, nachname, telefon, passwort
             FROM kunden
             WHERE kunden_id = %s
                OR telefon = %s
                OR LOWER(vorname || ' ' || nachname) = LOWER(%s)
+            LIMIT 1
         """, (
             kennung,
             kennung,
             kennung
         ))
-        
+
         kunde = cur.fetchone()
-        
+
         cur.close()
         conn.close()
-        if kunde and check_password_hash(kunde[5], passwort):
-            return f"Login erfolgreich: {kunde[2]} {kunde[3]}"
-        
-        return "Kundenangaben oder Passwort sind falsch."
-    
+
+        if kunde and kunde[5] and check_password_hash(kunde[5], passwort):
+            return redirect(url_for("kunde", kunden_id=kunde[1]))
+
+        fehler = "❌ Kundenangaben oder Passwort sind falsch."
+
+    fehler_html = ""
+
+    if fehler:
+        fehler_html = f"""
+        <div style="
+            background: #3b1111;
+            color: #ff6b6b;
+            border: 2px solid #ff2b2b;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        ">
+            {fehler}
+        </div>
+        """
+
     return f"""
     {app_style()}
     <div class="page">
@@ -972,10 +994,17 @@ def login():
             <div class="logo">DÖNİ BONUS</div>
             <div class="subtitle">Einloggen</div>
 
+            {fehler_html}
+
             <form method="POST">
 
                 <label>Name, Telefon oder Kunden-ID</label>
-                <input type="text" name="kennung" required>
+                <input
+                    type="text"
+                    name="kennung"
+                    value="{request.form.get('kennung', '')}"
+                    required
+                >
 
                 <label>Passwort</label>
                 <input type="password" name="passwort" required>
