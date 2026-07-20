@@ -1138,9 +1138,10 @@ def register():
                     Bitte speichere diesen QR-Code oder mache einen Screenshot.
                     Dieser QR-Code wird im Laden zum Sammeln und Einlösen der Punkte benötigt.
                 </div>
-                <a class="btn btn-red" href="/praemien/{kunden_id}">
+                <a class="btn btn-red" href="/kunde/{kunden_id}/praemien">
                     🎁 Prämien ansehen
                 </a>
+                
                 
                 <a class="small-link" href="/">Neuen Kunden registrieren</a>
             </div>
