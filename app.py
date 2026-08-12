@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 
 app.secret_key = os.environ.get("SECRET_KEY", "kebab-hoehe-test-secret-key")
-app.permanent_session_lifetime = timedelta(hours=12)
+app.permanent_session_lifetime = timedelta(days=365)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 MITARBEITER_PIN = os.environ.get("MITARBEITER_PIN", "1234")
