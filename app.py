@@ -4303,11 +4303,12 @@ def datenschutz():
             <div class="subtitle">Datenschutzerklärung</div>
 
             <div class="hint">
-                Wir verarbeiten personenbezogene Daten ausschließlich zur Durchführung
-                unseres Bonusprogramms und zur Verwaltung von Kundenkonten.
+                Der Schutz Ihrer personenbezogenen Daten ist uns wichtig.
+                Nachfolgend informieren wir Sie darüber, welche personenbezogenen
+                Daten bei der Nutzung unseres Bonusprogramms verarbeitet werden.
             </div>
 
-            <h2>Verantwortlicher</h2>
+            <h2>1. Verantwortlicher</h2>
 
             <p>
                 Kebab Höhle XXL<br>
@@ -4319,44 +4320,240 @@ def datenschutz():
                 E-Mail: mustafaerdugulu@outlook.de
             </p>
 
-            <h2>Gespeicherte Daten</h2>
+            <h2>2. Registrierung und Kundenkonto</h2>
+
+            <p>
+                Für die Teilnahme am Bonusprogramm verarbeiten wir bei der
+                Registrierung folgende Daten:
+            </p>
 
             <p>
                 Vorname<br>
                 Nachname<br>
                 Geburtsdatum<br>
-                Telefonnummer<br>
-                Adresse<br>
-                Kunden-ID<br>
-                Punktestand<br>
-                Punktebewegungen
+                Telefonnummer, sofern freiwillig angegeben<br>
+                Adresse, sofern freiwillig angegeben<br>
+                Passwort in technisch geschützter Form<br>
+                automatisch erzeugte Kunden-ID
             </p>
 
-            <h2>Zweck der Speicherung</h2>
-
             <p>
-                Teilnahme am Bonusprogramm,
-                Verwaltung von Punkten,
-                Verhinderung von Doppelregistrierungen,
-                Kundenservice sowie zukünftige Bestell- und Lieferfunktionen.
+                Die Verarbeitung erfolgt zur Einrichtung und Verwaltung des
+                Kundenkontos sowie zur Durchführung des Bonusprogramms.
+                Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.
             </p>
 
-            <h2>Werbeeinwilligung</h2>
+            <h2>3. Bonuspunkte und Prämien</h2>
 
             <p>
-                Kunden können freiwillig zustimmen,
-                Informationen zu Angeboten und Aktionen zu erhalten.
-                Diese Einwilligung kann jederzeit widerrufen werden.
+                Im Rahmen des Bonusprogramms werden insbesondere die Kunden-ID,
+                der aktuelle Punktestand sowie Gutschriften, Einlösungen und
+                damit verbundene Bonusvorgänge gespeichert.
             </p>
 
-            <h2>Ihre Rechte</h2>
+            <p>
+                Diese Daten werden verarbeitet, um Bonuspunkte und Prämien
+                korrekt zu verwalten, Buchungen nachvollziehen und einen
+                Missbrauch des Bonusprogramms verhindern zu können.
+                Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.
+            </p>
+
+            <h2>4. Freiwillige Angaben</h2>
 
             <p>
-                Auskunft,
-                Berichtigung,
-                Löschung,
+                Telefonnummer und Adresse sind freiwillige Angaben.
+                Eine Registrierung ist auch ohne diese Angaben möglich.
+                Die für die Einrichtung des Kundenkontos erforderlichen
+                Pflichtangaben müssen jedoch angegeben werden.
+            </p>
+
+            <h2>5. Werbeeinwilligung</h2>
+
+            <p>
+                Kunden können freiwillig einwilligen, Informationen über
+                Angebote und Aktionen von Kebab Höhle XXL zu erhalten.
+                Die Teilnahme am Bonusprogramm ist nicht von dieser
+                Einwilligung abhängig.
+            </p>
+
+            <p>
+                Rechtsgrundlage für die Verarbeitung zu Werbezwecken ist
+                Art. 6 Abs. 1 lit. a DSGVO. Eine erteilte Einwilligung kann
+                jederzeit mit Wirkung für die Zukunft widerrufen werden.
+                Die Rechtmäßigkeit der bis zum Widerruf erfolgten Verarbeitung
+                bleibt davon unberührt.
+            </p>
+
+            <p>
+                Der Widerruf kann über die oben genannten Kontaktdaten
+                erklärt werden.
+            </p>
+
+            <h2>6. Push-Benachrichtigungen</h2>
+
+            <p>
+                Sofern Push-Benachrichtigungen freiwillig aktiviert werden,
+                können Informationen über Angebote und Aktionen auf dem
+                verwendeten Endgerät angezeigt werden.
+            </p>
+
+            <p>
+                Für die technische Bereitstellung werden die hierfür
+                erforderlichen technischen Push-Informationen, insbesondere
+                Push-Subscriptions sowie zugehörige technische Kennungen
+                und Schlüssel, verarbeitet.
+            </p>
+
+            <p>
+                Werbliche Push-Benachrichtigungen erfolgen auf Grundlage
+                einer Einwilligung gemäß Art. 6 Abs. 1 lit. a DSGVO.
+                Push-Benachrichtigungen können über die Einstellungen des
+                verwendeten Geräts oder Browsers deaktiviert werden.
+            </p>
+
+            <h2>7. Hosting und Datenverarbeitung</h2>
+
+            <p>
+                Für die technische Bereitstellung des Bonusprogramms nutzen
+                wir Dienste von Render Services, Inc., USA.
+                Die Anwendung sowie die zugehörige Datenbank werden derzeit
+                in der Render-Region Ohio in den Vereinigten Staaten betrieben.
+            </p>
+
+            <p>
+                Im Rahmen des Hostings können personenbezogene und technische
+                Daten durch den Hosting-Dienstleister verarbeitet werden.
+            </p>
+
+            <p>
+                Render Services, Inc. gibt an, unter dem EU-US Data Privacy
+                Framework zertifiziert zu sein. Soweit erforderlich, sieht
+                Render für internationale Datenübermittlungen außerdem die
+                von der Europäischen Kommission verabschiedeten
+                Standardvertragsklauseln vor.
+            </p>
+
+            <h2>8. Technische Daten</h2>
+
+            <p>
+                Beim Aufruf und bei der Nutzung der Anwendung können technisch
+                notwendige Informationen verarbeitet werden. Dazu können
+                insbesondere IP-Adresse, Zeitpunkt des Zugriffs, aufgerufene
+                Inhalte sowie Informationen über Browser und Endgerät gehören.
+            </p>
+
+            <p>
+                Diese Verarbeitung dient der sicheren und zuverlässigen
+                Bereitstellung der Anwendung sowie der Fehleranalyse.
+                Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO.
+                Unser berechtigtes Interesse besteht im sicheren und
+                funktionsfähigen Betrieb des Bonusprogramms.
+            </p>
+
+            <h2>9. Empfänger personenbezogener Daten</h2>
+
+            <p>
+                Personenbezogene Daten werden nur weitergegeben oder durch
+                Dienstleister verarbeitet, soweit dies für den Betrieb des
+                Bonusprogramms erforderlich ist, eine gesetzliche Verpflichtung
+                besteht oder eine entsprechende Einwilligung vorliegt.
+            </p>
+
+            <p>
+                Zu den Empfängern können insbesondere von uns eingesetzte
+                IT- und Hosting-Dienstleister gehören.
+            </p>
+
+            <h2>10. Speicherdauer</h2>
+
+            <p>
+                Daten des Kundenkontos werden grundsätzlich für die Dauer
+                der Teilnahme am Bonusprogramm gespeichert.
+            </p>
+
+            <p>
+                Wird die Löschung des Kundenkontos verlangt, werden die
+                personenbezogenen Daten gelöscht, soweit keine gesetzlichen
+                Aufbewahrungspflichten oder sonstigen rechtlichen Gründe
+                einer Löschung entgegenstehen.
+            </p>
+
+            <p>
+                Daten, für die gesetzliche Aufbewahrungspflichten bestehen,
+                werden für die jeweilige gesetzliche Aufbewahrungsfrist
+                gespeichert und anschließend gelöscht.
+            </p>
+
+            <p>
+                Nachweise über erteilte oder widerrufene Einwilligungen können
+                im erforderlichen Umfang zur Erfüllung gesetzlicher
+                Nachweispflichten aufbewahrt werden.
+            </p>
+
+            <h2>11. Ihre Rechte</h2>
+
+            <p>
+                Ihnen stehen im Rahmen der gesetzlichen Voraussetzungen
+                insbesondere folgende Rechte zu:
+            </p>
+
+            <p>
+                Auskunft über Ihre personenbezogenen Daten
+                (Art. 15 DSGVO)<br><br>
+
+                Berichtigung unrichtiger Daten
+                (Art. 16 DSGVO)<br><br>
+
+                Löschung Ihrer Daten
+                (Art. 17 DSGVO)<br><br>
+
                 Einschränkung der Verarbeitung
-                sowie Widerruf erteilter Einwilligungen.
+                (Art. 18 DSGVO)<br><br>
+
+                Datenübertragbarkeit
+                (Art. 20 DSGVO)<br><br>
+
+                Widerspruch gegen bestimmte Verarbeitungen
+                (Art. 21 DSGVO)<br><br>
+
+                Widerruf einer erteilten Einwilligung mit Wirkung
+                für die Zukunft
+            </p>
+
+            <p>
+                Zur Ausübung Ihrer Rechte können Sie sich an den oben
+                genannten Verantwortlichen wenden.
+            </p>
+
+            <h2>12. Beschwerderecht</h2>
+
+            <p>
+                Sie haben gemäß Art. 77 DSGVO das Recht, sich bei einer
+                Datenschutzaufsichtsbehörde zu beschweren, wenn Sie der
+                Ansicht sind, dass die Verarbeitung Ihrer personenbezogenen
+                Daten gegen die DSGVO verstößt.
+            </p>
+
+            <h2>13. Datensicherheit</h2>
+
+            <p>
+                Wir treffen angemessene technische und organisatorische
+                Maßnahmen zum Schutz personenbezogener Daten vor Verlust,
+                unbefugtem Zugriff, Veränderung oder unbefugter Offenlegung.
+                Die Übertragung der Anwendung erfolgt über eine verschlüsselte
+                HTTPS-Verbindung.
+            </p>
+
+            <h2>14. Änderungen dieser Datenschutzerklärung</h2>
+
+            <p>
+                Diese Datenschutzerklärung kann angepasst werden, wenn sich
+                Funktionen des Bonusprogramms, eingesetzte Dienstleister
+                oder rechtliche Anforderungen ändern.
+            </p>
+
+            <p>
+                <strong>Stand: August 2026</strong>
             </p>
 
             <a class="btn btn-red" href="/">Zurück</a>
