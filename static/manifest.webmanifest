@@ -1,6 +1,6 @@
 {
-    "name": "KEBAB HÖHLE Bonus",
-    "short_name": "KEBAB",
+    "name": "BONUS Treueprogram",
+    "short_name": "BONUS",
     "description": "Bonusprogramm der Kebab Höhle",
     "start_url": "/",
     "display": "standalone",
