@@ -2392,20 +2392,20 @@ def chef_testdaten_loeschen():
     cur = conn.cursor()
 
     try:
-    cur.execute("DELETE FROM mitarbeiter")
-
-    cur.execute(
-        "SELECT pg_get_serial_sequence('mitarbeiter', 'id')"
-    )
-    sequence = cur.fetchone()[0]
-
-    if sequence:
+        cur.execute("DELETE FROM mitarbeiter")
+    
         cur.execute(
-            "SELECT setval(%s::regclass, 1, false)",
-            (sequence,)
+            "SELECT pg_get_serial_sequence('mitarbeiter', 'id')"
         )
-
-    conn.commit()
+        sequence = cur.fetchone()[0]
+    
+        if sequence:
+            cur.execute(
+                "SELECT setval(%s::regclass, 1, false)",
+                (sequence,)
+            )
+    
+        conn.commit()
 
     except Exception as fehler:
         conn.rollback()
