@@ -2322,36 +2322,7 @@ def chef_dashboard():
 
             </div>
             
-            <div style="
-                margin-top:35px;
-                padding:24px;
-                border:2px solid #ff2b2b;
-                border-radius:20px;
-            ">
-                <div style="
-                    font-size:28px;
-                    font-weight:900;
-                    color:#ff6b6b;
-                    margin-bottom:15px;
-                ">
-                    ⚠️ Nur für den Teststart
-                </div>
             
-                <div class="hint">
-                    Dieser Vorgang löscht alle bisherigen Testkunden,
-                    Punktebewegungen und Testnachrichten endgültig.
-                </div>
-            
-                <form
-                    method="POST"
-                    action="/chef-testdaten-loeschen"
-                    onsubmit="return confirm('ACHTUNG! Wirklich ALLE bisherigen Testdaten löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');"
-                >
-                    <button class="btn btn-red" type="submit">
-                        🗑️ TESTDATEN ENDGÜLTIG LÖSCHEN
-                    </button>
-                </form>
-            </div>
 
             <div class="section-title">Letzte Punktebewegungen</div>
             <div class="hint">
