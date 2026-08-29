@@ -2321,6 +2321,38 @@ def chef_dashboard():
             <a class="menu-box menu-gray" href="/chef-einstellungen">⚙️ Einstellungen</a>
 
             </div>
+            
+            <div style="
+                margin-top:35px;
+                padding:24px;
+                border:2px solid #ff2b2b;
+                border-radius:20px;
+            ">
+                <div style="
+                    font-size:28px;
+                    font-weight:900;
+                    color:#ff6b6b;
+                    margin-bottom:15px;
+                ">
+                    ⚠️ Nur für den Teststart
+                </div>
+            
+                <div class="hint">
+                    Dieser Vorgang löscht alle bisherigen Testkunden,
+                    Punktebewegungen und Testnachrichten endgültig.
+                </div>
+            
+                <form
+                    method="POST"
+                    action="/chef-testdaten-loeschen"
+                    onsubmit="return confirm('ACHTUNG! Wirklich ALLE bisherigen Testdaten löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');"
+                >
+                    <button class="btn btn-red" type="submit">
+                        🗑️ TESTDATEN ENDGÜLTIG LÖSCHEN
+                    </button>
+                </form>
+            </div>
+
             <div class="section-title">Letzte Punktebewegungen</div>
             <div class="hint">
                 Diese Historie ist nur für Chef/Admin gedacht.
@@ -2351,6 +2383,97 @@ def chef_dashboard():
         </div>
     </div>
     """
+@app.route("/chef-testdaten-loeschen", methods=["POST"])
+def chef_testdaten_loeschen():
+    if not ist_chef():
+        return redirect("/chef-login")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("DELETE FROM push_subscriptions")
+        cur.execute("DELETE FROM punkte_bewegungen")
+        cur.execute("DELETE FROM kunden_laeden")
+        cur.execute("DELETE FROM kunden")
+        cur.execute("DELETE FROM push_nachrichten")
+
+        tabellen = [
+            "kunden",
+            "kunden_laeden",
+            "punkte_bewegungen",
+            "push_subscriptions",
+            "push_nachrichten"
+        ]
+
+        for tabelle in tabellen:
+            cur.execute(
+                "SELECT pg_get_serial_sequence(%s, 'id')",
+                (tabelle,)
+            )
+            sequence = cur.fetchone()[0]
+
+            if sequence:
+                cur.execute(
+                    "SELECT setval(%s::regclass, 1, false)",
+                    (sequence,)
+                )
+
+        conn.commit()
+
+    except Exception as fehler:
+        conn.rollback()
+        cur.close()
+        conn.close()
+
+        return f"""
+        {app_style()}
+        <div class="page">
+            <div class="card">
+                <div class="logo">KEBAB HÖHLE</div>
+                <div class="subtitle">Testdaten löschen</div>
+
+                <div class="message">
+                    ❌ Fehler beim Löschen:<br><br>
+                    {str(fehler)}
+                </div>
+
+                <a class="btn btn-dark" href="/chef-dashboard">
+                    Zurück zum Chef Dashboard
+                </a>
+            </div>
+        </div>
+        """
+
+    cur.close()
+    conn.close()
+
+    return f"""
+    {app_style()}
+    <div class="page">
+        <div class="card">
+            <div class="logo">KEBAB HÖHLE</div>
+            <div class="subtitle">Testdaten gelöscht</div>
+
+            <div class="success-icon">✓</div>
+
+            <div class="message">
+                ✅ Alle bisherigen Testkunden, Punktebewegungen,
+                Push-Abonnements und Testnachrichten wurden gelöscht.
+            </div>
+
+            <div class="hint">
+                Prämien, Einstellungen, Chef-PIN und Mitarbeiter
+                wurden nicht verändert.
+            </div>
+
+            <a class="btn btn-red" href="/chef-dashboard">
+                Zurück zum Chef Dashboard
+            </a>
+        </div>
+    </div>
+    """
+
 @app.route("/chef-kunden")
 def chef_kunden():
     if not ist_chef():
