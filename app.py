@@ -2392,34 +2392,20 @@ def chef_testdaten_loeschen():
     cur = conn.cursor()
 
     try:
-        cur.execute("DELETE FROM push_subscriptions")
-        cur.execute("DELETE FROM punkte_bewegungen")
-        cur.execute("DELETE FROM kunden_laeden")
-        cur.execute("DELETE FROM kunden")
-        cur.execute("DELETE FROM push_nachrichten")
+    cur.execute("DELETE FROM mitarbeiter")
 
-        tabellen = [
-            "kunden",
-            "kunden_laeden",
-            "punkte_bewegungen",
-            "push_subscriptions",
-            "push_nachrichten"
-        ]
+    cur.execute(
+        "SELECT pg_get_serial_sequence('mitarbeiter', 'id')"
+    )
+    sequence = cur.fetchone()[0]
 
-        for tabelle in tabellen:
-            cur.execute(
-                "SELECT pg_get_serial_sequence(%s, 'id')",
-                (tabelle,)
-            )
-            sequence = cur.fetchone()[0]
+    if sequence:
+        cur.execute(
+            "SELECT setval(%s::regclass, 1, false)",
+            (sequence,)
+        )
 
-            if sequence:
-                cur.execute(
-                    "SELECT setval(%s::regclass, 1, false)",
-                    (sequence,)
-                )
-
-        conn.commit()
+    conn.commit()
 
     except Exception as fehler:
         conn.rollback()
