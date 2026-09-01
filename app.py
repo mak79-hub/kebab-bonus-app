@@ -1702,6 +1702,94 @@ def api_bestellung():
         cur.close()
         conn.close()
 
+@app.route("/api/bestellung/<token>/bezahlt", methods=["POST"])
+def api_bestellung_bezahlt(token):
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                id,
+                kunde_id,
+                gesamtbetrag,
+                status,
+                punkte_gutgeschrieben
+            FROM bestellungen
+            WHERE token = %s
+            FOR UPDATE
+        """, (token,))
+
+        bestellung = cur.fetchone()
+
+        if not bestellung:
+            return jsonify({
+                "ok": False,
+                "fehler": "Bestellung nicht gefunden."
+            }), 404
+
+        bestellung_id = bestellung[0]
+        kunde_id = bestellung[1]
+        gesamtbetrag = bestellung[2]
+        status = bestellung[3]
+        punkte_gutgeschrieben = bestellung[4]
+
+        if status == "BEZAHLT":
+            return jsonify({
+                "ok": True,
+                "bereits_bezahlt": True
+            })
+
+        vergebene_punkte = 0
+
+        if kunde_id and not punkte_gutgeschrieben:
+            vergebene_punkte = int(gesamtbetrag)
+
+            if vergebene_punkte > 0:
+                cur.execute("""
+                    INSERT INTO punkte_bewegungen
+                        (kunde_id, typ, punkte)
+                    VALUES
+                        (%s, %s, %s)
+                """, (
+                    kunde_id,
+                    "GUTSCHRIFT",
+                    vergebene_punkte
+                ))
+
+            cur.execute("""
+                UPDATE bestellungen
+                SET punkte_gutgeschrieben = TRUE
+                WHERE id = %s
+            """, (bestellung_id,))
+
+        cur.execute("""
+            UPDATE bestellungen
+            SET
+                status = 'BEZAHLT',
+                bezahlt_am = CURRENT_TIMESTAMP
+            WHERE id = %s
+        """, (bestellung_id,))
+
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "punkte": vergebene_punkte,
+            "bonus_kunde": kunde_id is not None
+        })
+
+    except Exception as e:
+        conn.rollback()
+
+        return jsonify({
+            "ok": False,
+            "fehler": str(e)
+        }), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 @app.route("/kunde/<kunden_id>/praemien")
 def kunde_praemien(kunden_id):
