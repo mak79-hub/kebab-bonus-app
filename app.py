@@ -113,6 +113,39 @@ def init_db():
         );
     """)
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bestellungen (
+            id SERIAL PRIMARY KEY,
+            token TEXT UNIQUE NOT NULL,
+            tagesnummer INTEGER NOT NULL,
+            bestelldatum DATE NOT NULL DEFAULT CURRENT_DATE,
+            kunde_id INTEGER REFERENCES kunden(id) ON DELETE SET NULL,
+            gesamtbetrag NUMERIC(10,2) NOT NULL,
+            status TEXT NOT NULL DEFAULT 'WARTET_AUF_ZAHLUNG',
+            punkte_gutgeschrieben BOOLEAN NOT NULL DEFAULT FALSE,
+            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            bezahlt_am TIMESTAMP,
+            UNIQUE(bestelldatum, tagesnummer)
+        );
+    """)
+    
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bestellpositionen (
+            id SERIAL PRIMARY KEY,
+            bestellung_id INTEGER NOT NULL REFERENCES bestellungen(id) ON DELETE CASCADE,
+            produkt_id INTEGER,
+            produkt_name TEXT NOT NULL,
+            variante TEXT,
+            menge INTEGER NOT NULL DEFAULT 1,
+            einzelpreis NUMERIC(10,2) NOT NULL,
+            gesamtpreis NUMERIC(10,2) NOT NULL,
+            extras JSONB,
+            kueche INTEGER DEFAULT 1,
+            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    
+    
     conn.commit()
     cur.close()
     conn.close()
