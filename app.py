@@ -2,9 +2,12 @@ import os
 import base64
 import urllib.parse
 import urllib.request
+import secrets
 from io import BytesIO
 from datetime import timedelta
 from zoneinfo import ZoneInfo
+from psycopg2.extras import Json
+from flask import jsonify
 import json
 import psycopg2
 import qrcode
@@ -1585,7 +1588,119 @@ def kunde(kunden_id):
 def bestellen():
     return render_template("bestellen.html")
 
+@app.route("/api/bestellung", methods=["POST"])
+def api_bestellung():
+    daten = request.get_json()
 
+    if not daten or not daten.get("items"):
+        return jsonify({"ok": False, "fehler": "Warenkorb ist leer."}), 400
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT COALESCE(MAX(tagesnummer), 99) + 1
+            FROM bestellungen
+            WHERE bestelldatum = CURRENT_DATE
+        """)
+        tagesnummer = cur.fetchone()[0]
+
+        token = secrets.token_urlsafe(24)
+
+        kunden_id = None
+        kunden_code = session.get("kunde_id")
+
+        if kunden_code:
+            cur.execute("""
+                SELECT id
+                FROM kunden
+                WHERE kunden_id = %s
+            """, (kunden_code,))
+            kunde = cur.fetchone()
+
+            if kunde:
+                kunden_id = kunde[0]
+
+        gesamtbetrag = sum(
+            float(item.get("total", 0))
+            for item in daten["items"]
+        )
+
+        cur.execute("""
+            INSERT INTO bestellungen
+                (token, tagesnummer, kunde_id, gesamtbetrag)
+            VALUES
+                (%s, %s, %s, %s)
+            RETURNING id
+        """, (
+            token,
+            tagesnummer,
+            kunden_id,
+            gesamtbetrag
+        ))
+
+        bestellung_id = cur.fetchone()[0]
+
+        for item in daten["items"]:
+            variante = item.get("variant") or {}
+            extras = item.get("extras") or []
+            upgrade = item.get("upgrade")
+
+            menge = int(item.get("qty", 1))
+            gesamtpreis = float(item.get("total", 0))
+            einzelpreis = gesamtpreis / menge if menge > 0 else 0
+
+            optionen = {
+                "extras": extras,
+                "upgrade": upgrade
+            }
+
+            cur.execute("""
+                INSERT INTO bestellpositionen
+                    (
+                        bestellung_id,
+                        produkt_id,
+                        produkt_name,
+                        variante,
+                        menge,
+                        einzelpreis,
+                        gesamtpreis,
+                        extras
+                    )
+                VALUES
+                    (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                bestellung_id,
+                item.get("productId"),
+                item.get("name", "Produkt"),
+                variante.get("name"),
+                menge,
+                einzelpreis,
+                gesamtpreis,
+                Json(optionen)
+            ))
+
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "bestellung_id": bestellung_id,
+            "bestellnummer": tagesnummer,
+            "token": token,
+            "qr": "ORDER:" + token
+        })
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({
+            "ok": False,
+            "fehler": str(e)
+        }), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 
 @app.route("/kunde/<kunden_id>/praemien")
