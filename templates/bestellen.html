@@ -1383,32 +1383,36 @@ function generateInternalId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
 
-function checkout() {
+async function checkout() {
     if (!cart.length) return;
-    toggleCart();
-    setTimeout(function() {
-        var visibleNumber = generateOrderId();
-        var internalId = generateInternalId();
-        var token = generateToken();
-        var orderKey = 'ORDER:' + internalId + ':' + token;
-        var order = {
-            internalId: internalId,
-            visibleNumber: visibleNumber,
-            token: token,
-            key: orderKey,
-            items: JSON.parse(JSON.stringify(cart)),
-            subtotal: cart.reduce(function(s, i) { return s + i.total; }, 0),
-            status: 'WARTET_AUF_ZAHLUNG',
-            createdAt: new Date().toISOString()
-        };
-        orders.push(order);
-        localStorage.setItem('khOrders', JSON.stringify(orders));
 
-        document.getElementById('orderNumber').textContent = '#' + visibleNumber;
+    toggleCart();
+
+    try {
+        const response = await fetch('/api/bestellung', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                items: cart
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            alert(data.fehler || 'Bestellung konnte nicht gespeichert werden.');
+            return;
+        }
+
+        document.getElementById('orderNumber').textContent = '#' + data.bestellnummer;
+
         var qrEl = document.getElementById('qrContainer');
         qrEl.innerHTML = '';
+
         new QRCode(qrEl, {
-            text: orderKey,
+            text: data.qr,
             width: 240,
             height: 240,
             colorDark: '#ffffff',
@@ -1419,7 +1423,10 @@ function checkout() {
         cart = [];
         updateCartBadge();
         document.getElementById('successModal').classList.add('show');
-    }, 300);
+
+    } catch (error) {
+        alert('Verbindung zum Server fehlgeschlagen.');
+    }
 }
 
 function closeSuccess() {
