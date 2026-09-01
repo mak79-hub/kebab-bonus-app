@@ -1393,6 +1393,10 @@ def kunde(kunden_id):
             <a class="btn btn-red" href="/kunde/{kunde_daten[1]}/praemien">
                 🎁 Prämien ansehen
             </a>
+            <a class="btn btn-green" href="/bestellen">
+                🍽️ Jetzt bestellen
+            </a>
+            
             
             <button
                 id="pushButton"
