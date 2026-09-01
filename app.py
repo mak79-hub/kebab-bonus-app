@@ -1241,7 +1241,9 @@ def register():
                 <a class="btn btn-red" href="/kunde/{kunden_id}/praemien">
                     🎁 Prämien ansehen
                 </a>
-                
+                <a class="btn btn-green" href="/bestellen">
+                    🍽️ Jetzt bestellen
+                </a>
                 
                 <a class="small-link" href="/">Neuen Kunden registrieren</a>
             </div>
@@ -1547,6 +1549,13 @@ def kunde(kunden_id):
             </div>
             </div>
             """
+@app.route("/bestellen")
+def bestellen():
+    return render_template("bestellen.html")
+
+
+
+
 @app.route("/kunde/<kunden_id>/praemien")
 def kunde_praemien(kunden_id):
     kunden_id = kunden_id.strip().upper()
