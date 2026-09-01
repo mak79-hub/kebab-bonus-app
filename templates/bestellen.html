@@ -462,6 +462,7 @@
 
 <div class="header">
     <div class="header-top">
+        <button class="back-btn" onclick="window.location.href='/'">←</button>
         <div class="logo">
             <img class="logo-icon" src="/static/bilder/logo.png" alt="Kebap Höhle XXL">
             <div class="logo-text">
@@ -1422,8 +1423,7 @@ function checkout() {
 }
 
 function closeSuccess() {
-    document.getElementById('successModal').classList.remove('show');
-    showHome();
+    window.location.href = "/";
 }
 function setMode(btn) {
     document.querySelectorAll('.toggle-btn').forEach(function(b) { b.classList.remove('active'); });
