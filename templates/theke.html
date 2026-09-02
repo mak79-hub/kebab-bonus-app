@@ -63,6 +63,7 @@
             padding: 0 20px; border: 0; border-radius: 12px;
             background: var(--blue); color: #fff; font-weight: 800; cursor: pointer;
         }
+        .scan-btn { background: var(--green); }
         .lookup-message {
             display: none; max-width: 868px; margin: 0 auto 4px; padding: 0 16px;
             color: #ef4444; font-size: 0.85rem;
@@ -115,6 +116,15 @@
         .detail-view .item-name, .detail-view .item-price { font-size: 1.05rem; }
         .detail-view .item-details { font-size: 0.9rem; }
         .detail-view .order-footer { padding: 0 24px 28px; }
+
+        .scanner-view {
+            position: fixed; width: 1px; height: 1px; left: -10px; bottom: 0;
+            overflow: hidden; opacity: 0; pointer-events: none;
+        }
+        .scanner-frame {
+            width: 1px; height: 1px; overflow: hidden;
+        }
+        .scanner-video { width: 2px; height: 2px; }
 
         .order-card {
             background: var(--card); border-radius: 16px; overflow: hidden;
@@ -258,6 +268,9 @@
             .orders-container { padding: 8px 10px 24px; }
             .lookup-bar { top: 105px; padding: 10px; }
             .lookup-btn { padding: 0 14px; }
+            .lookup-bar { flex-wrap: wrap; }
+            .lookup-input { flex-basis: calc(100% - 90px); }
+            .scan-btn { flex: 1 0 100%; padding: 13px; }
             .queue-row { grid-template-columns: 76px minmax(0,1fr) auto 18px; gap: 8px; padding: 10px; }
             .queue-number { font-size: 1.3rem; }
             .queue-total { font-size: 1rem; }
@@ -298,6 +311,12 @@
         <div class="detail-heading">Aktuelle Bestellung bearbeiten</div>
     </div>
     <div class="detail-content" id="detailContent"></div>
+</div>
+
+<div class="scanner-view" id="scannerView">
+    <div class="scanner-frame">
+        <video class="scanner-video" id="scannerVideo" playsinline muted></video>
+    </div>
 </div>
 
 <!-- ZAHLUNGS-DIALOG -->
@@ -605,6 +624,12 @@ var IS_LOCAL_DEMO = window.location.protocol === 'file:';
 var orders = IS_LOCAL_DEMO ? createDemoOrders() : [];
 var processingPayments = {};
 var currentOrderId = null;
+var scannerStream = null;
+var scannerDetector = null;
+var scannerFrameId = null;
+var scannerActive = false;
+var lastScannedValue = '';
+var lastScannedAt = 0;
 
 // ============================================================
 // RENDERING
@@ -682,7 +707,14 @@ function renderActiveDetail() {
 
 function findAndOpenOrder() {
     var input = document.getElementById('orderLookup');
-    var value = input.value.trim().replace(/^ORDER:/i, '').replace(/^#/, '');
+    var value = input.value.trim();
+    if (openOrderFromCode(value)) {
+        input.value = '';
+    }
+}
+
+function openOrderFromCode(rawValue) {
+    var value = String(rawValue || '').trim().replace(/^ORDER:/i, '').replace(/^#/, '');
     var message = document.getElementById('lookupMessage');
     var order = orders.find(function(o) {
         return String(o.visibleNumber) === value || o.token === value || o.internalId === value;
@@ -690,15 +722,92 @@ function findAndOpenOrder() {
     if (!order) {
         message.textContent = 'Keine Bestellung zu „' + value + '“ gefunden.';
         message.classList.add('show');
-        return;
+        return false;
     }
     message.classList.remove('show');
-    input.value = '';
     openOrderDetail(order.internalId);
+    return true;
 }
 
 document.getElementById('orderLookup').addEventListener('keydown', function(event) {
     if (event.key === 'Enter') findAndOpenOrder();
+});
+
+async function startQrScanner() {
+    if (!('BarcodeDetector' in window)) {
+        console.warn('QR-Kamerascanner wird von diesem Browser nicht unterstützt.');
+        return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('Kamerazugriff wird von diesem Browser nicht unterstützt.');
+        return;
+    }
+
+    try {
+        stopQrCameraOnly();
+        scannerDetector = new BarcodeDetector({ formats: ['qr_code'] });
+        scannerStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false
+        });
+
+        var video = document.getElementById('scannerVideo');
+        video.srcObject = scannerStream;
+        await video.play();
+        scannerActive = true;
+        scanQrFrame();
+    } catch (error) {
+        stopQrCameraOnly();
+        console.error('Kamera konnte nicht gestartet werden:', error);
+    }
+}
+
+async function scanQrFrame() {
+    if (!scannerActive || !scannerDetector) return;
+    var video = document.getElementById('scannerVideo');
+
+    try {
+        var codes = await scannerDetector.detect(video);
+        if (codes.length && codes[0].rawValue) {
+            var code = codes[0].rawValue;
+            var now = Date.now();
+            if (code !== lastScannedValue || now - lastScannedAt > 3000) {
+                lastScannedValue = code;
+                lastScannedAt = now;
+                loadThekenBestellungen();
+            }
+        }
+    } catch (error) {
+        console.error('QR-Erkennung:', error);
+    }
+
+    if (scannerActive) scannerFrameId = requestAnimationFrame(scanQrFrame);
+}
+
+function stopQrCameraOnly() {
+    scannerActive = false;
+    if (scannerFrameId) cancelAnimationFrame(scannerFrameId);
+    scannerFrameId = null;
+    if (scannerStream) {
+        scannerStream.getTracks().forEach(function(track) { track.stop(); });
+    }
+    scannerStream = null;
+    scannerDetector = null;
+    var video = document.getElementById('scannerVideo');
+    if (video) video.srcObject = null;
+}
+
+function stopQrScanner() {
+    stopQrCameraOnly();
+}
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        stopQrScanner();
+    } else if (!scannerActive) {
+        startQrScanner();
+    }
 });
 
 function renderOrderCard(order) {
@@ -1049,6 +1158,7 @@ if (IS_LOCAL_DEMO) {
     loadThekenBestellungen();
     startAutoRefresh(5000);
 }
+setTimeout(startQrScanner, 400);
 </script>
 
 </body>
