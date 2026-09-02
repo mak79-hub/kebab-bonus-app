@@ -1856,6 +1856,12 @@ def api_bestellung():
 
 @app.route("/api/bestellung/<token>/bezahlt", methods=["POST"])
 def api_bestellung_bezahlt(token):
+    if not theke_zugriff_erlaubt():
+        return jsonify({
+            "ok": False,
+            "fehler": "Nicht angemeldet."
+        }), 401
+
     conn = get_db_connection()
     cur = conn.cursor()
 
