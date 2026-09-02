@@ -1588,6 +1588,158 @@ def kunde(kunden_id):
 def bestellen():
     return render_template("bestellen.html")
 
+
+def theke_zugriff_erlaubt():
+    return ist_mitarbeiter() or ist_chef()
+
+
+def betrag_in_cent(betrag):
+    return int(round(float(betrag or 0) * 100))
+
+
+def normalisiere_bestelloption(option):
+    if isinstance(option, str):
+        return {"name": option, "preis": 0}
+
+    if not isinstance(option, dict):
+        return None
+
+    name = option.get("name") or option.get("title") or option.get("label")
+    if not name:
+        return None
+
+    preis = option.get("price", option.get("preis", 0))
+    return {
+        "name": str(name),
+        "preis": betrag_in_cent(preis)
+    }
+
+
+@app.route("/theke")
+def theke():
+    if not theke_zugriff_erlaubt():
+        return redirect(url_for("mitarbeiter_login", next="/theke"))
+
+    return render_template("theke.html")
+
+
+@app.route("/api/theke/bestellungen")
+def api_theke_bestellungen():
+    if not theke_zugriff_erlaubt():
+        return jsonify({
+            "ok": False,
+            "fehler": "Nicht angemeldet."
+        }), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT
+                b.id,
+                b.token,
+                b.tagesnummer,
+                b.gesamtbetrag,
+                b.status,
+                b.kunde_id,
+                b.punkte_gutgeschrieben,
+                b.erstellt_am,
+                b.bezahlt_am
+            FROM bestellungen b
+            WHERE b.bestelldatum = CURRENT_DATE
+            ORDER BY b.erstellt_am ASC
+            LIMIT 200
+        """)
+        bestellzeilen = cur.fetchall()
+
+        bestellung_ids = [zeile[0] for zeile in bestellzeilen]
+        positionen_nach_bestellung = {}
+
+        if bestellung_ids:
+            cur.execute("""
+                SELECT
+                    bestellung_id,
+                    produkt_id,
+                    produkt_name,
+                    variante,
+                    menge,
+                    einzelpreis,
+                    gesamtpreis,
+                    extras,
+                    kueche
+                FROM bestellpositionen
+                WHERE bestellung_id = ANY(%s)
+                ORDER BY id ASC
+            """, (bestellung_ids,))
+
+            for position in cur.fetchall():
+                optionen = position[7] if isinstance(position[7], dict) else {}
+                extras_roh = optionen.get("extras") or []
+                upgrade_roh = optionen.get("upgrade")
+
+                extras = []
+                for extra_roh in extras_roh:
+                    extra = normalisiere_bestelloption(extra_roh)
+                    if extra:
+                        extras.append(extra)
+
+                upgrade = normalisiere_bestelloption(upgrade_roh)
+
+                positionen_nach_bestellung.setdefault(position[0], []).append({
+                    "produkt_id": position[1],
+                    "produkt_name": position[2],
+                    "variante": position[3] or "",
+                    "menge": position[4],
+                    "einzelpreis": betrag_in_cent(position[5]),
+                    "gesamtpreis": betrag_in_cent(position[6]),
+                    "extras": extras,
+                    "upgrade": upgrade,
+                    "beilage": None,
+                    "kueche": position[8],
+                    "preisIstServerGesamt": True
+                })
+
+        bestellungen_json = []
+
+        for zeile in bestellzeilen:
+            gesamtbetrag_cent = betrag_in_cent(zeile[3])
+            ist_bonus_kunde = zeile[5] is not None
+
+            bestellungen_json.append({
+                "internalId": str(zeile[0]),
+                "token": zeile[1],
+                "visibleNumber": zeile[2],
+                "Gesamtbetrag": gesamtbetrag_cent,
+                "status": zeile[4],
+                "bonus_kunde": ist_bonus_kunde,
+                "punkte": int(float(zeile[3])) if ist_bonus_kunde else 0,
+                "bonus_gutgeschrieben": bool(zeile[6]),
+                "zahlungsart": None,
+                "zahlungsstatus": "PAID" if zeile[4] == "BEZAHLT" else None,
+                "bezahlt_am": zeile[8].isoformat() if zeile[8] else None,
+                "sumup_checkout_id": None,
+                "sumup_transaction_id": None,
+                "sumup_status": None,
+                "erstellt_am": zeile[7].isoformat(),
+                "items": positionen_nach_bestellung.get(zeile[0], [])
+            })
+
+        return jsonify({
+            "ok": True,
+            "bestellungen": bestellungen_json
+        })
+
+    except Exception as e:
+        return jsonify({
+            "ok": False,
+            "fehler": str(e)
+        }), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
 @app.route("/api/bestellung", methods=["POST"])
 def api_bestellung():
     daten = request.get_json()
