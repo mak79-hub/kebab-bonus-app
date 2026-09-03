@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kebap Höhle XXL – Prämien bestellen</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --red: #c41e3a; --red-dark: #a01830; --black: #0d0d0d; --dark: #1a1a1a;
+            --card: #252525; --gray: #888; --green: #2ecc71; --radius: 16px;
+        }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--black); color: #fff;
+            min-height: 100vh; overflow-x: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(13,13,13,0.95); backdrop-filter: blur(20px);
+            padding: 16px 20px; border-bottom: 1px solid #2a2a2a;
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            object-fit: contain; display: block;
+        }
+        .logo-text h1 { font-size: 1.15rem; font-weight: 800; }
+        .logo-text span { font-size: 0.7rem; color: var(--gray); }
+        .cart-btn {
+            position: relative; width: 46px; height: 46px; background: var(--card);
+            border: none; border-radius: 12px; color: #fff; font-size: 20px; cursor: pointer;
+        }
+        .cart-badge {
+            position: absolute; top: -4px; right: -4px; width: 20px; height: 20px;
+            background: var(--red); border-radius: 50%; font-size: 11px; font-weight: 700;
+            display: none; align-items: center; justify-content: center; border: 2px solid var(--black);
+        }
+        .cart-badge.show { display: flex; }
+
+        /* ===== MODE TOGGLE ===== */
+        .toggle-bar { display: flex; background: var(--card); border-radius: 12px; padding: 4px; }
+        .toggle-btn {
+            flex: 1; padding: 10px; border: none; background: transparent;
+            color: var(--gray); font-size: 0.85rem; font-weight: 600;
+            border-radius: 10px; cursor: pointer; transition: all 0.3s;
+        }
+        .toggle-btn.active { background: var(--red); color: #fff; }
+
+        /* ===== VIEW: HOME – Kategorien-Kacheln ===== */
+        .view { display: none; padding: 20px; }
+        .view.active { display: block; }
+
+        .category-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+            padding-bottom: 40px;
+        }
+        .category-tile {
+            background: var(--card); border-radius: var(--radius); overflow: hidden;
+            cursor: pointer; transition: all 0.3s; border: 2px solid transparent;
+            display: flex; flex-direction: column; position: relative;
+            min-height: 160px; text-align: center;
+        }
+        .category-tile:hover { border-color: var(--red); transform: translateY(-2px); }
+        .category-tile:active { transform: scale(0.97); }
+        .category-tile-img {
+            width: 100%; height: 120px; object-fit: cover; display: block;
+        }
+        .category-tile-name {
+            font-size: 0.85rem; font-weight: 700; line-height: 1.2;
+            padding: 10px 8px; background: var(--card);
+        }
+
+        /* ===== VIEW: KATEGORIE – Produkte ===== */
+        .category-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+        }
+        .back-btn {
+            width: 48px; height: 48px; background: rgba(255,255,255,0.06); border: none;
+            border-radius: 13px; color: #fff; font-size: 23px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            transition: all 0.15s;
+        }
+        .back-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.12); }
+        .category-title {
+            font-size: 1.5rem; font-weight: 900; color: #fff; letter-spacing: -0.02em;
+            display: flex; align-items: center; gap: 10px; line-height: 1.2;
+        }
+        .category-title::before {
+            content: ''; display: block; width: 4px; height: 1.1em; background: var(--red);
+            border-radius: 2px; flex-shrink: 0;
+        }
+
+        .products { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-bottom: 40px; }
+        .product-card {
+            background: var(--card); border-radius: var(--radius); overflow: hidden;
+            cursor: pointer; transition: all 0.3s; border: 2px solid transparent;
+        }
+        .product-card:hover { border-color: var(--red); transform: translateY(-2px); }
+        .product-card:active { transform: scale(0.97); }
+        .product-img {
+            height: 100px; display: flex; align-items: center; justify-content: center;
+            font-size: 48px; background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
+            overflow: hidden;
+        }
+        .product-img img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .product-info { padding: 12px; }
+        .product-name { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; line-height: 1.2; }
+        .product-desc {
+            font-size: 0.7rem; color: var(--gray); margin-bottom: 8px;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .product-bottom { display: flex; justify-content: space-between; align-items: center; }
+        .product-price { font-size: 0.95rem; font-weight: 800; color: var(--red); }
+        .bonus-balance {
+            display:flex; align-items:center; justify-content:center; gap:8px;
+            padding:11px 14px; border-radius:12px; background:rgba(46,204,113,.12);
+            border:1px solid rgba(46,204,113,.38); color:var(--green);
+            font-size:.9rem; font-weight:800;
+        }
+        .product-card.reward-available { border-color:rgba(46,204,113,.65); }
+        .product-card.reward-available .product-price { color:var(--green); }
+        .product-card.reward-locked { border-color:rgba(196,30,58,.6); opacity:.72; cursor:not-allowed; }
+        .product-card.reward-locked .product-price { color:#ff526d; }
+        .variant-btn.reward-available { border-color:rgba(46,204,113,.6); }
+        .variant-btn.reward-available .variant-price { color:var(--green); }
+        .variant-btn.reward-locked { border-color:rgba(196,30,58,.5); opacity:.55; cursor:not-allowed; }
+        .menu-product-card.reward-available { border-color:rgba(46,204,113,.65); }
+        .menu-product-card.reward-locked { border-color:rgba(196,30,58,.6); opacity:.55; cursor:not-allowed; }
+        .reward-note { font-size:.72rem; color:var(--gray); margin-top:5px; }
+
+        /* ===== MODAL: Produktkonfigurator ===== */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 200; display: none;
+            align-items: flex-end; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--dark); width: 100%; max-width: 500px; max-height: 90vh;
+            border-radius: 24px 24px 0 0; overflow: hidden; animation: slideUp 0.3s ease;
+            display: flex; flex-direction: column;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-header {
+            padding: 20px; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0;
+        }
+        .modal-header h2 { font-size: 1.2rem; font-weight: 800; }
+        .modal-close {
+            width: 36px; height: 36px; background: var(--card); border: none;
+            border-radius: 50%; color: #fff; font-size: 18px; cursor: pointer;
+        }
+        .modal-body { padding: 20px; flex: 1; min-height: 0; overflow-y: auto; }
+        .modal-product-img {
+            height: 120px; display: flex; align-items: center; justify-content: center;
+            font-size: 68px; background: var(--card); border-radius: var(--radius); margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .modal-product-img img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .modal-product-name { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+        .modal-product-desc { color: var(--gray); font-size: 0.85rem; margin-bottom: 20px; }
+
+        .variant-group { margin-bottom: 20px; }
+        .variant-group-title {
+            font-size: 0.8rem; font-weight: 700; color: var(--gray);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+        }
+        .variant-options { display: flex; gap: 8px; flex-wrap: wrap; }
+        .variant-btn {
+            flex: 1; min-width: 100px; padding: 12px 16px; background: var(--card);
+            border: 2px solid transparent; border-radius: 12px; color: #fff;
+            font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            text-align: center;
+        }
+        .variant-btn.selected { border-color: var(--red); background: rgba(196,30,58,0.15); color: var(--red); }
+        .variant-btn .variant-price { display: block; font-size: 0.8rem; color: var(--gray); margin-top: 4px; }
+        .variant-btn.selected .variant-price { color: var(--red); }
+
+        .side-group { margin-bottom: 20px; }
+        .side-group-title {
+            font-size: 0.8rem; font-weight: 700; color: var(--gray);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+        }
+        .side-options { display: flex; gap: 8px; flex-wrap: wrap; }
+        .side-btn {
+            flex: 1; min-width: 100px; padding: 12px 16px; background: var(--card);
+            border: 2px solid transparent; border-radius: 12px; color: #fff;
+            font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            text-align: center;
+        }
+        .side-btn.selected { border-color: var(--red); background: rgba(196,30,58,0.15); color: var(--red); }
+        .side-btn .side-emoji { display: block; font-size: 1.2rem; margin-bottom: 4px; }
+
+        .menu-group { margin-bottom: 20px; }
+        .menu-group-title {
+            font-size: 0.8rem; font-weight: 700; color: var(--gray);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+        }
+        .menu-options { display: flex; gap: 8px; flex-wrap: wrap; }
+        .menu-btn {
+            flex: 1; min-width: 80px; padding: 10px 8px; background: var(--card);
+            border: 2px solid transparent; border-radius: 12px; color: #fff;
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            text-align: center;
+        }
+        .menu-btn.selected { border-color: var(--red); background: rgba(196,30,58,0.15); color: var(--red); }
+        .menu-btn .menu-price { display: block; font-size: 0.75rem; color: var(--gray); margin-top: 2px; }
+        .menu-btn.selected .menu-price { color: var(--red); }
+        .menu-btn .menu-desc { display: block; font-size: 0.65rem; color: var(--gray); margin-top: 2px; line-height: 1.2; }
+        .menu-btn.selected .menu-desc { color: var(--red); opacity: 0.8; }
+
+        /* ===== MENÜ KATEGORIE – HERO + CARDS ===== */
+        .menu-hero {
+            position: relative; width: 100%; border-radius: 16px; overflow: hidden;
+            margin-bottom: 20px; aspect-ratio: 16/9; background: #111;
+        }
+        .menu-hero-img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .menu-hero-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 28px 20px 18px;
+            background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+        }
+        .menu-hero-title {
+            font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 4px;
+        }
+        .menu-hero-sub {
+            font-size: 0.85rem; color: rgba(255,255,255,0.7); font-weight: 400;
+        }
+        .menu-size-list {
+            display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;
+        }
+        .menu-size-card {
+            background: var(--card); border: 2px solid transparent; border-radius: 14px;
+            padding: 14px 16px; cursor: pointer; transition: all 0.15s;
+            display: flex; align-items: center; gap: 14px; min-height: 72px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .menu-size-card:active { transform: scale(0.975); }
+        .menu-size-card.selected {
+            border-color: var(--red); background: rgba(196,30,58,0.10);
+        }
+        .menu-size-check {
+            width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid #444;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; flex-shrink: 0;
+        }
+        .menu-size-card.selected .menu-size-check {
+            border-color: var(--red); background: var(--red);
+        }
+        .menu-size-card.selected .menu-size-check::after {
+            content: '\2713'; color: #fff; font-size: 14px; font-weight: 800;
+        }
+        .menu-size-info { flex: 1; min-width: 0; }
+        .menu-size-name {
+            font-size: 1rem; font-weight: 700; color: #fff; line-height: 1.2;
+        }
+        .menu-size-card.selected .menu-size-name { color: var(--red); }
+        .menu-size-desc {
+            font-size: 0.78rem; color: var(--gray); margin-top: 2px; line-height: 1.3;
+        }
+        .menu-size-card.selected .menu-size-desc { color: rgba(255,255,255,0.5); }
+        .menu-size-price {
+            font-size: 1.1rem; font-weight: 800; color: var(--red); white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .menu-select-btn {
+            display: block; width: 100%; padding: 16px; border: none; border-radius: 14px;
+            font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+            text-align: center; -webkit-tap-highlight-color: transparent;
+        }
+        .menu-select-btn[disabled] {
+            background: #1c1c1c; color: #555; cursor: not-allowed;
+        }
+        .menu-select-btn:not([disabled]) {
+            background: var(--red); color: #fff;
+        }
+        .menu-select-btn:not([disabled]):active { transform: scale(0.97); }
+
+        .menu-product-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+            padding-bottom: 40px;
+        }
+        .menu-product-card {
+            background: var(--card); border-radius: 12px; overflow: hidden;
+            cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+        }
+        .menu-product-card:active { transform: scale(0.96); border-color: var(--red); }
+        .menu-product-card-img {
+            width: 100%; aspect-ratio: 1; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
+        }
+        .menu-product-card-img img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .menu-product-card-img .menu-product-emoji {
+            font-size: 36px;
+        }
+        .menu-product-card-name {
+            padding: 6px 6px 8px; font-size: 0.7rem; font-weight: 600;
+            line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden; min-height: 2.8em;
+        }
+
+        .extra-group { margin-bottom: 20px; }
+        .extra-group-title {
+            font-size: 0.8rem; font-weight: 700; color: var(--gray);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+        }
+        .extra-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 0; border-bottom: 1px solid #2a2a2a; cursor: pointer;
+        }
+        .extra-item:last-child { border-bottom: none; }
+        .extra-left { display: flex; align-items: center; gap: 10px; }
+        .extra-checkbox {
+            width: 22px; height: 22px; border: 2px solid #555; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .extra-item.selected .extra-checkbox { background: var(--red); border-color: var(--red); }
+        .extra-item.selected .extra-checkbox::after { content: '\2713'; color: #fff; font-size: 12px; font-weight: 700; }
+        .extra-name { font-size: 0.9rem; }
+        .extra-price { color: var(--gray); font-size: 0.8rem; }
+
+        .quantity-bar { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 16px 0; }
+        .qty-btn {
+            width: 44px; height: 44px; background: var(--card); border: none;
+            border-radius: 12px; color: #fff; font-size: 20px; cursor: pointer;
+        }
+        .qty-num { font-size: 1.5rem; font-weight: 800; min-width: 40px; text-align: center; }
+
+        .modal-footer { padding: 16px 20px; border-top: 1px solid #333; flex-shrink: 0; }
+        .add-to-cart-btn {
+            width: 100%; padding: 16px; background: var(--red); border: none;
+            border-radius: 14px; color: #fff; font-size: 1rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .add-to-cart-btn:hover { background: var(--red-dark); }
+        .add-to-cart-btn:disabled { background: #444; cursor: not-allowed; }
+
+        /* ===== MODAL: Nach Warenkorb – Weiter oder Warenkorb ===== */
+        .choice-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 500; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(10px);
+        }
+        .choice-overlay.show { display: flex; }
+        .choice-box {
+            background: var(--dark); border-radius: 24px; padding: 32px 24px;
+            text-align: center; max-width: 340px; width: 90%; animation: popIn 0.35s ease;
+        }
+        @keyframes popIn { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .choice-icon { font-size: 56px; margin-bottom: 12px; }
+        .choice-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 6px; }
+        .choice-sub { color: var(--gray); font-size: 0.85rem; margin-bottom: 24px; }
+        .choice-btn {
+            width: 100%; padding: 15px; border: none; border-radius: 14px;
+            font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        .choice-btn:active { transform: scale(0.97); }
+        .choice-btn-primary { background: var(--red); color: #fff; }
+        .choice-btn-secondary { background: var(--card); color: #fff; border: 1px solid #444; }
+
+        /* ===== CART SIDEBAR ===== */
+        .cart-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 300; display: none; backdrop-filter: blur(5px);
+        }
+        .cart-overlay.show { display: block; }
+        .cart-sidebar {
+            position: fixed; top: 0; right: -100%; width: 100%; max-width: 420px;
+            height: 100%; background: var(--dark); z-index: 301;
+            transition: right 0.3s ease; display: flex; flex-direction: column;
+        }
+        .cart-sidebar.show { right: 0; }
+        .cart-header {
+            padding: 20px; border-bottom: 1px solid #333;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .cart-header h2 { font-size: 1.3rem; font-weight: 800; }
+        .cart-items { flex: 1; overflow-y: auto; padding: 16px 20px; }
+        .cart-empty { text-align: center; padding: 60px 20px; color: var(--gray); }
+        .cart-empty-icon { font-size: 60px; margin-bottom: 16px; }
+        .cart-item { display: flex; gap: 12px; padding: 16px 0; border-bottom: 1px solid #2a2a2a; }
+        .cart-item-img {
+            width: 56px; height: 56px; background: var(--card); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0;
+            overflow: hidden;
+        }
+        .cart-item-img img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .cart-item-info { flex: 1; }
+        .cart-item-name { font-size: 0.9rem; font-weight: 700; margin-bottom: 2px; }
+        .cart-item-variant { font-size: 0.75rem; color: var(--red); margin-bottom: 2px; }
+        .cart-item-extras { font-size: 0.7rem; color: var(--gray); margin-bottom: 6px; }
+        .cart-item-bottom { display: flex; justify-content: space-between; align-items: center; }
+        .cart-item-price { font-weight: 700; color: var(--red); font-size: 0.9rem; }
+        .cart-qty-ctrl { display: flex; align-items: center; gap: 10px; }
+        .cart-qty-btn {
+            width: 28px; height: 28px; background: var(--card); border: none;
+            border-radius: 8px; color: #fff; font-size: 14px; cursor: pointer;
+        }
+        .cart-qty-num { font-weight: 700; font-size: 0.9rem; }
+        .cart-footer { padding: 20px; border-top: 1px solid #333; background: var(--dark); }
+        .cart-summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .cart-total {
+            display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800;
+            padding-top: 12px; border-top: 1px solid #333; margin-top: 8px;
+        }
+        .cart-total span:last-child { color: var(--red); }
+        .checkout-btn {
+            width: 100%; padding: 16px; background: var(--green); border: none;
+            border-radius: 14px; color: #fff; font-size: 1rem; font-weight: 700;
+            cursor: pointer; margin-top: 16px; transition: all 0.2s;
+        }
+        .checkout-btn:hover { filter: brightness(1.1); }
+        .clear-cart-btn {
+            width: 100%; padding: 12px; background: transparent; border: 1px solid #444;
+            border-radius: 12px; color: var(--gray); font-size: 0.85rem; cursor: pointer; margin-top: 8px;
+        }
+
+        /* ===== SUCCESS ===== */
+        .success-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 400; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(10px);
+        }
+        .success-overlay.show { display: flex; }
+        .success-box {
+            background: var(--dark); border-radius: 24px; padding: 32px 24px;
+            text-align: center; max-width: 360px; width: 90%; animation: popIn 0.4s ease;
+        }
+        .success-icon { font-size: 56px; margin-bottom: 12px; }
+        .success-box h2 { font-size: 1.3rem; margin-bottom: 8px; }
+        .order-number {
+            font-size: 2rem; font-weight: 900; color: var(--red); margin: 8px 0 16px;
+            letter-spacing: 2px;
+        }
+        .qr-container {
+            display: flex; justify-content: center; margin: 0 auto 16px;
+        }
+        .qr-container canvas, .qr-container img {
+            border-radius: 12px;
+        }
+        .order-hint {
+            color: var(--gray); font-size: 0.8rem; margin-bottom: 24px; line-height: 1.4;
+        }
+        .success-btn {
+            padding: 14px 40px; background: var(--red); border: none;
+            border-radius: 14px; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+            width: 100%;
+        }
+
+        @keyframes bounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+        .bounce { animation: bounce 0.3s ease; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        @media (min-width: 768px) { .products { grid-template-columns: repeat(3, 1fr); } .category-grid { grid-template-columns: repeat(3, 1fr); } .menu-product-grid { grid-template-columns: repeat(3, 1fr); } body { max-width: 500px; margin: 0 auto; } }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-top">
+        <button class="back-btn" onclick="window.location.href='/'">←</button>
+        <div class="logo">
+            <img class="logo-icon" src="/static/bilder/logo.png" alt="Kebap Höhle XXL">
+            <div class="logo-text">
+                <h1>Kebap Höhle XXL</h1>
+                <span>Bischofsheim • Prämienbestellung</span>
+            </div>
+        </div>
+        <button class="cart-btn" onclick="toggleCart()">🛒<span class="cart-badge" id="cartBadge">0</span></button>
+    </div>
+    <div class="bonus-balance">🪙 Dein Guthaben: <span id="bonusBalance">{{ punktestand|default(0) }}</span> Punkte</div>
+</div>
+
+<!-- ===== EBENE 1: STARTSEITE – Kategorien-Kacheln ===== -->
+<div class="view active" id="viewHome">
+    <div class="category-grid" id="categoryGrid"></div>
+</div>
+
+<!-- ===== EBENE 2: KATEGORIE – Produkte ===== -->
+<div class="view" id="viewCategory">
+    <div class="category-header">
+        <button class="back-btn" onclick="showHome()">←</button>
+        <h2 class="category-title" id="categoryTitle"></h2>
+    </div>
+    <div class="products" id="productGrid"></div>
+</div>
+
+<!-- ===== EBENE 3: MODAL – Produktkonfigurator ===== -->
+<div class="modal-overlay" id="productModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle">Anpassen</h2>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <div class="quantity-bar">
+                <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                <span class="qty-num" id="qtyNum">1</span>
+                <button class="qty-btn" onclick="changeQty(1)">+</button>
+            </div>
+            <button class="add-to-cart-btn" id="addToCartBtn" onclick="addToCart()" disabled>🛒 Als Prämie wählen • <span id="modalTotal">0 Punkte</span></button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAL: Weiter auswählen oder Warenkorb ===== -->
+<div class="choice-overlay" id="choiceModal">
+    <div class="choice-box">
+        <div class="choice-icon">✅</div>
+        <div class="choice-title">Hinzugefügt!</div>
+        <div class="choice-sub" id="choiceProductName"></div>
+        <button class="choice-btn choice-btn-primary" onclick="continueShopping()">Weiter auswählen</button>
+        <button class="choice-btn choice-btn-secondary" onclick="goToCart()">Zum Warenkorb</button>
+    </div>
+</div>
+
+<!-- ===== CART SIDEBAR ===== -->
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+<div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header">
+        <h2>🪙 Prämienkorb</h2>
+        <button class="modal-close" onclick="toggleCart()">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+        <div class="cart-empty"><div class="cart-empty-icon">🪙</div><h3>Leer</h3><p>Wähle deine Prämien!</p></div>
+    </div>
+    <div class="cart-footer" id="cartFooter" style="display:none;">
+        <div class="cart-summary-row"><span>Benötigte Punkte</span><span id="cartSubtotal">0 Punkte</span></div>
+        <div class="cart-summary-row" style="display:none"><span>Liefergebühr</span><span id="cartFee">Kostenlos</span></div>
+        <div class="cart-total"><span>Gesamt</span><span id="cartTotal">0 Punkte</span></div>
+        <button class="checkout-btn" id="checkoutBtn" onclick="checkout()">Mit Punkten bestellen 🎉</button>
+        <button class="clear-cart-btn" onclick="clearCart()">Warenkorb leeren</button>
+    </div>
+</div>
+
+<!-- ===== SUCCESS ===== -->
+<div class="success-overlay" id="successModal">
+    <div class="success-box">
+        <div class="success-icon">✅</div>
+        <h2>Prämienbestellung wurde erstellt</h2>
+        <p style="color:var(--gray);margin-bottom:8px;">Deine Bestellnummer</p>
+        <div class="order-number" id="orderNumber">#0000</div>
+        <div class="qr-container" id="qrContainer"></div>
+        <p class="order-hint">Zeige den QR-Code an der Theke vor oder nenne deine Bestellnummer. Die Punkte werden erst nach Bestätigung an der Theke abgezogen.</p>
+        <button class="success-btn" onclick="closeSuccess()">Fertig</button>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// OFFIZIELLE SPEISEKARTE – KEBAP HÖHLE XXL
+// Quelle: https://kebap-hoehle.de/speisekarte/
+// Stand: August 2026
+// ============================================================
+
+const CATEGORIES = [
+    { id: "doener-sandwich", name: "Döner Sandwich", emoji: "🥙", img: "/static/bilder/doener.png" },
+    { id: "wrap-doener", name: "Wrap Döner", emoji: "🌯", img: "/static/bilder/durum.png" },
+    { id: "doener-teller", name: "Döner Teller", emoji: "🍽️", img: "/static/bilder/doenerteller.png" },
+    { id: "lahmacun", name: "Lahmacun", emoji: "🫓", img: "/static/bilder/lahmacun.png" },
+    { id: "salate", name: "Salate", emoji: "🥗", img: "/static/bilder/salat.png" },
+    { id: "boxenstopp", name: "Boxenstopp", emoji: "📦", img: "/static/bilder/boxenstopp.png" },
+    { id: "bowls", name: "Bowls", emoji: "🥣", img: "/static/bilder/bowls.png" },
+    { id: "falafel", name: "Falafel", emoji: "🧆", img: "/static/bilder/falafel.png" },
+    { id: "alaturka", name: "Alaturka", emoji: "🌭", img: "/static/bilder/alaturka.png" },
+    { id: "pide", name: "Pide", emoji: "🥧", img: "/static/bilder/pide.png" },
+    { id: "fingerfood", name: "Fingerfood", emoji: "🍗", img: "/static/bilder/fingerfood.png" },
+    { id: "katmer", name: "Katmer", emoji: "🫓", img: "/static/bilder/katmer.png" },
+    { id: "kids", name: "Kids", emoji: "👶", img: "/static/bilder/kids.png" },
+    { id: "pizza", name: "Pizza", emoji: "🍕", img: "/static/bilder/pizza.png" },
+    { id: "pizzabroetchen", name: "Pizzabrötchen", emoji: "🧈", img: "/static/bilder/pizzabroetchen.png" },
+    { id: "pizzabrot", name: "Pizzabrot", emoji: "🫓", img: "/static/bilder/pizzabrot.png" },
+    { id: "getraenke", name: "Getränke", emoji: "🥤", img: "/static/bilder/getraenke.png" },
+    { id: "menus", name: "Menüs", emoji: "🍽️", img: "/static/bilder/menue.png" },
+];
+
+const DOENER_SAUCE = ["Knoblauch", "Cocktail", "Chili", "Kräuter", "Joghurt"];
+const DOENER_WITHOUT = ["Zwiebel", "Rotkraut", "Eisbergsalat", "Tomate", "Karotte", "Gurke", "Rucola"];
+const DOENER_EXTRAS = [
+    { name: "Fleisch", price: 1.50 },
+    { name: "Gegrilltes Gemüse", price: 1.50 },
+];
+
+const PIZZA_EXTRAS = [
+    { name: "Soße", price: 1.00 },
+    { name: "Jalapenos", price: 1.00 },
+    { name: "Knoblauch", price: 1.00 },
+    { name: "Pilze", price: 1.00 },
+    { name: "Käse", price: 1.00 },
+    { name: "Oliven", price: 1.00 },
+    { name: "Fleisch", price: 1.50 },
+    { name: "Salami", price: 1.50 },
+    { name: "Sucuk", price: 1.50 },
+    { name: "Truthahn", price: 1.50 },
+    { name: "Gegrilltes Gemüse", price: 1.50 },
+    { name: "Ei", price: 1.50 },
+    { name: "Peperoniwurst", price: 1.50 },
+    { name: "Thunfisch", price: 2.00 },
+];
+
+const MENU = [
+    // ===== 1. DÖNER SANDWICH =====
+    { id:1, cat:"doener-sandwich", name:"Döner Sandwich Beef", desc:"", emoji:"🥙", img:"/static/bilder/doener.png",
+      variants:[{name:"Classic",price:10.00},{name:"XXL",price:12.50}], extras:[], menuUpgradeAllowed:false },
+    { id:2, cat:"doener-sandwich", name:"Döner Sandwich Beef Cheese", desc:"", emoji:"🧀", img:"/static/bilder/doener.png",
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:3, cat:"doener-sandwich", name:"Döner Sandwich Chicken", desc:"", emoji:"🍗", img:"/static/bilder/doenerchicken.png",
+      variants:[{name:"Classic",price:8.00},{name:"XXL",price:10.00}], extras:[], menuUpgradeAllowed:false },
+    { id:4, cat:"doener-sandwich", name:"Döner Sandwich Chicken Cheese", desc:"", emoji:"🧀", img:"/static/bilder/doenerchicken.png",
+      variants:[{name:"Classic",price:10.00},{name:"XXL",price:12.00}], extras:[], menuUpgradeAllowed:false },
+    { id:5, cat:"doener-sandwich", name:"Döner Sandwich Vegetarisch mit Käse", desc:"", emoji:"🥬", img:"/static/bilder/doenervegetarisch.png?v=2",
+      variants:[{name:"Classic",price:6.50},{name:"XXL",price:8.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 2. WRAP DÖNER =====
+    { id:6, cat:"wrap-doener", name:"Wrap Beef", desc:"", emoji:"🌯", img:"/static/bilder/wrapbeef.png",
+      variants:[{name:"Classic",price:10.00},{name:"XXL",price:12.50}], extras:[], menuUpgradeAllowed:false },
+    { id:7, cat:"wrap-doener", name:"Wrap Chicken", desc:"", emoji:"🌯", img:"/static/bilder/wrapchicken.png",
+      variants:[{name:"Classic",price:8.00},{name:"XXL",price:10.00}], extras:[], menuUpgradeAllowed:false },
+    { id:8, cat:"wrap-doener", name:"Wrap Vegetarisch", desc:"", emoji:"🌯", img:"/static/bilder/wrapvegetarisch.png",
+      variants:[{name:"Classic",price:6.50},{name:"XXL",price:8.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 3. DÖNER TELLER =====
+    { id:9, cat:"doener-teller", name:"Döner Teller Beef mit Pommes", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerbeefmitpommes.png",
+      variants:[{name:"Classic",price:14.00},{name:"XXL",price:17.00}], extras:[], menuUpgradeAllowed:false },
+    { id:10, cat:"doener-teller", name:"Döner Teller Beef mit Reis", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerbeefmitreis.png",
+      variants:[{name:"Classic",price:14.00},{name:"XXL",price:17.00}], extras:[], menuUpgradeAllowed:false },
+    { id:11, cat:"doener-teller", name:"Döner Teller Chicken mit Pommes", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerchickenmitpommes.png",
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
+    { id:12, cat:"doener-teller", name:"Döner Teller Chicken mit Reis", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerchickenmitreis.png",
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 4. LAHMACUN =====
+    { id:13, cat:"lahmacun", name:"Lahmacun Beef", desc:"", emoji:"🫓", img:"/static/bilder/lahmacunbeef.png",
+      variants:[{name:"Classic",price:11.00},{name:"XXL",price:13.50}], extras:[], menuUpgradeAllowed:false },
+    { id:14, cat:"lahmacun", name:"Lahmacun Chicken", desc:"", emoji:"🫓", img:"/static/bilder/lahmacunchicken.png",
+      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
+    { id:15, cat:"lahmacun", name:"Lahmacun Salat u. Käse", desc:"", emoji:"🫓", img:"/static/bilder/lahmacunsalatundkaese.png",
+      variants:[{name:"Classic",price:7.50},{name:"XXL",price:9.50}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 5. SALATE =====
+    { id:16, cat:"salate", name:"Höhlen Salat", desc:"Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Ei, Truthahn, Käse, Soße", emoji:"🥗", img:"/static/bilder/hoehlensalat.png",
+      variants:[{name:"",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:17, cat:"salate", name:"Döner Salat", desc:"Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/doenersalat.png",
+      variants:[{name:"",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:18, cat:"salate", name:"Thunfisch Salat", desc:"Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/thunfischsalat.png",
+      variants:[{name:"",price:10.00}], extras:[], menuUpgradeAllowed:false },
+    { id:19, cat:"salate", name:"Gemischter Salat", desc:"Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Paprika, Oliven, Soße", emoji:"🥗", img:"/static/bilder/gemischtersalat.png",
+      variants:[{name:"",price:9.50}], extras:[], menuUpgradeAllowed:false },
+    { id:20, cat:"salate", name:"Falafel Salat", desc:"Falafel, Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/falafelsalat.png",
+      variants:[{name:"",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:21, cat:"salate", name:"Beilagen Salat", desc:"Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/beilagensalat.png",
+      variants:[{name:"",price:4.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 6. BOXENSTOPP =====
+    { id:22, cat:"boxenstopp", name:"Boxenstopp Beef", desc:"", emoji:"📦", img:"/static/bilder/boxenstopp-beef.png",
+      variants:[{name:"Classic",price:8.50},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
+    { id:23, cat:"boxenstopp", name:"Boxenstopp Chicken", desc:"", emoji:"📦", img:"/static/bilder/boxenstopp-chicken.png",
+      variants:[{name:"Classic",price:7.50},{name:"XXL",price:10.00}], extras:[], menuUpgradeAllowed:false },
+    { id:24, cat:"boxenstopp", name:"Boxenstopp Falafel", desc:"", emoji:"📦", img:"/static/bilder/boxenstopp-falafel.png",
+      variants:[{name:"Classic",price:8.50},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
+    { id:25, cat:"boxenstopp", name:"Pommes", desc:"", emoji:"🍟", img:"/static/bilder/pommes-mitnehmen.png",
+      variants:[{name:"Classic",price:4.00},{name:"XXL",price:5.00}], extras:[], menuUpgradeAllowed:false },
+    { id:26, cat:"boxenstopp", name:"Portion Fleisch Beef", desc:"", emoji:"🥩", img:"/static/bilder/portion-fleisch-beef.png",
+      variants:[{name:"Classic",price:9.50},{name:"XXL",price:11.50}], extras:[], menuUpgradeAllowed:false },
+    { id:27, cat:"boxenstopp", name:"Portion Fleisch Chicken", desc:"", emoji:"🍗", img:"/static/bilder/portion-fleisch-chicken.png",
+      variants:[{name:"Classic",price:8.50},{name:"XXL",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:28, cat:"boxenstopp", name:"Portion Reis", desc:"", emoji:"🍚", img:"/static/bilder/portion-reis.png",
+      variants:[{name:"Classic",price:6.00},{name:"XXL",price:8.00}], extras:[], menuUpgradeAllowed:false },
+    { id:29, cat:"boxenstopp", name:"Falafel", desc:"", emoji:"🧆", img:"/static/bilder/falafel-mitnahme.png",
+      variants:[{name:"5 Stück",price:8.50},{name:"8 Stück",price:11.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 7. BOWLS =====
+    { id:30, cat:"bowls", name:"Bowl Beef mit Reis", desc:"", emoji:"🥣", img:"/static/bilder/bowlbeefmitreis.png",
+      variants:[{name:"",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:31, cat:"bowls", name:"Bowl Beef mit Pommes", desc:"", emoji:"🥣", img:"/static/bilder/bowlbeefmitpommes.png",
+      variants:[{name:"",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:32, cat:"bowls", name:"Bowl Chicken mit Reis", desc:"", emoji:"🥣", img:"/static/bilder/bowlchickenmitreis.png",
+      variants:[{name:"",price:12.50}], extras:[], menuUpgradeAllowed:false },
+    { id:33, cat:"bowls", name:"Bowl Chicken mit Pommes", desc:"", emoji:"🥣", img:"/static/bilder/bowlchickenmitpommes.png",
+      variants:[{name:"",price:12.50}], extras:[], menuUpgradeAllowed:false },
+    { id:34, cat:"bowls", name:"Bowl Falafel mit Reis", desc:"", emoji:"🥣", img:"/static/bilder/bowlfalafelmitreis.png",
+      variants:[{name:"",price:12.50}], extras:[], menuUpgradeAllowed:false },
+    { id:35, cat:"bowls", name:"Bowl Falafel mit Pommes", desc:"", emoji:"🥣", img:"/static/bilder/bowlfalafelmitpommes.png",
+      variants:[{name:"",price:12.50}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 8. FALAFEL =====
+    { id:36, cat:"falafel", name:"Falafel Sandwich", desc:"", emoji:"🧆", img:"/static/bilder/falafelsandwich.png",
+      variants:[{name:"Classic",price:8.50},{name:"XXL",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:37, cat:"falafel", name:"Falafel Wrap", desc:"", emoji:"🧆", img:"/static/bilder/falafelwrap.png",
+      variants:[{name:"Classic",price:8.50},{name:"XXL",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:38, cat:"falafel", name:"Falafel Lahmacun", desc:"", emoji:"🧆", img:"/static/bilder/falafellahmacun.png",
+      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
+    { id:39, cat:"falafel", name:"Falafel", desc:"", emoji:"🧆", img:"/static/bilder/falafel.png",
+      variants:[{name:"5 Stück",price:6.00},{name:"8 Stück",price:9.00}], extras:[], menuUpgradeAllowed:false },
+    { id:40, cat:"falafel", name:"Falafel Teller mit Pommes", desc:"", emoji:"🧆", img:"/static/bilder/bowlfalafelmitpommes.png",
+      variants:[{name:"Classic",price:11.50},{name:"XXL",price:13.50}], extras:[], menuUpgradeAllowed:false },
+    { id:41, cat:"falafel", name:"Falafel Teller mit Reis", desc:"", emoji:"🧆", img:"/static/bilder/bowlfalafelmitreis.png",
+      variants:[{name:"Classic",price:11.50},{name:"XXL",price:13.50}], extras:[], menuUpgradeAllowed:false },
+    { id:42, cat:"falafel", name:"Falafel Box mit Pommes", desc:"", emoji:"🧆", img:"/static/bilder/boxenstopp-falafel.png",
+      variants:[{name:"Classic",price:8.50},{name:"XXL",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:43, cat:"falafel", name:"Falafel Box mit Reis", desc:"", emoji:"🧆", img:"/static/bilder/falafelboxmitreis.png",
+      variants:[{name:"Classic",price:8.50},{name:"XXL",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:44, cat:"falafel", name:"Falafel Salat", desc:"", emoji:"🧆", img:"/static/bilder/falafelsalat.png",
+      variants:[{name:"",price:10.50}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 9. ALATURKA =====
+    { id:45, cat:"alaturka", name:"Sucuk Sandwich", desc:"", emoji:"🌭", img:"/static/bilder/sucuksandwich.png",
+      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
+    { id:46, cat:"alaturka", name:"Döner Burger Beef", desc:"", emoji:"🍔", img:"/static/bilder/doenerburgerbeef.png",
+      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
+    { id:47, cat:"alaturka", name:"Döner Burger Chicken", desc:"", emoji:"🍔", img:"/static/bilder/doenerburgerchicken.png",
+      variants:[{name:"Classic",price:7.50},{name:"XXL",price:9.50}], extras:[], menuUpgradeAllowed:false },
+    { id:48, cat:"alaturka", name:"Börek Sticks", desc:"", emoji:"🥟", img:"/static/bilder/boereksticks.png",
+      variants:[{name:"1 Stück",price:1.50},{name:"5 Stück",price:6.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 10. PIDE =====
+    { id:49, cat:"pide", name:"Pide Hackfleisch", desc:"", emoji:"🥧", img:"/static/bilder/pidehackfleisch.png",
+      variants:[{name:"Classic",price:11.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+    { id:50, cat:"pide", name:"Pide Spinat", desc:"", emoji:"🥧", img:"/static/bilder/pidespinat.png",
+      variants:[{name:"Classic",price:10.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+    { id:51, cat:"pide", name:"Pide Weichkäse", desc:"", emoji:"🥧", img:"/static/bilder/pideweichkaese.png",
+      variants:[{name:"Classic",price:10.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+    { id:52, cat:"pide", name:"Pide Sucuk Knoblauchwurst", desc:"", emoji:"🥧", img:"/static/bilder/pidesucuk.png",
+      variants:[{name:"Classic",price:11.00},{name:"XXL",price:16.00}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+    { id:53, cat:"pide", name:"Pide Gemischt", desc:"Dönerfleisch, Käse, Paprika und Zwiebel", emoji:"🥧", img:"/static/bilder/pidegemischt.png",
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:17.00}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+
+    // ===== 11. FINGERFOOD =====
+    { id:54, cat:"fingerfood", name:"Chicken Nuggets", desc:"", emoji:"🍗", img:"/static/bilder/chickennuggets.png",
+      variants:[{name:"6 Stück",price:5.50},{name:"9 Stück",price:7.50},{name:"20 Stück",price:12.00}], extras:[], menuUpgradeAllowed:false },
+    { id:55, cat:"fingerfood", name:"Chili Cheese Nuggets", desc:"", emoji:"🍗", img:"/static/bilder/chilicheesenuggets.png",
+      variants:[{name:"6 Stück",price:7.50},{name:"9 Stück",price:9.50},{name:"20 Stück",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:56, cat:"fingerfood", name:"Mozzarella Sticks", desc:"", emoji:"🧀", img:"/static/bilder/mozzarellasticks.png",
+      variants:[{name:"6 Stück",price:8.00},{name:"9 Stück",price:10.00},{name:"20 Stück",price:14.50}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 12. KATMER =====
+    { id:57, cat:"katmer", name:"Katmer Beef", desc:"", emoji:"🫓", img:"/static/bilder/katmerbeef.png",
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
+    { id:58, cat:"katmer", name:"Katmer Chicken", desc:"", emoji:"🫓", img:"/static/bilder/katmerchicken.png",
+      variants:[{name:"Classic",price:10.00},{name:"XXL",price:13.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 13. KIDS =====
+    { id:59, cat:"kids", name:"Beef Wrap", desc:"", emoji:"👶", img:"/static/bilder/beefwrapkids.png",
+      variants:[{name:"",price:6.50}], extras:[], menuUpgradeAllowed:false },
+    { id:60, cat:"kids", name:"Chicken Wrap", desc:"", emoji:"👶", img:"/static/bilder/chickenwrapkids.png",
+      variants:[{name:"",price:5.50}], extras:[], menuUpgradeAllowed:false },
+    { id:61, cat:"kids", name:"Beef Box", desc:"", emoji:"👶", img:"/static/bilder/beefboxkids.png",
+      variants:[{name:"",price:6.50}], extras:[], menuUpgradeAllowed:false },
+    { id:62, cat:"kids", name:"Chicken Box", desc:"", emoji:"👶", img:"/static/bilder/chickenboxkids.png",
+      variants:[{name:"",price:5.50}], extras:[], menuUpgradeAllowed:false },
+    { id:63, cat:"kids", name:"Nugget Box", desc:"", emoji:"👶", img:"/static/bilder/nuggetboxkids.png",
+      variants:[{name:"",price:5.50}], extras:[], menuUpgradeAllowed:false },
+    { id:64, cat:"kids", name:"Brot mit Soße", desc:"", emoji:"👶", img:"/static/bilder/brotmitsoßekids.png",
+      variants:[{name:"",price:2.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 14. PIZZA =====
+    { id:65, cat:"pizza", name:"Pizza Margherita", desc:"", emoji:"🍕", img:"/static/bilder/pizzamargherita.png",
+      variants:[{name:"Classic 32 cm",price:8.00},{name:"XXL 40 cm",price:13.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:66, cat:"pizza", name:"Pizza Rindersalami", desc:"", emoji:"🍕", img:"/static/bilder/pizzarindersalami.png",
+      variants:[{name:"Classic 32 cm",price:9.50},{name:"XXL 40 cm",price:14.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:67, cat:"pizza", name:"Pizza Truthan", desc:"Pizzabelag mit Truthahnscheiben", emoji:"🍕", img:"/static/bilder/pitzatruthan.png",
+      variants:[{name:"Classic 32 cm",price:9.50},{name:"XXL 40 cm",price:14.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:68, cat:"pizza", name:"Pizza Peperoniwurst", desc:"", emoji:"🍕", img:"/static/bilder/pizzapeperoniwurst.png",
+      variants:[{name:"Classic 32 cm",price:9.50},{name:"XXL 40 cm",price:14.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:69, cat:"pizza", name:"Pizza Pilze", desc:"", emoji:"🍄", img:"/static/bilder/pizzapilze.png",
+      variants:[{name:"Classic 32 cm",price:9.50},{name:"XXL 40 cm",price:14.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:70, cat:"pizza", name:"Pizza Spinat", desc:"mit Weichkäse", emoji:"🥬", img:"/static/bilder/pizzaspinat.png",
+      variants:[{name:"Classic 32 cm",price:10.00},{name:"XXL 40 cm",price:15.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:71, cat:"pizza", name:"Pizza Mozzarella", desc:"", emoji:"🧀", img:"/static/bilder/pizzamozzarella.png",
+      variants:[{name:"Classic 32 cm",price:10.00},{name:"XXL 40 cm",price:15.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:72, cat:"pizza", name:"Pizza Sucuk", desc:"Knoblauchwurst", emoji:"🍕", img:"/static/bilder/pizzasucuk.png",
+      variants:[{name:"Classic 32 cm",price:11.00},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:73, cat:"pizza", name:"Pizza Milano", desc:"Rindersalami & Pilze", emoji:"🍕", img:"/static/bilder/pizzamilano.png",
+      variants:[{name:"Classic 32 cm",price:10.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:74, cat:"pizza", name:"Pizza Truthan Funghi", desc:"Truthahnbelag, Pilze", emoji:"🍕", img:"/static/bilder/pizzatruthanfunghi.png",
+      variants:[{name:"Classic 32 cm",price:10.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:75, cat:"pizza", name:"Pizza Thunfisch", desc:"mit Zwiebel", emoji:"🐟", img:"/static/bilder/pizzathunfisch.png",
+      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:76, cat:"pizza", name:"Pizza Rindersalami Spezial", desc:"Salami, Zwiebel, Knoblauch", emoji:"🍕", img:"/static/bilder/pizzarindersalamispezoal.png",
+      variants:[{name:"Classic 32 cm",price:10.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:77, cat:"pizza", name:"Pizza Vegetarisch", desc:"Paprika, Pilze, Mais, Zwiebel, Oliven", emoji:"🥬", img:"/static/bilder/pizzavegetarisch.png",
+      variants:[{name:"Classic 32 cm",price:10.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:78, cat:"pizza", name:"Pizza Quattro Stagioni", desc:"Truthahnbelag, Rindersalami, Peperoniwurst, Pilze", emoji:"🍕", img:"/static/bilder/pizzaquattrostagioni.png",
+      variants:[{name:"Classic 32 cm",price:11.00},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:79, cat:"pizza", name:"Pizza Döner Chicken", desc:"Dönerfleisch & Zwiebel", emoji:"🍕", img:"/static/bilder/pizzadoenerchicken.png",
+      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:80, cat:"pizza", name:"Pizza Döner Beef", desc:"Dönerfleisch & Zwiebel", emoji:"🍕", img:"/static/bilder/pizzadoenerbeef.png",
+      variants:[{name:"Classic 32 cm",price:12.50},{name:"XXL 40 cm",price:17.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:81, cat:"pizza", name:"Pizza Europa", desc:"Truthahnbelag, Rindersalami, Pilze, Paprika, Zwiebel", emoji:"🍕", img:"/static/bilder/pizzaeuropa.png",
+      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:82, cat:"pizza", name:"Pizza Toni", desc:"Sucuk, Pilze, Mais, Zwiebel", emoji:"🍕", img:"/static/bilder/pizzatoni.png",
+      variants:[{name:"Classic 32 cm",price:11.00},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:83, cat:"pizza", name:"Pizza El Chapo", desc:"Dönerfleisch, Mais, BBQ Soße", emoji:"🍕", img:"/static/bilder/pizzaelchapo.png",
+      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:16.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:84, cat:"pizza", name:"Pizza El Pablo", desc:"Dönerfleisch, Sucuk, Jalapenos, Paprika", emoji:"🍕", img:"/static/bilder/pizzaelpablo.png",
+      variants:[{name:"Classic 32 cm",price:12.00},{name:"XXL 40 cm",price:17.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:85, cat:"pizza", name:"Pizza Mexicano", desc:"Rinderhackfleisch, Mais, Jalapeno, Kidneybohnen, Zwiebel", emoji:"🍕", img:"/static/bilder/pizzamexicano.png",
+      variants:[{name:"Classic 32 cm",price:12.50},{name:"XXL 40 cm",price:17.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+
+    // ===== 15. PIZZABRÖTCHEN 8ER =====
+    { id:86, cat:"pizzabroetchen", name:"Pizzabrötchen Käse", desc:"", emoji:"🧈", img:"/static/bilder/pizzabroetchenkaese.png",
+      variants:[{name:"",price:7.00}], extras:[], menuUpgradeAllowed:false },
+    { id:87, cat:"pizzabroetchen", name:"Pizzabrötchen Chicken - Käse", desc:"", emoji:"🧈", img:"/static/bilder/pizzabroetchenchickenkaese.png",
+      variants:[{name:"",price:8.50}], extras:[], menuUpgradeAllowed:false },
+    { id:88, cat:"pizzabroetchen", name:"Pizzabrötchen Beef - Käse", desc:"", emoji:"🧈", img:"/static/bilder/pizzabroetchenbeefkaese.png",
+      variants:[{name:"",price:9.50}], extras:[], menuUpgradeAllowed:false },
+    { id:89, cat:"pizzabroetchen", name:"Pizzabrötchen Sucuk - Käse", desc:"", emoji:"🧈", img:"/static/bilder/pizzabroetchensucukkaese.png",
+      variants:[{name:"",price:9.50}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 16. PIZZABROT =====
+    { id:90, cat:"pizzabrot", name:"Pizzabrot mit Oregano & Olivenöl", desc:"", emoji:"🫓", img:"/static/bilder/pizzabrotmitoregano&olivenoel.png",
+      variants:[{name:"32 cm",price:5.00},{name:"40 cm",price:8.00}], extras:[], menuUpgradeAllowed:false },
+    { id:91, cat:"pizzabrot", name:"Pizzabrot Knoblauch & Tomatensoße", desc:"", emoji:"🫓", img:"/static/bilder/pizzabrotknoblauch&tomatensoße.png",
+      variants:[{name:"32 cm",price:6.00},{name:"40 cm",price:9.00}], extras:[], menuUpgradeAllowed:false },
+
+    // ===== 17. GETRÄNKE =====
+    { id:92, cat:"getraenke", name:"Softdrink 0,33 l", desc:"inkl. Pfand", emoji:"🥤", img:"/static/bilder/cola.png",
+      variants:[{name:"",price:2.50}], extras:[], menuUpgradeAllowed:false },
+    { id:93, cat:"getraenke", name:"Softdrink 1 l", desc:"inkl. Pfand", emoji:"🥤", img:"/static/bilder/softdrink1liter.png",
+      variants:[{name:"",price:4.00}], extras:[], menuUpgradeAllowed:false },
+    { id:94, cat:"getraenke", name:"Ayran 0,25 l", desc:"", emoji:"🥛", img:"/static/bilder/ayran.png",
+      variants:[{name:"",price:2.00}], extras:[], menuUpgradeAllowed:false },
+    { id:95, cat:"getraenke", name:"Mineralwasser mit Kohlensäure 0,5 l", desc:"inkl. Pfand", emoji:"💧", img:"/static/bilder/wasser.png",
+      variants:[{name:"",price:2.00}], extras:[], menuUpgradeAllowed:false },
+    { id:96, cat:"getraenke", name:"Mineralwasser still 0,5 l", desc:"inkl. Pfand", emoji:"💧", img:"/static/bilder/wasser.png",
+      variants:[{name:"",price:2.00}], extras:[], menuUpgradeAllowed:false },
+];
+
+const MENU_UPGRADES = [
+    { name:"Menü L", desc:"Kleine Pommes + Softgetränk 0,33 l", price:4.00 },
+    { name:"Menü XL", desc:"Mittlere Pommes + Softgetränk 0,33 l", price:5.00 },
+    { name:"Menü XXL", desc:"Große Pommes + Softgetränk 1 l", price:6.50 },
+];
+
+// ============================================================
+// APP STATE
+// ============================================================
+let cart = [];
+let currentProduct = null;
+let currentVariant = null;
+let currentQty = 1;
+let selectedExtras = [];
+let selectedSauces = [];
+let selectedWithout = [];
+let selectedUpgrade = null;
+let selectedSide = null;
+let currentCategoryId = null;
+let menuPreselected = null;
+const BONUS_BALANCE = Number({{ punktestand|default(0)|tojson }});
+
+// Einheitliche Prämienlogik: 1,00 € Warenwert = 100 Punkte.
+// Ayran behält den bisherigen, bereits festgelegten Wert von 100 Punkten.
+function pointsFor(price, productId) {
+    if (Number(productId) === 94) return 100;
+    return Math.round(Number(price) * 100);
+}
+
+function cartPoints() {
+    return cart.reduce(function(sum, item) { return sum + item.totalPoints; }, 0);
+}
+
+function remainingPoints() {
+    return BONUS_BALANCE - cartPoints();
+}
+
+function formatPointsFromPrice(price, productId) {
+    return pointsFor(price, productId).toLocaleString('de-DE') + ' Punkte';
+}
+
+function isDoenerProduct(item) {
+    if (item.cat === 'doener-sandwich') return true;
+    if (item.cat === 'wrap-doener') return true;
+    if (item.cat === 'doener-teller') return true;
+    if (item.cat === 'lahmacun') return true;
+    if (item.cat === 'boxenstopp') {
+        var n = item.name.toLowerCase();
+        if (n.indexOf('beef') >= 0 || n.indexOf('chicken') >= 0) return true;
+    }
+    return false;
+}
+
+function needsSideSelection(item) {
+    return item.id === 22 || item.id === 23 || item.id === 24;
+}
+
+function selectMenuFromCategory(idx) {
+    document.querySelectorAll('.menu-size-card').forEach(function(c) { c.classList.remove('selected'); });
+    if (menuPreselected === idx) {
+        menuPreselected = null;
+        document.getElementById('menuCategoryBtn').disabled = true;
+    } else {
+        menuPreselected = idx;
+        document.getElementById('menuCard' + idx).classList.add('selected');
+        document.getElementById('menuCategoryBtn').disabled = false;
+    }
+}
+
+function goToCategoryFromMenu() {
+    if (menuPreselected === null) return;
+    document.getElementById('categoryTitle').textContent = 'Gericht für ' + MENU_UPGRADES[menuPreselected].name + ' wählen';
+    const items = MENU.filter(function(i) { return i.cat !== 'getraenke' && i.cat !== 'menus'; });
+    let h = '';
+    items.forEach(function(item) {
+        var upgradePoints = pointsFor(MENU_UPGRADES[menuPreselected].price);
+        var available = item.variants.some(function(v) {
+            return pointsFor(v.price, item.id) + upgradePoints <= remainingPoints();
+        });
+        h += '<div class="menu-product-card ' + (available ? 'reward-available' : 'reward-locked') + '"' +
+            (available ? ' onclick="openModal(' + item.id + ')"' : '') + '>' +
+            '<div class="menu-product-card-img">' +
+            (item.img ? '<img src="' + item.img + '" alt="' + item.name + '" loading="lazy">' : '<span class="menu-product-emoji">' + item.emoji + '</span>') +
+            '</div>' +
+            '<div class="menu-product-card-name">' + item.name + '</div>' +
+            '</div>';
+    });
+    var pg = document.getElementById('productGrid');
+    pg.className = 'menu-product-grid';
+    pg.style.display = '';
+    pg.innerHTML = h;
+    window.scrollTo(0, 0);
+}
+
+function toggleMenu(el, idx) {
+    var btns = document.querySelectorAll('.menu-btn');
+    btns.forEach(function(b) { b.classList.remove('selected'); });
+    if (selectedUpgrade && selectedUpgrade.name === MENU_UPGRADES[idx].name) {
+        selectedUpgrade = null;
+    } else {
+        selectedUpgrade = MENU_UPGRADES[idx];
+        el.classList.add('selected');
+    }
+    updateModalTotal();
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showHome() {
+    document.getElementById('viewHome').classList.add('active');
+    document.getElementById('viewCategory').classList.remove('active');
+    currentCategoryId = null;
+    menuPreselected = null;
+    window.scrollTo(0, 0);
+}
+
+function showCategory(catId) {
+    currentCategoryId = catId;
+    const cat = CATEGORIES.find(c => c.id === catId);
+    if (!cat) return;
+
+    document.getElementById('categoryTitle').textContent = cat.name;
+
+    if (catId === 'menus') {
+        let h = '<div class="menu-hero">' +
+            '<img class="menu-hero-img" src="/static/bilder/menue.png" alt="Menüs">' +
+            '<div class="menu-hero-overlay">' +
+            '<div class="menu-hero-title">Mach mehr daraus.</div>' +
+            '<div class="menu-hero-sub">Wähle deine Menügröße.</div>' +
+            '</div></div>' +
+            '<div class="menu-size-list">';
+
+        MENU_UPGRADES.forEach(function(m, idx) {
+            h += '<div class="menu-size-card" id="menuCard' + idx + '" onclick="selectMenuFromCategory(' + idx + ')">' +
+                '<div class="menu-size-check"></div>' +
+                '<div class="menu-size-info">' +
+                '<div class="menu-size-name">' + m.name + '</div>' +
+                '<div class="menu-size-desc">' + m.desc + '</div>' +
+                '</div>' +
+                '<div class="menu-size-price">+' + pointsFor(m.price).toLocaleString('de-DE') + ' Punkte</div>' +
+                '</div>';
+        });
+
+        h += '</div>' +
+            '<button class="menu-select-btn" id="menuCategoryBtn" onclick="goToCategoryFromMenu()" disabled>Gericht auswählen →</button>';
+        var pg = document.getElementById('productGrid');
+        pg.innerHTML = h;
+        pg.style.display = 'block';
+    } else {
+        var pg = document.getElementById('productGrid');
+        pg.className = 'products';
+        pg.style.display = '';
+        menuPreselected = null;
+        const items = MENU.filter(i => i.cat === catId);
+        let h = '';
+        items.forEach(item => {
+            const hasVariantName = item.variants[0].name !== "";
+            const priceFrom = item.variants[0].price;
+            const priceTo = item.variants.length > 1 && hasVariantName ? item.variants[item.variants.length-1].price : null;
+            const lowestPoints = pointsFor(priceFrom, item.id);
+            const highestPoints = priceTo ? pointsFor(priceTo, item.id) : null;
+            const priceStr = highestPoints && lowestPoints !== highestPoints
+                ? lowestPoints.toLocaleString('de-DE') + ' – ' + highestPoints.toLocaleString('de-DE') + ' Punkte'
+                : lowestPoints.toLocaleString('de-DE') + ' Punkte';
+            const available = item.variants.some(function(v) { return pointsFor(v.price, item.id) <= remainingPoints(); });
+
+            h += '<div class="product-card ' + (available ? 'reward-available' : 'reward-locked') + '"' +
+                (available ? ' onclick="openModal(' + item.id + ')"' : '') + '>' +
+                '<div class="product-img">' + (item.img ? '<img src="' + item.img + '" alt="' + item.name + '" loading="lazy">' : item.emoji) + '</div>' +
+                '<div class="product-info">' +
+                '<div class="product-name">' + item.name + '</div>' +
+                (item.desc ? '<div class="product-desc">' + item.desc + '</div>' : '') +
+                '<div class="product-bottom">' +
+                '<span class="product-price">' + priceStr + '</span>' +
+                (!available ? '<div class="reward-note">Nicht genügend Punkte</div>' : '') +
+                '</div></div></div>';
+        });
+        document.getElementById('productGrid').innerHTML = h;
+    }
+
+    document.getElementById('viewHome').classList.remove('active');
+    document.getElementById('viewCategory').classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+// ============================================================
+// INIT – Kacheln rendern
+// ============================================================
+function init() {
+    let h = '';
+    CATEGORIES.forEach(cat => {
+        h += '<div class="category-tile" onclick="showCategory(\'' + cat.id + '\')">' +
+            '<img class="category-tile-img" src="' + cat.img + '" alt="' + cat.name + '" loading="lazy" onerror="this.style.display=\'none\'">' +
+            '<div class="category-tile-name">' + cat.name + '</div>' +
+            '</div>';
+    });
+    document.getElementById('categoryGrid').innerHTML = h;
+}
+
+// ============================================================
+// MODAL – Produktkonfigurator
+// ============================================================
+function openModal(id) {
+    const item = MENU.find(i => i.id === id);
+    if (!item) return;
+    if (!item.variants.some(function(v) { return pointsFor(v.price, item.id) <= remainingPoints(); })) return;
+
+    currentProduct = item;
+    currentVariant = null;
+    currentQty = 1;
+    selectedExtras = [];
+    selectedSauces = [];
+    selectedWithout = [];
+    selectedUpgrade = menuPreselected !== null ? MENU_UPGRADES[menuPreselected] : null;
+    selectedSide = null;
+
+    document.getElementById('modalTitle').textContent = item.name;
+    document.getElementById('qtyNum').textContent = 1;
+    document.getElementById('addToCartBtn').disabled = true;
+
+    let html = '';
+
+    html += '<div class="modal-product-img">' + (item.img ? '<img src="' + item.img + '" alt="' + item.name + '">' : item.emoji) + '</div>';
+    html += '<div class="modal-product-name">' + item.name + '</div>';
+    if (item.desc) {
+        html += '<div class="modal-product-desc">' + item.desc + '</div>';
+    }
+
+    const hasVariantName = item.variants[0].name !== "";
+    if (item.variants.length > 1 && hasVariantName) {
+        html += '<div class="variant-group"><div class="variant-group-title">Variante wählen</div><div class="variant-options">';
+        item.variants.forEach(function(v, idx) {
+            var variantAvailable = pointsFor(v.price, item.id) <= remainingPoints();
+            html += '<button class="variant-btn ' + (variantAvailable ? 'reward-available' : 'reward-locked') + '"' +
+                (variantAvailable ? ' onclick="selectVariant(this,' + idx + ')"' : ' disabled') + '>' +
+                v.name + '<span class="variant-price">' + formatPointsFromPrice(v.price, item.id) + '</span></button>';
+        });
+        html += '</div></div>';
+    } else if (item.variants.length === 1) {
+        currentVariant = item.variants[0];
+        var singleAvailable = pointsFor(currentVariant.price, item.id) <= remainingPoints();
+        if (singleAvailable && !needsSideSelection(item)) {
+            document.getElementById('addToCartBtn').disabled = false;
+        }
+        html += '<div style="margin-bottom:16px;padding:12px;background:var(--card);border-radius:12px;font-size:0.9rem;">' +
+            '<strong style="color:' + (singleAvailable ? 'var(--green)' : 'var(--red)') + '">' + formatPointsFromPrice(item.variants[0].price, item.id) + '</strong>' +
+            (!singleAvailable ? '<div class="reward-note">Nicht genügend Punkte</div>' : '') + '</div>';
+    }
+
+    if (needsSideSelection(item)) {
+        html += '<div class="side-group"><div class="side-group-title">Beilage wählen</div><div class="side-options">';
+        html += '<button class="side-btn" onclick="selectSide(this,\'Pommes\')"><span class="side-emoji">🍟</span>Pommes</button>';
+        html += '<button class="side-btn" onclick="selectSide(this,\'Reis\')"><span class="side-emoji">🍚</span>Reis</button>';
+        html += '</div></div>';
+    }
+
+    const hasMultiVariant = item.variants.length > 1 && hasVariantName;
+    const hasExtras = (item.extras && item.extras.length > 0);
+    const isDoener = isDoenerProduct(item);
+    const hasDoenerOptions = isDoener;
+    const extrasHidden = hasMultiVariant && (hasExtras || hasDoenerOptions);
+
+    html += '<div id="menuContainer">';
+    html += '<div class="menu-group"><div class="menu-group-title">MENÜ WÄHLEN – OPTIONAL</div><div class="menu-options">';
+    MENU_UPGRADES.forEach(function(m, idx) {
+        var isSelected = selectedUpgrade && selectedUpgrade.name === m.name;
+        html += '<button class="menu-btn' + (isSelected ? ' selected' : '') + '" onclick="toggleMenu(this,' + idx + ')">' +
+            m.name.replace('Menü ', '') +
+            '<span class="menu-price">+' + pointsFor(m.price).toLocaleString('de-DE') + ' Punkte</span>' +
+            '<span class="menu-desc">' + m.desc + '</span></button>';
+    });
+    html += '</div></div></div>';
+
+    html += '<div id="extrasContainer"' + (extrasHidden ? ' style="display:none"' : '') + '>';
+
+    if (isDoener) {
+        html += '<div class="extra-group"><div class="extra-group-title">Soße wählen – max. 2</div>';
+        DOENER_SAUCE.forEach(function(s) {
+            html += '<div class="extra-item" onclick="toggleSauce(this,\'' + s + '\')">' +
+                '<div class="extra-left"><div class="extra-checkbox"></div><span class="extra-name">' + s + '</span></div>' +
+                '<span class="extra-price" style="color:var(--green)">Kostenlos</span></div>';
+        });
+        html += '</div>';
+
+        html += '<div class="extra-group"><div class="extra-group-title">Ohne</div>';
+        DOENER_WITHOUT.forEach(function(w) {
+            html += '<div class="extra-item" onclick="toggleWithout(this,\'' + w + '\')">' +
+                '<div class="extra-left"><div class="extra-checkbox"></div><span class="extra-name">' + w + '</span></div>' +
+                '<span class="extra-price">–</span></div>';
+        });
+        html += '</div>';
+
+        html += '<div class="extra-group"><div class="extra-group-title">Extras +150 Punkte</div>';
+        DOENER_EXTRAS.forEach(function(ex) {
+            html += '<div class="extra-item" onclick="toggleExtra(this,\'' + ex.name + '\',' + ex.price + ')">' +
+                '<div class="extra-left"><div class="extra-checkbox"></div><span class="extra-name">' + ex.name + '</span></div>' +
+                '<span class="extra-price">+' + pointsFor(ex.price).toLocaleString('de-DE') + ' Punkte</span></div>';
+        });
+        html += '</div>';
+    }
+
+    if (item.cat === 'pizza' && item.extras && item.extras.length > 0) {
+        html += '<div class="extra-group"><div class="extra-group-title">Pizza-Extras +100 Punkte</div>';
+        item.extras.filter(function(e) { return e.price === 1.00; }).forEach(function(ex) {
+            html += '<div class="extra-item" onclick="toggleExtra(this,\'' + ex.name + '\',' + ex.price + ')">' +
+                '<div class="extra-left"><div class="extra-checkbox"></div><span class="extra-name">' + ex.name + '</span></div>' +
+                '<span class="extra-price">+' + pointsFor(ex.price).toLocaleString('de-DE') + ' Punkte</span></div>';
+        });
+        html += '</div>';
+        html += '<div class="extra-group"><div class="extra-group-title">Pizza-Extras +150 Punkte</div>';
+        item.extras.filter(function(e) { return e.price === 1.50; }).forEach(function(ex) {
+            html += '<div class="extra-item" onclick="toggleExtra(this,\'' + ex.name + '\',' + ex.price + ')">' +
+                '<div class="extra-left"><div class="extra-checkbox"></div><span class="extra-name">' + ex.name + '</span></div>' +
+                '<span class="extra-price">+' + pointsFor(ex.price).toLocaleString('de-DE') + ' Punkte</span></div>';
+        });
+        html += '</div>';
+        html += '<div class="extra-group"><div class="extra-group-title">Pizza-Extras +200 Punkte</div>';
+        item.extras.filter(function(e) { return e.price === 2.00; }).forEach(function(ex) {
+            html += '<div class="extra-item" onclick="toggleExtra(this,\'' + ex.name + '\',' + ex.price + ')">' +
+                '<div class="extra-left"><div class="extra-checkbox"></div><span class="extra-name">' + ex.name + '</span></div>' +
+                '<span class="extra-price">+' + pointsFor(ex.price).toLocaleString('de-DE') + ' Punkte</span></div>';
+        });
+        html += '</div>';
+    }
+
+    if (item.cat === 'pide' && item.extras && item.extras.length > 0) {
+        item.extras.forEach(function(ex) {
+            html += '<div class="extra-group"><div class="extra-group-title">Zusatz</div>';
+            html += '<div class="extra-item" onclick="toggleExtraPide(this,\'' + ex.name + '\',' + ex.priceClassic + ',' + ex.priceXXL + ')">' +
+                '<div class="extra-left"><div class="extra-checkbox"></div><span class="extra-name">' + ex.name + '</span></div>' +
+                '<span class="extra-price">Classic +' + pointsFor(ex.priceClassic).toLocaleString('de-DE') + ' / XXL +' + pointsFor(ex.priceXXL).toLocaleString('de-DE') + ' Punkte</span></div>';
+            html += '</div>';
+        });
+    }
+
+    html += '</div>';
+
+    document.getElementById('modalBody').innerHTML = html;
+    updateModalTotal();
+    document.getElementById('productModal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('productModal').classList.remove('show'); }
+
+function selectVariant(btn, idx) {
+    document.querySelectorAll('.variant-btn').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    currentVariant = currentProduct.variants[idx];
+
+    selectedExtras = [];
+    selectedSauces = [];
+    selectedWithout = [];
+    selectedSide = null;
+    document.querySelectorAll('#modalBody .extra-item.selected').forEach(function(el) { el.classList.remove('selected'); });
+    document.querySelectorAll('.side-btn').forEach(function(b) { b.classList.remove('selected'); });
+
+    var extrasEl = document.getElementById('extrasContainer');
+    if (extrasEl) extrasEl.style.display = '';
+
+    if (needsSideSelection(currentProduct)) {
+        document.getElementById('addToCartBtn').disabled = true;
+    } else {
+        document.getElementById('addToCartBtn').disabled = false;
+    }
+    updateModalTotal();
+}
+
+function selectSide(btn, side) {
+    document.querySelectorAll('.side-btn').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    selectedSide = side;
+    if (currentVariant) {
+        document.getElementById('addToCartBtn').disabled = false;
+    }
+    updateModalTotal();
+}
+
+function toggleExtra(el, name, price) {
+    el.classList.toggle('selected');
+    var idx = selectedExtras.findIndex(function(e) { return e.name === name; });
+    if (idx >= 0) selectedExtras.splice(idx, 1);
+    else selectedExtras.push({ name: name, price: price });
+    updateModalTotal();
+}
+
+function toggleSauce(el, name) {
+    var idx = selectedSauces.indexOf(name);
+    if (idx >= 0) {
+        selectedSauces.splice(idx, 1);
+        el.classList.remove('selected');
+    } else {
+        if (selectedSauces.length >= 2) return;
+        selectedSauces.push(name);
+        el.classList.add('selected');
+    }
+}
+
+function toggleWithout(el, name) {
+    el.classList.toggle('selected');
+    var idx = selectedWithout.indexOf(name);
+    if (idx >= 0) selectedWithout.splice(idx, 1);
+    else selectedWithout.push(name);
+}
+
+function toggleExtraPide(el, name, priceClassic, priceXXL) {
+    el.classList.toggle('selected');
+    var idx = selectedExtras.findIndex(function(e) { return e.name === name; });
+    if (idx >= 0) {
+        selectedExtras.splice(idx, 1);
+    } else {
+        var varIdx = currentProduct.variants.indexOf(currentVariant);
+        var price = varIdx === 0 ? priceClassic : priceXXL;
+        selectedExtras.push({ name: name, price: price });
+    }
+    updateModalTotal();
+}
+
+function changeQty(d) {
+    currentQty = Math.max(1, currentQty + d);
+    document.getElementById('qtyNum').textContent = currentQty;
+    updateModalTotal();
+}
+
+function updateModalTotal() {
+    var base = currentVariant ? currentVariant.price : 0;
+    var extras = selectedExtras.reduce(function(s, e) { return s + e.price; }, 0);
+    var upgrade = selectedUpgrade ? selectedUpgrade.price : 0;
+    var unitPoints = (currentVariant ? pointsFor(base, currentProduct.id) : 0) + pointsFor(extras) + pointsFor(upgrade);
+    var totalPoints = unitPoints * currentQty;
+    document.getElementById('modalTotal').textContent = totalPoints.toLocaleString('de-DE') + ' Punkte';
+    var addButton = document.getElementById('addToCartBtn');
+    var ready = Boolean(currentVariant) && (!needsSideSelection(currentProduct) || Boolean(selectedSide));
+    addButton.disabled = !ready || totalPoints > remainingPoints();
+}
+
+function addToCart() {
+    if (!currentProduct || !currentVariant) return;
+
+    var base = currentVariant.price;
+    var extras = selectedExtras.reduce(function(s, e) { return s + e.price; }, 0);
+    var upgrade = selectedUpgrade ? selectedUpgrade.price : 0;
+    var total = (base + extras + upgrade) * currentQty;
+    var totalPoints = (pointsFor(base, currentProduct.id) + pointsFor(extras) + pointsFor(upgrade)) * currentQty;
+    if (totalPoints > remainingPoints()) {
+        alert('Für diese Auswahl reichen deine Punkte nicht aus.');
+        return;
+    }
+
+    cart.push({
+        id: Date.now(),
+        product: currentProduct,
+        variant: currentVariant,
+        qty: currentQty,
+        sauces: selectedSauces.slice(),
+        without: selectedWithout.slice(),
+        extras: selectedExtras.slice(),
+        upgrade: selectedUpgrade,
+        side: selectedSide,
+        total: total,
+        totalPoints: totalPoints
+    });
+
+    updateCartBadge();
+    closeModal();
+
+    document.getElementById('choiceProductName').textContent = currentProduct.name;
+    document.getElementById('choiceModal').classList.add('show');
+}
+
+function continueShopping() {
+    document.getElementById('choiceModal').classList.remove('show');
+    menuPreselected = null;
+    showHome();
+}
+
+function goToCart() {
+    document.getElementById('choiceModal').classList.remove('show');
+    toggleCart();
+}
+
+// ============================================================
+// CART
+// ============================================================
+function toggleCart() {
+    var o = document.getElementById('cartOverlay');
+    var s = document.getElementById('cartSidebar');
+    if (s.classList.contains('show')) {
+        o.classList.remove('show');
+        s.classList.remove('show');
+        document.body.style.overflow = '';
+    } else {
+        o.classList.add('show');
+        s.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        renderCart();
+    }
+}
+
+function renderCart() {
+    var c = document.getElementById('cartItems');
+    var f = document.getElementById('cartFooter');
+
+    if (!cart.length) {
+        c.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon">🪙</div><h3>Leer</h3><p>Wähle deine Prämien!</p></div>';
+        f.style.display = 'none';
+        return;
+    }
+
+    var h = '';
+    cart.forEach(function(item) {
+        var extrasText = item.extras.map(function(e) { return e.name + ' (+' + pointsFor(e.price).toLocaleString('de-DE') + ' Punkte)'; }).join(', ');
+        var saucesText = (item.sauces && item.sauces.length) ? item.sauces.join(', ') : '';
+        var withoutText = (item.without && item.without.length) ? item.without.map(function(w) { return 'ohne ' + w; }).join(', ') : '';
+        var upgradeText = item.upgrade ? item.upgrade.name + ' +' + pointsFor(item.upgrade.price).toLocaleString('de-DE') + ' Punkte' : '';
+        var upgradeDesc = item.upgrade ? item.upgrade.desc : '';
+
+        h += '<div class="cart-item">' +
+            '<div class="cart-item-img">' + (item.product.img ? '<img src="' + item.product.img + '" alt="' + item.product.name + '">' : item.product.emoji) + '</div>' +
+            '<div class="cart-item-info">' +
+            '<div class="cart-item-name">' + item.product.name + '</div>' +
+            (item.variant.name ? '<div class="cart-item-variant">' + item.variant.name + (item.side ? ' · ' + item.side : '') + '</div>' : (item.side ? '<div class="cart-item-variant">' + item.side + '</div>' : '')) +
+            (upgradeText ? '<div class="cart-item-extras" style="color:var(--green)">' + upgradeText + '</div>' : '') +
+            (upgradeDesc ? '<div class="cart-item-extras" style="color:var(--gray);font-size:0.65rem;">' + upgradeDesc + '</div>' : '') +
+            (saucesText ? '<div class="cart-item-extras">Soße: ' + saucesText + '</div>' : '') +
+            (withoutText ? '<div class="cart-item-extras">' + withoutText + '</div>' : '') +
+            (extrasText ? '<div class="cart-item-extras">' + extrasText + '</div>' : '') +
+            '<div class="cart-item-bottom">' +
+            '<span class="cart-item-price">' + item.totalPoints.toLocaleString('de-DE') + ' Punkte</span>' +
+            '<div class="cart-qty-ctrl">' +
+            '<button class="cart-qty-btn" onclick="cartQty(' + item.id + ',-1)">−</button>' +
+            '<span class="cart-qty-num">' + item.qty + '</span>' +
+            '<button class="cart-qty-btn" onclick="cartQty(' + item.id + ',1)">+</button>' +
+            '</div></div></div></div>';
+    });
+    c.innerHTML = h;
+
+    var sub = cartPoints();
+    document.getElementById('cartSubtotal').textContent = sub.toLocaleString('de-DE') + ' Punkte';
+    document.getElementById('cartTotal').textContent = sub.toLocaleString('de-DE') + ' Punkte';
+    var checkoutBtn = document.getElementById('checkoutBtn');
+    checkoutBtn.disabled = sub > BONUS_BALANCE;
+    checkoutBtn.textContent = sub > BONUS_BALANCE ? 'Nicht genügend Punkte' : 'Mit Punkten bestellen 🎉';
+    f.style.display = 'block';
+}
+
+function cartQty(cid, d) {
+    var item = cart.find(function(x) { return x.id === cid; });
+    if (!item) return;
+    item.qty += d;
+    if (item.qty <= 0) { cart = cart.filter(function(x) { return x.id !== cid; }); }
+    else {
+        var base = item.variant.price;
+        var extras = item.extras.reduce(function(s, e) { return s + e.price; }, 0);
+        var upgrade = item.upgrade ? item.upgrade.price : 0;
+        item.total = (base + extras + upgrade) * item.qty;
+        item.totalPoints = (pointsFor(base, item.product.id) + pointsFor(extras) + pointsFor(upgrade)) * item.qty;
+        if (cartPoints() > BONUS_BALANCE) {
+            item.qty -= d;
+            item.total = (base + extras + upgrade) * item.qty;
+            item.totalPoints = (pointsFor(base, item.product.id) + pointsFor(extras) + pointsFor(upgrade)) * item.qty;
+            alert('Dafür reichen deine Punkte nicht aus.');
+        }
+    }
+    updateCartBadge();
+    renderCart();
+}
+
+function clearCart() { cart = []; updateCartBadge(); renderCart(); }
+
+function updateCartBadge() {
+    var b = document.getElementById('cartBadge');
+    var n = cart.reduce(function(s, i) { return s + i.qty; }, 0);
+    b.textContent = n;
+    b.classList.toggle('show', n > 0);
+}
+
+async function checkout() {
+    if (!cart.length) return;
+
+    toggleCart();
+
+    try {
+        const response = await fetch('/api/praemien-bestellung', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                items: cart,
+                punkte: cartPoints()
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.ok) {
+            alert(data.fehler || 'Bestellung konnte nicht gespeichert werden.');
+            return;
+        }
+
+        document.getElementById('orderNumber').textContent = '#' + data.bestellnummer;
+
+        var qrEl = document.getElementById('qrContainer');
+        qrEl.innerHTML = '';
+
+        new QRCode(qrEl, {
+            text: data.qr,
+            width: 240,
+            height: 240,
+            colorDark: '#ffffff',
+            colorLight: '#0d0d0d',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+
+        cart = [];
+        updateCartBadge();
+        document.getElementById('successModal').classList.add('show');
+
+    } catch (error) {
+        alert('Verbindung zum Server fehlgeschlagen.');
+    }
+}
+
+function closeSuccess() {
+    window.location.href = "/";
+}
+init();
+</script>
+</body>
+</html>
