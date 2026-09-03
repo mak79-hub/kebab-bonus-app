@@ -67,6 +67,23 @@
         }
         .category-tile:hover { border-color: var(--red); transform: translateY(-2px); }
         .category-tile:active { transform: scale(0.97); }
+        .category-tile.reward-available {
+            border-color: var(--green);
+            box-shadow: 0 0 16px rgba(46,204,113,.28);
+        }
+        .category-tile.reward-available:hover { border-color: var(--green); }
+        .category-tile.reward-locked {
+            border-color: rgba(196,30,58,.65);
+            opacity: .72;
+        }
+        .category-tile.reward-locked:hover { border-color: var(--red); }
+        .category-reward-status {
+            position:absolute; top:8px; right:8px; padding:5px 8px;
+            border-radius:999px; font-size:.62rem; font-weight:800;
+            background:rgba(13,13,13,.88); backdrop-filter:blur(5px);
+        }
+        .reward-available .category-reward-status { color:var(--green); }
+        .reward-locked .category-reward-status { color:#ff526d; }
         .category-tile-img {
             width: 100%; height: 120px; object-fit: cover; display: block;
         }
@@ -957,6 +974,7 @@ function toggleMenu(el, idx) {
 // NAVIGATION
 // ============================================================
 function showHome() {
+    renderCategoryTiles();
     document.getElementById('viewHome').classList.add('active');
     document.getElementById('viewCategory').classList.remove('active');
     currentCategoryId = null;
@@ -1036,15 +1054,41 @@ function showCategory(catId) {
 // ============================================================
 // INIT – Kacheln rendern
 // ============================================================
-function init() {
+function categoryHasAvailableReward(catId) {
+    if (catId === 'menus') {
+        var cheapestMenu = Math.min.apply(null, MENU_UPGRADES.map(function(m) {
+            return pointsFor(m.price);
+        }));
+        return MENU.some(function(item) {
+            if (item.cat === 'getraenke' || item.cat === 'menus') return false;
+            return item.variants.some(function(v) {
+                return pointsFor(v.price, item.id) + cheapestMenu <= remainingPoints();
+            });
+        });
+    }
+
+    return MENU.some(function(item) {
+        return item.cat === catId && item.variants.some(function(v) {
+            return pointsFor(v.price, item.id) <= remainingPoints();
+        });
+    });
+}
+
+function renderCategoryTiles() {
     let h = '';
     CATEGORIES.forEach(cat => {
-        h += '<div class="category-tile" onclick="showCategory(\'' + cat.id + '\')">' +
+        var available = categoryHasAvailableReward(cat.id);
+        h += '<div class="category-tile ' + (available ? 'reward-available' : 'reward-locked') + '" onclick="showCategory(\'' + cat.id + '\')">' +
             '<img class="category-tile-img" src="' + cat.img + '" alt="' + cat.name + '" loading="lazy" onerror="this.style.display=\'none\'">' +
+            '<div class="category-reward-status">' + (available ? '✓ Prämie möglich' : 'Nicht ausreichend') + '</div>' +
             '<div class="category-tile-name">' + cat.name + '</div>' +
             '</div>';
     });
     document.getElementById('categoryGrid').innerHTML = h;
+}
+
+function init() {
+    renderCategoryTiles();
 }
 
 // ============================================================
