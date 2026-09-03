@@ -1620,7 +1620,11 @@ def theke():
     if not theke_zugriff_erlaubt():
         return redirect(url_for("mitarbeiter_login", next="/theke"))
 
-    return render_template("theke.html")
+    return render_template(
+        "theke.html",
+        theke_ist_mitarbeiter=ist_mitarbeiter(),
+        theke_ist_chef=ist_chef()
+    )
 
 
 @app.route("/api/theke/bestellungen")
@@ -2104,11 +2108,11 @@ def kunde_praemien(kunden_id):
 @app.route("/mitarbeiter-login", methods=["GET", "POST"])
 def mitarbeiter_login():
     meldung = ""
-    next_url = request.args.get("next", "/mitarbeiter")
+    next_url = request.args.get("next", "/theke")
 
     if request.method == "POST":
         pin = request.form.get("pin", "").strip()
-        next_url = request.form.get("next", "/mitarbeiter")
+        next_url = request.form.get("next", "/theke")
 
         conn = get_db_connection()
         cur = conn.cursor()
@@ -2223,6 +2227,8 @@ def mitarbeiter():
                 <div class="label">Angemeldet als</div>
                 <div class="value">👤 {mitarbeiter_name}</div>
             </div>
+
+            <a class="btn btn-green" href="/theke">🧾 Theke / Bestellungen</a>
 
             <a class="btn btn-red" href="/scanner">QR-Code scannen</a>
 
@@ -2715,6 +2721,7 @@ def chef_dashboard():
             </div>
             <div class="menu-grid">
 
+            <a class="menu-box menu-blue" href="/theke">🧾 Theke / Bestellungen</a>
             <a class="menu-box menu-blue" href="/chef-kunden">👥 Kunden</a>
             <a class="menu-box menu-green" href="/chef-gutschriften">💰 Gutschriften</a>
             <a class="menu-box menu-orange" href="/chef-einloesungen">🎁 Einlösungen</a>
