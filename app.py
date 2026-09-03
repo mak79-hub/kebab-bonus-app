@@ -14,6 +14,7 @@ import qrcode
 from flask import Flask, request, render_template, url_for, redirect, session, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from pywebpush import webpush, WebPushException
+from praemien_katalog import PRAEMIEN_KATALOG, PRAEMIEN_EXTRAS, PRAEMIEN_MENUES
 
 app = Flask(__name__)
 
@@ -146,6 +147,20 @@ def init_db():
             kueche INTEGER DEFAULT 1,
             erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+    """)
+
+    # Bestehende Datenbanken werden ohne Löschen erweitert.
+    cur.execute("""
+        ALTER TABLE bestellungen
+        ADD COLUMN IF NOT EXISTS zahlungsart TEXT NOT NULL DEFAULT 'BAR';
+    """)
+    cur.execute("""
+        ALTER TABLE bestellungen
+        ADD COLUMN IF NOT EXISTS punkte_betrag INTEGER NOT NULL DEFAULT 0;
+    """)
+    cur.execute("""
+        ALTER TABLE bestellungen
+        ADD COLUMN IF NOT EXISTS punkte_eingeloest BOOLEAN NOT NULL DEFAULT FALSE;
     """)
     
     
@@ -1589,6 +1604,212 @@ def bestellen():
     return render_template("bestellen.html")
 
 
+def angemeldeter_kunde():
+    kunden_code = session.get("kunde_id")
+    if not kunden_code:
+        return None
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, kunden_id, vorname, nachname
+        FROM kunden
+        WHERE kunden_id = %s
+    """, (kunden_code,))
+    kunde = cur.fetchone()
+    cur.close()
+    conn.close()
+    return kunde
+
+
+def praemien_positionen_pruefen(items):
+    positionen = []
+    gesamtpunkte = 0
+
+    if not isinstance(items, list) or not items:
+        raise ValueError("Der Prämienkorb ist leer.")
+
+    for item in items:
+        produkt_client = item.get("product") or {}
+        produkt_id_roh = item.get("productId", produkt_client.get("id"))
+
+        try:
+            produkt_id = int(produkt_id_roh)
+            menge = int(item.get("qty", 1))
+        except (TypeError, ValueError):
+            raise ValueError("Ein Produkt ist ungültig.")
+
+        if menge < 1 or menge > 20:
+            raise ValueError("Die gewählte Menge ist ungültig.")
+
+        katalog_produkt = PRAEMIEN_KATALOG.get(produkt_id)
+        if not katalog_produkt:
+            raise ValueError("Ein Produkt ist nicht im Prämienkatalog.")
+
+        variante_client = item.get("variant") or {}
+        variantenname = str(variante_client.get("name") or "")
+        varianten = katalog_produkt["varianten"]
+
+        if variantenname not in varianten:
+            raise ValueError("Die gewählte Produktvariante ist ungültig.")
+
+        einzelpunkte = int(varianten[variantenname])
+        extras_normalisiert = []
+
+        for extra in item.get("extras") or []:
+            if not isinstance(extra, dict):
+                raise ValueError("Ein Extra ist ungültig.")
+
+            extra_name = str(extra.get("name") or "")
+            extra_punkte = None
+
+            if katalog_produkt["cat"] == "pide" and extra_name == "Extra Ei":
+                extra_punkte = 200 if variantenname == "XXL" else 100
+            elif katalog_produkt["cat"] == "pizza":
+                extra_punkte = PRAEMIEN_EXTRAS.get(extra_name)
+            elif katalog_produkt["cat"] in {
+                "doener-sandwich", "wrap-doener", "doener-teller",
+                "lahmacun", "boxenstopp"
+            } and extra_name in {"Fleisch", "Gegrilltes Gemüse"}:
+                extra_punkte = PRAEMIEN_EXTRAS.get(extra_name)
+
+            if extra_punkte is None:
+                raise ValueError("Ein gewähltes Extra ist nicht erlaubt.")
+
+            einzelpunkte += int(extra_punkte)
+            extras_normalisiert.append({
+                "name": extra_name,
+                "punkte": int(extra_punkte)
+            })
+
+        upgrade_client = item.get("upgrade")
+        upgrade_normalisiert = None
+
+        if upgrade_client:
+            upgrade_name = str(upgrade_client.get("name") or "")
+            upgrade_punkte = PRAEMIEN_MENUES.get(upgrade_name)
+            if upgrade_punkte is None:
+                raise ValueError("Das gewählte Menü ist ungültig.")
+            einzelpunkte += int(upgrade_punkte)
+            upgrade_normalisiert = {
+                "name": upgrade_name,
+                "punkte": int(upgrade_punkte),
+                "desc": str(upgrade_client.get("desc") or "")
+            }
+
+        positionspunkte = einzelpunkte * menge
+        gesamtpunkte += positionspunkte
+
+        positionen.append({
+            "produkt_id": produkt_id,
+            "produkt_name": katalog_produkt["name"],
+            "variante": variantenname,
+            "menge": menge,
+            "einzelpunkte": einzelpunkte,
+            "gesamtpunkte": positionspunkte,
+            "optionen": {
+                "extras": extras_normalisiert,
+                "upgrade": upgrade_normalisiert,
+                "sauces": item.get("sauces") or [],
+                "without": item.get("without") or [],
+                "side": item.get("side")
+            }
+        })
+
+    return positionen, gesamtpunkte
+
+
+@app.route("/api/praemien-bestellung", methods=["POST"])
+def api_praemien_bestellung():
+    kunde = angemeldeter_kunde()
+    if not kunde:
+        return jsonify({
+            "ok": False,
+            "fehler": "Bitte zuerst als Kunde anmelden."
+        }), 401
+
+    daten = request.get_json(silent=True) or {}
+
+    try:
+        positionen, benoetigte_punkte = praemien_positionen_pruefen(
+            daten.get("items")
+        )
+    except ValueError as e:
+        return jsonify({"ok": False, "fehler": str(e)}), 400
+
+    aktueller_punktestand = int(get_punktestand(kunde[0]))
+    if benoetigte_punkte > aktueller_punktestand:
+        return jsonify({
+            "ok": False,
+            "fehler": "Dein Punktestand reicht für diese Bestellung nicht aus.",
+            "punktestand": aktueller_punktestand
+        }), 409
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT COALESCE(MAX(tagesnummer), 99) + 1
+            FROM bestellungen
+            WHERE bestelldatum = CURRENT_DATE
+        """)
+        tagesnummer = cur.fetchone()[0]
+        token = secrets.token_urlsafe(24)
+
+        cur.execute("""
+            INSERT INTO bestellungen
+                (
+                    token, tagesnummer, kunde_id, gesamtbetrag,
+                    zahlungsart, punkte_betrag
+                )
+            VALUES
+                (%s, %s, %s, 0, 'BONUSPUNKTE', %s)
+            RETURNING id
+        """, (token, tagesnummer, kunde[0], benoetigte_punkte))
+        bestellung_id = cur.fetchone()[0]
+
+        for position in positionen:
+            cur.execute("""
+                INSERT INTO bestellpositionen
+                    (
+                        bestellung_id, produkt_id, produkt_name, variante,
+                        menge, einzelpreis, gesamtpreis, extras
+                    )
+                VALUES
+                    (%s, %s, %s, %s, %s, 0, 0, %s)
+            """, (
+                bestellung_id,
+                position["produkt_id"],
+                position["produkt_name"],
+                position["variante"],
+                position["menge"],
+                Json({
+                    **position["optionen"],
+                    "einzelpunkte": position["einzelpunkte"],
+                    "gesamtpunkte": position["gesamtpunkte"]
+                })
+            ))
+
+        conn.commit()
+
+        return jsonify({
+            "ok": True,
+            "bestellung_id": bestellung_id,
+            "bestellnummer": tagesnummer,
+            "token": token,
+            "qr": "ORDER:" + token,
+            "punkte": benoetigte_punkte
+        })
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"ok": False, "fehler": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+
 def theke_zugriff_erlaubt():
     return ist_mitarbeiter() or ist_chef()
 
@@ -1611,7 +1832,8 @@ def normalisiere_bestelloption(option):
     preis = option.get("price", option.get("preis", 0))
     return {
         "name": str(name),
-        "preis": betrag_in_cent(preis)
+        "preis": betrag_in_cent(preis),
+        "punkte": int(option.get("punkte", 0) or 0)
     }
 
 
@@ -1649,7 +1871,10 @@ def api_theke_bestellungen():
                 b.kunde_id,
                 b.punkte_gutgeschrieben,
                 b.erstellt_am,
-                b.bezahlt_am
+                b.bezahlt_am,
+                b.zahlungsart,
+                b.punkte_betrag,
+                b.punkte_eingeloest
             FROM bestellungen b
             WHERE b.bestelldatum = CURRENT_DATE
             ORDER BY b.erstellt_am ASC
@@ -1699,7 +1924,11 @@ def api_theke_bestellungen():
                     "gesamtpreis": betrag_in_cent(position[6]),
                     "extras": extras,
                     "upgrade": upgrade,
-                    "beilage": None,
+                    "beilage": optionen.get("side"),
+                    "saucen": optionen.get("sauces") or [],
+                    "ohne": optionen.get("without") or [],
+                    "punkte_einzel": int(optionen.get("einzelpunkte", 0) or 0),
+                    "punkte_gesamt": int(optionen.get("gesamtpunkte", 0) or 0),
                     "kueche": position[8],
                     "preisIstServerGesamt": True
                 })
@@ -1719,7 +1948,9 @@ def api_theke_bestellungen():
                 "bonus_kunde": ist_bonus_kunde,
                 "punkte": int(float(zeile[3])) if ist_bonus_kunde else 0,
                 "bonus_gutgeschrieben": bool(zeile[6]),
-                "zahlungsart": None,
+                "zahlungsart": zeile[9],
+                "punkte_betrag": int(zeile[10] or 0),
+                "punkte_eingeloest": bool(zeile[11]),
                 "zahlungsstatus": "PAID" if zeile[4] == "BEZAHLT" else None,
                 "bezahlt_am": zeile[8].isoformat() if zeile[8] else None,
                 "sumup_checkout_id": None,
@@ -1799,6 +2030,7 @@ def api_bestellung():
         bestellung_id = cur.fetchone()[0]
 
         for item in daten["items"]:
+            produkt = item.get("product") or {}
             variante = item.get("variant") or {}
             extras = item.get("extras") or []
             upgrade = item.get("upgrade")
@@ -1809,7 +2041,10 @@ def api_bestellung():
 
             optionen = {
                 "extras": extras,
-                "upgrade": upgrade
+                "upgrade": upgrade,
+                "sauces": item.get("sauces") or [],
+                "without": item.get("without") or [],
+                "side": item.get("side")
             }
 
             cur.execute("""
@@ -1828,8 +2063,8 @@ def api_bestellung():
                     (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 bestellung_id,
-                item.get("productId"),
-                item.get("name", "Produkt"),
+                item.get("productId", produkt.get("id")),
+                item.get("name", produkt.get("name", "Produkt")),
                 variante.get("name"),
                 menge,
                 einzelpreis,
@@ -1876,7 +2111,10 @@ def api_bestellung_bezahlt(token):
                 kunde_id,
                 gesamtbetrag,
                 status,
-                punkte_gutgeschrieben
+                punkte_gutgeschrieben,
+                zahlungsart,
+                punkte_betrag,
+                punkte_eingeloest
             FROM bestellungen
             WHERE token = %s
             FOR UPDATE
@@ -1895,11 +2133,76 @@ def api_bestellung_bezahlt(token):
         gesamtbetrag = bestellung[2]
         status = bestellung[3]
         punkte_gutgeschrieben = bestellung[4]
+        zahlungsart = bestellung[5]
+        punkte_betrag = int(bestellung[6] or 0)
+        punkte_eingeloest = bool(bestellung[7])
 
         if status == "BEZAHLT":
             return jsonify({
                 "ok": True,
                 "bereits_bezahlt": True
+            })
+
+        if zahlungsart == "BONUSPUNKTE":
+            if not kunde_id:
+                return jsonify({
+                    "ok": False,
+                    "fehler": "Der Prämienbestellung ist kein Kunde zugeordnet."
+                }), 409
+
+            cur.execute("""
+                SELECT id
+                FROM kunden
+                WHERE id = %s
+                FOR UPDATE
+            """, (kunde_id,))
+
+            cur.execute("""
+                SELECT COALESCE(SUM(punkte), 0)
+                FROM punkte_bewegungen
+                WHERE kunde_id = %s
+            """, (kunde_id,))
+            aktueller_punktestand = int(cur.fetchone()[0] or 0)
+
+            if not punkte_eingeloest:
+                if punkte_betrag <= 0:
+                    return jsonify({
+                        "ok": False,
+                        "fehler": "Der Punktebetrag dieser Bestellung ist ungültig."
+                    }), 409
+
+                if aktueller_punktestand < punkte_betrag:
+                    return jsonify({
+                        "ok": False,
+                        "fehler": "Der Kunde hat nicht mehr genügend Punkte.",
+                        "punktestand": aktueller_punktestand,
+                        "benoetigt": punkte_betrag
+                    }), 409
+
+                cur.execute("""
+                    INSERT INTO punkte_bewegungen
+                        (kunde_id, typ, punkte)
+                    VALUES
+                        (%s, 'EINLOESUNG_BESTELLUNG', %s)
+                """, (kunde_id, -punkte_betrag))
+
+            cur.execute("""
+                UPDATE bestellungen
+                SET
+                    status = 'BEZAHLT',
+                    bezahlt_am = CURRENT_TIMESTAMP,
+                    punkte_eingeloest = TRUE,
+                    punkte_gutgeschrieben = TRUE
+                WHERE id = %s
+            """, (bestellung_id,))
+
+            conn.commit()
+
+            return jsonify({
+                "ok": True,
+                "bonus_kunde": True,
+                "punkte": 0,
+                "punkte_abgezogen": punkte_betrag
             })
 
         vergebene_punkte = 0
@@ -1955,6 +2258,33 @@ def api_bestellung_bezahlt(token):
 
 @app.route("/kunde/<kunden_id>/praemien")
 def kunde_praemien(kunden_id):
+    kunden_id = kunden_id.strip().upper()
+
+    if session.get("kunde_id") != kunden_id:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id
+        FROM kunden
+        WHERE kunden_id = %s
+    """, (kunden_id,))
+    kunde = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not kunde:
+        return redirect(url_for("login"))
+
+    return render_template(
+        "praemien.html",
+        punktestand=int(get_punktestand(kunde[0]))
+    )
+
+
+@app.route("/kunde/<kunden_id>/praemien-alt")
+def kunde_praemien_alt(kunden_id):
     kunden_id = kunden_id.strip().upper()
 
     conn = get_db_connection()
@@ -2139,6 +2469,7 @@ def mitarbeiter_login():
             conn.close()
 
             session.permanent = True
+            session.pop("chef_angemeldet", None)
             session["mitarbeiter_angemeldet"] = True
             session["mitarbeiter_id"] = mitarbeiter[0]
             session["mitarbeiter_name"] = mitarbeiter[1]
@@ -2590,6 +2921,9 @@ def chef_login():
 
         if pin == chef_pin:
             session.permanent = True
+            session.pop("mitarbeiter_angemeldet", None)
+            session.pop("mitarbeiter_id", None)
+            session.pop("mitarbeiter_name", None)
             session["chef_angemeldet"] = True
             return redirect("/chef-dashboard")
         else:
