@@ -671,6 +671,16 @@ function renderOrders() {
     renderActiveDetail();
 }
 
+function isBonusOrder(order) {
+    return order && order.zahlungsart === 'BONUSPUNKTE';
+}
+
+function orderTotalText(order) {
+    return isBonusOrder(order)
+        ? Number(order.punkte_betrag || 0).toLocaleString('de-DE') + ' Punkte'
+        : centToEuro(order.Gesamtbetrag);
+}
+
 function renderQueueRow(order) {
     var rowClass = '';
     if (order.status === STATUS.ZAHLUNG_GESTARTET || order.status === STATUS.ZAHLUNG_AUSSTEHEND) rowClass = ' row-pending';
@@ -683,7 +693,7 @@ function renderQueueRow(order) {
         '<div class="queue-number">#' + esc(order.visibleNumber) + '</div>' +
         '<div class="queue-info"><div class="queue-status">' + esc(STATUS_LABELS[order.status] || order.status) + '</div>' +
         '<div class="queue-sub">' + formatTime(order.erstellt_am) + ' · ' + anzahl + ' Artikel' + bonus + '</div></div>' +
-        '<div class="queue-total">' + centToEuro(order.Gesamtbetrag) + '</div>' +
+        '<div class="queue-total">' + orderTotalText(order) + '</div>' +
         '<div class="queue-arrow">›</div></button>';
 }
 
@@ -814,12 +824,14 @@ function renderOrderCard(order) {
     h += '</div>';
     h += '<div class="order-meta">';
     h += '<div class="order-time">' + formatTime(order.erstellt_am) + '</div>';
-    h += '<div class="order-total">' + centToEuro(order.Gesamtbetrag) + '</div>';
+    h += '<div class="order-total">' + orderTotalText(order) + '</div>';
     h += '</div>';
     h += '</div>';
 
     h += '<div class="order-bonus' + (order.bonus_kunde ? ' hat-konto' : '') + '">';
-    h += order.bonus_kunde ? '🎯 Bonus-Kunde (' + order.punkte + ' Pkte)' : 'Kein Bonus-Konto';
+    h += isBonusOrder(order)
+        ? '🪙 Prämienbestellung – Zahlung mit Bonuspunkten'
+        : (order.bonus_kunde ? '🎯 Bonus-Kunde (' + order.punkte + ' Pkte)' : 'Kein Bonus-Konto');
     h += '</div>';
 
     h += '<div class="order-items">';
@@ -829,7 +841,9 @@ function renderOrderCard(order) {
         h += '<div class="item-name">' + item.menge + '× ' + esc(item.produkt_name);
         if (item.variante) h += ' ' + esc(item.variante);
         h += '</div>';
-        h += '<div class="item-price">' + centToEuro(calculateItemTotal(item)) + '</div>';
+        h += '<div class="item-price">' + (isBonusOrder(order)
+            ? Number(item.punkte_gesamt || 0).toLocaleString('de-DE') + ' Pkte'
+            : centToEuro(calculateItemTotal(item))) + '</div>';
         h += '</div>';
         h += '<div class="item-details">';
         if (item.beilage) {
@@ -843,13 +857,21 @@ function renderOrderCard(order) {
             item.extras.forEach(function(ex) {
                 var tag = ex.name.indexOf('Ohne') === 0 ? 'without' : 'extra';
                 h += '<div class="item-detail ' + tag + '">' + esc(ex.name);
-                if (ex.preis > 0) h += ' <span class="price-tag">+' + centToEuro(ex.preis) + '</span>';
+                if (isBonusOrder(order) && ex.punkte > 0) h += ' <span class="price-tag">+' + Number(ex.punkte).toLocaleString('de-DE') + ' Pkte</span>';
+                else if (ex.preis > 0) h += ' <span class="price-tag">+' + centToEuro(ex.preis) + '</span>';
                 h += '</div>';
             });
         }
+        if (item.saucen && item.saucen.length) {
+            h += '<div class="item-detail">Soße: ' + esc(item.saucen.join(', ')) + '</div>';
+        }
+        if (item.ohne && item.ohne.length) {
+            h += '<div class="item-detail without">Ohne: ' + esc(item.ohne.join(', ')) + '</div>';
+        }
         if (item.upgrade) {
             h += '<div class="item-detail upgrade">+' + esc(item.upgrade.name);
-            if (item.upgrade.preis > 0) h += ' <span class="price-tag">+' + centToEuro(item.upgrade.preis) + '</span>';
+            if (isBonusOrder(order) && item.upgrade.punkte > 0) h += ' <span class="price-tag">+' + Number(item.upgrade.punkte).toLocaleString('de-DE') + ' Pkte</span>';
+            else if (item.upgrade.preis > 0) h += ' <span class="price-tag">+' + centToEuro(item.upgrade.preis) + '</span>';
             h += '</div>';
         }
         h += '</div></div>';
@@ -861,7 +883,9 @@ function renderOrderCard(order) {
         h += '<div class="paid-info">';
         h += '<div class="status-label">✓ BEZAHLT</div>';
         if (order.zahlungsart) h += '<div style="font-size:0.8rem;color:var(--gray);margin-top:4px;">' + esc(order.zahlungsart) + '</div>';
-        if (order.bonus_kunde && order.bonus_gutgeschrieben) {
+        if (isBonusOrder(order) && order.punkte_eingeloest) {
+            h += '<div class="bonus-msg">' + Number(order.punkte_betrag || 0).toLocaleString('de-DE') + ' Bonuspunkte eingelöst</div>';
+        } else if (order.bonus_kunde && order.bonus_gutgeschrieben) {
             h += '<div class="bonus-msg">+' + order.punkte + ' Bonuspunkte gutgeschrieben</div>';
         } else if (!order.bonus_kunde) {
             h += '<div class="no-bonus">Kein Bonuskonto – keine Punktegutschrift</div>';
@@ -876,7 +900,8 @@ function renderOrderCard(order) {
         var isProcessing = processingPayments[order.internalId];
         h += '<button class="pay-btn" id="payBtn-' + order.internalId + '"' +
             (isProcessing ? ' disabled' : '') +
-            ' onclick="openPaymentDialog(\'' + order.internalId + '\')">ZAHLUNG STARTEN</button>';
+            ' onclick="openPaymentDialog(\'' + order.internalId + '\')">' +
+            (isBonusOrder(order) ? 'PUNKTE EINLÖSEN' : 'ZAHLUNG STARTEN') + '</button>';
     }
     h += '</div>';
     h += '</div>';
@@ -893,12 +918,62 @@ function openPaymentDialog(internalId) {
 
     var html = '<h3>Zahlung</h3>';
     html += '<div class="dialog-order">Bestellung #' + order.visibleNumber + '</div>';
-    html += '<div class="dialog-amount">' + centToEuro(order.Gesamtbetrag) + '</div>';
-    html += '<button class="dialog-btn bar" onclick="startBarPayment(\'' + internalId + '\')">BAR BEZAHLEN</button>';
-    html += '<button class="dialog-btn sumup" onclick="startSumUpPayment(\'' + internalId + '\')">MIT SUMUP BEZAHLEN</button>';
+    html += '<div class="dialog-amount">' + orderTotalText(order) + '</div>';
+    if (isBonusOrder(order)) {
+        html += '<button class="dialog-btn bar" onclick="startBonusPayment(\'' + internalId + '\')">BONUSPUNKTE EINLÖSEN</button>';
+    } else {
+        html += '<button class="dialog-btn bar" onclick="startBarPayment(\'' + internalId + '\')">BAR BEZAHLEN</button>';
+        html += '<button class="dialog-btn sumup" onclick="startSumUpPayment(\'' + internalId + '\')">MIT SUMUP BEZAHLEN</button>';
+    }
     html += '<button class="dialog-btn cancel" onclick="closeDialog()">ABBRECHEN</button>';
 
     showDialog(html);
+}
+
+function startBonusPayment(internalId) {
+    var order = orders.find(function(o) { return o.internalId === internalId; });
+    if (!order || !isBonusOrder(order) || order.status === STATUS.BEZAHLT) return;
+
+    var html = '<h3>Bonuspunkte einlösen</h3>';
+    html += '<div class="dialog-order">Bestellung #' + order.visibleNumber + '</div>';
+    html += '<div class="dialog-confirmation">';
+    html += '<div class="confirm-text">Sollen <strong style="color:var(--green)">' +
+        Number(order.punkte_betrag || 0).toLocaleString('de-DE') +
+        ' Punkte</strong> vom Kundenkonto abgezogen werden?</div>';
+    html += '<button class="dialog-btn bar confirm-yes" onclick="confirmBonusPayment(\'' + internalId + '\')">JA, PUNKTE EINLÖSEN</button>';
+    html += '<button class="dialog-btn cancel confirm-no" onclick="closeDialog()">ABBRECHEN</button>';
+    html += '</div>';
+    showDialog(html);
+}
+
+function confirmBonusPayment(internalId) {
+    if (processingPayments[internalId]) return;
+    var order = orders.find(function(o) { return o.internalId === internalId; });
+    if (!order || !isBonusOrder(order) || order.status === STATUS.BEZAHLT) return;
+
+    processingPayments[internalId] = true;
+    fetch('/api/bestellung/' + encodeURIComponent(order.token) + '/bezahlt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    }).then(function(r) {
+        return r.json().then(function(data) {
+            if (!r.ok || !data.ok) throw new Error(data.fehler || 'Punkte konnten nicht eingelöst werden.');
+            return data;
+        });
+    }).then(function(data) {
+        order.punkte_eingeloest = true;
+        applyPaymentSuccess(order, 'BONUSPUNKTE');
+        processingPayments[internalId] = false;
+        loadThekenBestellungen();
+    }).catch(function(err) {
+        processingPayments[internalId] = false;
+        var html = '<h3>Punkte nicht eingelöst</h3>';
+        html += '<div class="confirm-text">' + esc(err.message) + '</div>';
+        html += '<button class="dialog-btn bar" onclick="startBonusPayment(\'' + internalId + '\')">ERNEUT VERSUCHEN</button>';
+        html += '<button class="dialog-btn cancel" onclick="closeDialog()">ABBRECHEN</button>';
+        showDialog(html);
+    });
 }
 
 function startBarPayment(internalId) {
