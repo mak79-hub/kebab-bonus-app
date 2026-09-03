@@ -35,6 +35,15 @@
         .header-logo { font-size: 1.1rem; font-weight: 900; color: var(--red); white-space: nowrap; }
         .header-title { font-size: 0.85rem; color: var(--gray); }
         .header-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+        .header-link {
+            color: #fff; background: #333; text-decoration: none; border-radius: 16px;
+            padding: 6px 12px; font-size: 0.75rem; font-weight: 700;
+        }
+        .camera-btn {
+            border: 0; cursor: pointer; background: rgba(245,158,11,0.18);
+            color: var(--orange);
+        }
+        .camera-btn.active { background: rgba(34,197,94,0.15); color: var(--green); }
         .header-badge {
             font-size: 0.8rem; font-weight: 700; padding: 5px 12px;
             border-radius: 16px; white-space: nowrap;
@@ -118,13 +127,10 @@
         .detail-view .order-footer { padding: 0 24px 28px; }
 
         .scanner-view {
-            position: fixed; width: 1px; height: 1px; left: -10px; bottom: 0;
+            position: fixed; width: 260px; height: 210px; left: -10000px; bottom: 0;
             overflow: hidden; opacity: 0; pointer-events: none;
         }
-        .scanner-frame {
-            width: 1px; height: 1px; overflow: hidden;
-        }
-        .scanner-video { width: 2px; height: 2px; }
+        #backgroundQrReader { width: 240px; height: 190px; }
 
         .order-card {
             background: var(--card); border-radius: 16px; overflow: hidden;
@@ -290,6 +296,9 @@
         <div class="header-title">Theke / Bestellungen</div>
     </div>
     <div class="header-badges">
+        {% if theke_ist_mitarbeiter %}<a class="header-link" href="/mitarbeiter">Bonusverwaltung</a>{% endif %}
+        {% if theke_ist_chef %}<a class="header-link" href="/chef-dashboard">Chef-Dashboard</a>{% endif %}
+        <button class="header-badge camera-btn" id="cameraButton" onclick="startQrScanner(false)">Kamera aktivieren</button>
         <div class="header-badge badge-open" id="badgeOpen">0 offen</div>
         <div class="header-badge badge-pending" id="badgePending">0 Zahlungen</div>
         <div class="header-badge badge-conn" id="badgeConn">Demo – nicht verbunden</div>
@@ -314,9 +323,7 @@
 </div>
 
 <div class="scanner-view" id="scannerView">
-    <div class="scanner-frame">
-        <video class="scanner-video" id="scannerVideo" playsinline muted></video>
-    </div>
+    <div id="backgroundQrReader"></div>
 </div>
 
 <!-- ZAHLUNGS-DIALOG -->
@@ -324,6 +331,7 @@
     <div class="dialog" id="dialogContent"></div>
 </div>
 
+<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
 // ============================================================
 // SICHERHEIT: HTML ESCAPING
@@ -624,9 +632,7 @@ var IS_LOCAL_DEMO = window.location.protocol === 'file:';
 var orders = IS_LOCAL_DEMO ? createDemoOrders() : [];
 var processingPayments = {};
 var currentOrderId = null;
-var scannerStream = null;
-var scannerDetector = null;
-var scannerFrameId = null;
+var backgroundQrScanner = null;
 var scannerActive = false;
 var lastScannedValue = '';
 var lastScannedAt = 0;
@@ -733,69 +739,52 @@ document.getElementById('orderLookup').addEventListener('keydown', function(even
     if (event.key === 'Enter') findAndOpenOrder();
 });
 
-async function startQrScanner() {
-    if (!('BarcodeDetector' in window)) {
-        console.warn('QR-Kamerascanner wird von diesem Browser nicht unterstützt.');
+async function startQrScanner(automaticStart) {
+    var cameraButton = document.getElementById('cameraButton');
+    if (scannerActive) return;
+    if (typeof Html5Qrcode === 'undefined') {
+        cameraButton.textContent = 'Kamera nicht verfügbar';
         return;
     }
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.warn('Kamerazugriff wird von diesem Browser nicht unterstützt.');
-        return;
-    }
-
     try {
-        stopQrCameraOnly();
-        scannerDetector = new BarcodeDetector({ formats: ['qr_code'] });
-        scannerStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'environment' } },
-            audio: false
-        });
-
-        var video = document.getElementById('scannerVideo');
-        video.srcObject = scannerStream;
-        await video.play();
+        cameraButton.textContent = 'Kamera wird gestartet …';
+        backgroundQrScanner = backgroundQrScanner || new Html5Qrcode('backgroundQrReader');
+        await backgroundQrScanner.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 220, height: 220 } },
+            onBackgroundQrScan,
+            function() {}
+        );
         scannerActive = true;
-        scanQrFrame();
+        cameraButton.textContent = '● Kamera aktiv';
+        cameraButton.classList.add('active');
+        localStorage.setItem('theke_kamera_erlaubt', '1');
     } catch (error) {
-        stopQrCameraOnly();
+        scannerActive = false;
+        cameraButton.classList.remove('active');
+        cameraButton.textContent = automaticStart ? 'Kamera aktivieren' : 'Kamera erneut aktivieren';
         console.error('Kamera konnte nicht gestartet werden:', error);
     }
 }
 
-async function scanQrFrame() {
-    if (!scannerActive || !scannerDetector) return;
-    var video = document.getElementById('scannerVideo');
-
-    try {
-        var codes = await scannerDetector.detect(video);
-        if (codes.length && codes[0].rawValue) {
-            var code = codes[0].rawValue;
-            var now = Date.now();
-            if (code !== lastScannedValue || now - lastScannedAt > 3000) {
-                lastScannedValue = code;
-                lastScannedAt = now;
-                loadThekenBestellungen();
-            }
-        }
-    } catch (error) {
-        console.error('QR-Erkennung:', error);
-    }
-
-    if (scannerActive) scannerFrameId = requestAnimationFrame(scanQrFrame);
+function onBackgroundQrScan(decodedText) {
+    var code = String(decodedText || '').trim();
+    if (!/^ORDER:/i.test(code)) return;
+    var now = Date.now();
+    if (code === lastScannedValue && now - lastScannedAt < 3000) return;
+    lastScannedValue = code;
+    lastScannedAt = now;
+    loadThekenBestellungen();
 }
 
-function stopQrCameraOnly() {
+async function stopQrCameraOnly() {
     scannerActive = false;
-    if (scannerFrameId) cancelAnimationFrame(scannerFrameId);
-    scannerFrameId = null;
-    if (scannerStream) {
-        scannerStream.getTracks().forEach(function(track) { track.stop(); });
+    if (backgroundQrScanner && backgroundQrScanner.isScanning) {
+        try { await backgroundQrScanner.stop(); } catch (error) {}
     }
-    scannerStream = null;
-    scannerDetector = null;
-    var video = document.getElementById('scannerVideo');
-    if (video) video.srcObject = null;
+    var cameraButton = document.getElementById('cameraButton');
+    cameraButton.classList.remove('active');
+    cameraButton.textContent = 'Kamera aktivieren';
 }
 
 function stopQrScanner() {
@@ -805,8 +794,8 @@ function stopQrScanner() {
 document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
         stopQrScanner();
-    } else if (!scannerActive) {
-        startQrScanner();
+    } else if (!scannerActive && localStorage.getItem('theke_kamera_erlaubt') === '1') {
+        startQrScanner(true);
     }
 });
 
@@ -1158,7 +1147,9 @@ if (IS_LOCAL_DEMO) {
     loadThekenBestellungen();
     startAutoRefresh(5000);
 }
-setTimeout(startQrScanner, 400);
+if (localStorage.getItem('theke_kamera_erlaubt') === '1') {
+    setTimeout(function() { startQrScanner(true); }, 400);
+}
 </script>
 
 </body>
