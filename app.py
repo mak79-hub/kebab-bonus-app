@@ -16,6 +16,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from pywebpush import webpush, WebPushException
 from praemien_katalog import PRAEMIEN_KATALOG, PRAEMIEN_EXTRAS, PRAEMIEN_MENUES
 
+
 app = Flask(__name__)
 
 
