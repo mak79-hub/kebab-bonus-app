@@ -631,6 +631,7 @@ function createDemoOrders() {
 var IS_LOCAL_DEMO = window.location.protocol === 'file:';
 var orders = IS_LOCAL_DEMO ? createDemoOrders() : [];
 var processingPayments = {};
+var sumupPollTimers = {};
 var currentOrderId = null;
 var backgroundQrScanner = null;
 var scannerActive = false;
@@ -1037,7 +1038,6 @@ function startSumUpPayment(internalId) {
     order.status = STATUS.ZAHLUNG_GESTARTET;
     order.zahlungsart = 'SUMUP';
     order.zahlungsstatus = 'STARTED';
-    order.idempotency_id = generateIdempotencyId();
     order.sumup_status = 'STARTED';
     renderOrders();
 
@@ -1048,70 +1048,99 @@ function startSumUpPayment(internalId) {
     html += '<div class="sumup-step active" id="sumup-step2">⏳ Warte auf Kartenzahlung am Terminal …</div>';
     html += '<div class="sumup-step pending" id="sumup-step3">Ergebnis wird erwartet …</div>';
     html += '</div>';
-    html += '<div class="sumup-actions">';
-    html += '<button class="dialog-btn success-btn" onclick="sumupSuccessDemo(\'' + internalId + '\')">✓ ZAHLUNG ERFOLGREICH</button>';
-    html += '<button class="dialog-btn fail-btn" onclick="sumupFailDemo(\'' + internalId + '\')">✗ ZAHLUNG FEHLGESCHLAGEN</button>';
-    html += '</div>';
-    html += '<button class="dialog-btn cancel" style="margin-top:10px" onclick="sumupAbortDemo(\'' + internalId + '\')">ZAHLUNG ABBRECHEN</button>';
+    html += '<button class="dialog-btn cancel" style="margin-top:10px" onclick="abortSumUpPayment(\'' + internalId + '\')">ZAHLUNG ABBRECHEN</button>';
 
     showDialog(html);
 
-    // DEMO: Das Terminal hat die Anfrage angenommen und wartet auf die Karte.
-    setTimeout(function() {
-        if (processingPayments[internalId] && order.status === STATUS.ZAHLUNG_GESTARTET) {
-            order.status = STATUS.ZAHLUNG_AUSSTEHEND;
-            order.zahlungsstatus = 'PENDING';
-            order.sumup_status = 'PENDING';
-            renderOrders();
+    fetch('/api/bestellung/' + encodeURIComponent(order.token) + '/sumup/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    }).then(function(r) {
+        return r.json().then(function(data) {
+            if (!r.ok || !data.ok) throw new Error(data.fehler || 'SumUp konnte nicht gestartet werden.');
+            return data;
+        });
+    }).then(function(data) {
+        order.sumup_checkout_id = data.checkout_id;
+        order.status = STATUS.ZAHLUNG_AUSSTEHEND;
+        order.zahlungsstatus = 'PENDING';
+        order.sumup_status = 'PENDING';
+        renderOrders();
+        pollSumUpStatus(internalId);
+    }).catch(function(err) {
+        processingPayments[internalId] = false;
+        order.status = STATUS.WARTET_AUF_ZAHLUNG;
+        order.zahlungsart = null;
+        order.zahlungsstatus = null;
+        order.sumup_status = null;
+        var fehlerHtml = '<h3>SumUp nicht gestartet</h3>';
+        fehlerHtml += '<div class="confirm-text">' + esc(err.message) + '</div>';
+        fehlerHtml += '<button class="dialog-btn sumup" onclick="startSumUpPayment(\'' + internalId + '\')">ERNEUT VERSUCHEN</button>';
+        fehlerHtml += '<button class="dialog-btn cancel" onclick="closeDialog()">SCHLIESSEN</button>';
+        showDialog(fehlerHtml);
+        renderOrders();
+    });
+}
+
+function pollSumUpStatus(internalId) {
+    clearTimeout(sumupPollTimers[internalId]);
+    var order = orders.find(function(o) { return o.internalId === internalId; });
+    if (!order || !processingPayments[internalId]) return;
+
+    fetch('/api/bestellung/' + encodeURIComponent(order.token) + '/sumup/status', {
+        headers: { 'Accept': 'application/json' }, cache: 'no-store'
+    }).then(function(r) {
+        return r.json().then(function(data) {
+            if (!r.ok || !data.ok) throw new Error(data.fehler || 'Zahlungsstatus nicht verfügbar.');
+            return data;
+        });
+    }).then(function(data) {
+        if (data.status === 'SUCCESS') {
+            order.punkte = Number(data.punkte || order.punkte || 0);
+            order.sumup_status = 'SUCCESS';
+            processingPayments[internalId] = false;
+            applyPaymentSuccess(order, 'SUMUP');
+            loadThekenBestellungen();
+            return;
         }
-    }, 250);
+        if (data.status === 'FAILED' || data.status === 'CANCELLED') {
+            order.status = STATUS.ZAHLUNG_FEHLGESCHLAGEN;
+            order.zahlungsstatus = data.status;
+            order.sumup_status = data.status;
+            processingPayments[internalId] = false;
+            var fehlerHtml = '<h3>Zahlung nicht erfolgreich</h3>';
+            fehlerHtml += '<div class="confirm-text">' + esc(data.fehler || 'Die Zahlung wurde abgebrochen oder ist fehlgeschlagen.') + '</div>';
+            fehlerHtml += '<button class="dialog-btn cancel" onclick="closeDialog();loadThekenBestellungen()">SCHLIESSEN</button>';
+            showDialog(fehlerHtml);
+            renderOrders();
+            return;
+        }
+        sumupPollTimers[internalId] = setTimeout(function() { pollSumUpStatus(internalId); }, 2000);
+    }).catch(function() {
+        sumupPollTimers[internalId] = setTimeout(function() { pollSumUpStatus(internalId); }, 3000);
+    });
 }
 
-function sumupSuccessDemo(internalId) {
+function abortSumUpPayment(internalId) {
     var order = orders.find(function(o) { return o.internalId === internalId; });
     if (!order || !processingPayments[internalId] || order.status === STATUS.BEZAHLT) return;
 
-    /*
-    // FLASK API: Die Successful-Zahlung wird später vom Server bestätigt.
-    // GET /api/theke/bestellungen/{internalId}/zahlungsstatus
-    */
-
-    // DEMO
-    order.sumup_checkout_id = 'DEMO-CHECKOUT-' + Date.now();
-    order.sumup_transaction_id = 'DEMO-TX-' + Date.now();
-    order.sumup_status = 'SUCCESS';
-    applyPaymentSuccess(order, 'SUMUP');
-    processingPayments[internalId] = false;
-}
-
-function sumupFailDemo(internalId) {
-    var order = orders.find(function(o) { return o.internalId === internalId; });
-    if (!order || !processingPayments[internalId] || order.status === STATUS.BEZAHLT) return;
-
-    order.status = STATUS.ZAHLUNG_FEHLGESCHLAGEN;
-    order.zahlungsstatus = 'FAILED';
-    order.sumup_status = 'FAILED';
-    processingPayments[internalId] = false;
-    closeDialog();
-    renderOrders();
-}
-
-function sumupAbortDemo(internalId) {
-    var order = orders.find(function(o) { return o.internalId === internalId; });
-    if (!order || !processingPayments[internalId] || order.status === STATUS.BEZAHLT) return;
-
-    order.status = STATUS.WARTET_AUF_ZAHLUNG;
-    order.zahlungsart = null;
-    order.zahlungsstatus = null;
-    order.sumup_status = 'CANCELLED';
-    processingPayments[internalId] = false;
-
-    /*
-    // FLASK API: POST /api/theke/bestellungen/{internalId}/zahlung-abbrechen
-    */
-
-    closeDialog();
-    renderOrders();
+    fetch('/api/bestellung/' + encodeURIComponent(order.token) + '/sumup/abbrechen', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({})
+    }).then(function(r) { return r.json(); }).then(function(data) {
+        if (!data.ok) throw new Error(data.fehler || 'Abbruch nicht möglich.');
+        clearTimeout(sumupPollTimers[internalId]);
+        order.status = STATUS.WARTET_AUF_ZAHLUNG;
+        order.zahlungsart = null;
+        order.zahlungsstatus = null;
+        order.sumup_status = 'CANCELLED';
+        processingPayments[internalId] = false;
+        closeDialog();
+        loadThekenBestellungen();
+    }).catch(function(err) {
+        window.alert(err.message);
+    });
 }
 
 // ============================================================
@@ -1229,3 +1258,4 @@ if (localStorage.getItem('theke_kamera_erlaubt') === '1') {
 
 </body>
 </html>
+
