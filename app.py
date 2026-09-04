@@ -2,7 +2,9 @@ import os
 import base64
 import urllib.parse
 import urllib.request
+import urllib.error
 import secrets
+import uuid
 from io import BytesIO
 from datetime import timedelta
 from zoneinfo import ZoneInfo
@@ -32,6 +34,12 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY")
 VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT")
+
+SUMUP_API_KEY = os.environ.get("SUMUP_API_KEY", "").strip()
+SUMUP_MERCHANT_CODE = os.environ.get("SUMUP_MERCHANT_CODE", "").strip()
+SUMUP_AFFILIATE_KEY = os.environ.get("SUMUP_AFFILIATE_KEY", "").strip()
+SUMUP_APP_ID = os.environ.get("SUMUP_APP_ID", "de.kebabhoehlexxl.bonusapp").strip()
+SUMUP_READER_ID = os.environ.get("SUMUP_READER_ID", "").strip()
 
 PRAEMIEN = [
     {"name": "Ayran 0,25l", "punkte": 100, "bild": "ayran.png", "farbe": "#22c55e"},
@@ -162,6 +170,22 @@ def init_db():
     cur.execute("""
         ALTER TABLE bestellungen
         ADD COLUMN IF NOT EXISTS punkte_eingeloest BOOLEAN NOT NULL DEFAULT FALSE;
+    """)
+    cur.execute("""
+        ALTER TABLE bestellungen
+        ADD COLUMN IF NOT EXISTS sumup_checkout_id TEXT;
+    """)
+    cur.execute("""
+        ALTER TABLE bestellungen
+        ADD COLUMN IF NOT EXISTS sumup_transaction_id TEXT;
+    """)
+    cur.execute("""
+        ALTER TABLE bestellungen
+        ADD COLUMN IF NOT EXISTS sumup_status TEXT;
+    """)
+    cur.execute("""
+        ALTER TABLE bestellungen
+        ADD COLUMN IF NOT EXISTS sumup_fehler TEXT;
     """)
     
     
@@ -1819,6 +1843,50 @@ def betrag_in_cent(betrag):
     return int(round(float(betrag or 0) * 100))
 
 
+def sumup_konfiguration(vollstaendig=True):
+    werte = {
+        "API-Schlüssel": SUMUP_API_KEY,
+        "Händlercode": SUMUP_MERCHANT_CODE,
+        "Affiliate Key": SUMUP_AFFILIATE_KEY,
+        "App-ID": SUMUP_APP_ID
+    }
+    if vollstaendig:
+        werte["Kartenterminal"] = SUMUP_READER_ID
+    return [name for name, wert in werte.items() if not wert]
+
+
+def sumup_anfrage(method, pfad, daten=None):
+    url = "https://api.sumup.com" + pfad
+    headers = {
+        "Authorization": "Bearer " + SUMUP_API_KEY,
+        "Accept": "application/json"
+    }
+    body = None
+    if daten is not None:
+        headers["Content-Type"] = "application/json"
+        body = json.dumps(daten).encode("utf-8")
+
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=20) as response:
+            inhalt = response.read().decode("utf-8")
+            return json.loads(inhalt) if inhalt else {}
+    except urllib.error.HTTPError as fehler:
+        inhalt = fehler.read().decode("utf-8", errors="replace")
+        try:
+            meldung = json.loads(inhalt).get("detail") or json.loads(inhalt).get("title")
+        except Exception:
+            meldung = inhalt
+        raise RuntimeError(meldung or f"SumUp-Fehler {fehler.code}")
+    except urllib.error.URLError:
+        raise RuntimeError("SumUp ist momentan nicht erreichbar.")
+
+
+def sumup_daten(antwort):
+    daten = antwort.get("data") if isinstance(antwort, dict) else None
+    return daten if isinstance(daten, dict) else (antwort if isinstance(antwort, dict) else {})
+
+
 def normalisiere_bestelloption(option):
     if isinstance(option, str):
         return {"name": option, "preis": 0}
@@ -1875,7 +1943,11 @@ def api_theke_bestellungen():
                 b.bezahlt_am,
                 b.zahlungsart,
                 b.punkte_betrag,
-                b.punkte_eingeloest
+                b.punkte_eingeloest,
+                b.sumup_checkout_id,
+                b.sumup_transaction_id,
+                b.sumup_status,
+                b.sumup_fehler
             FROM bestellungen b
             WHERE b.bestelldatum = CURRENT_DATE
             ORDER BY b.erstellt_am ASC
@@ -1954,9 +2026,10 @@ def api_theke_bestellungen():
                 "punkte_eingeloest": bool(zeile[11]),
                 "zahlungsstatus": "PAID" if zeile[4] == "BEZAHLT" else None,
                 "bezahlt_am": zeile[8].isoformat() if zeile[8] else None,
-                "sumup_checkout_id": None,
-                "sumup_transaction_id": None,
-                "sumup_status": None,
+                "sumup_checkout_id": zeile[12],
+                "sumup_transaction_id": zeile[13],
+                "sumup_status": zeile[14],
+                "sumup_fehler": zeile[15],
                 "erstellt_am": zeile[7].isoformat(),
                 "items": positionen_nach_bestellung.get(zeile[0], [])
             })
@@ -2094,6 +2167,241 @@ def api_bestellung():
         cur.close()
         conn.close()
 
+@app.route("/sumup-einrichten", methods=["GET", "POST"])
+def sumup_einrichten():
+    if not ist_chef():
+        return redirect(url_for("chef_login"))
+
+    fehlend = sumup_konfiguration(vollstaendig=False)
+    if fehlend:
+        return jsonify({
+            "ok": False,
+            "fehler": "In Render fehlen: " + ", ".join(fehlend)
+        }), 503
+
+    if request.method == "GET":
+        return """
+        <!doctype html><html lang="de"><meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>SumUp einrichten</title>
+        <body style="font-family:Arial;background:#0d0d0d;color:white;padding:30px;max-width:650px;margin:auto">
+        <h1>SumUp-Terminal koppeln</h1>
+        <p>Pairing-Code vom virtuellen oder echten Solo eingeben. Er ist nur 5 Minuten gültig.</p>
+        <form method="post"><input name="pairing_code" required minlength="8" maxlength="9"
+        style="font-size:24px;padding:14px;width:100%;box-sizing:border-box;text-transform:uppercase">
+        <button style="margin-top:15px;padding:15px;font-size:18px">TERMINAL KOPPELN</button></form>
+        </body></html>
+        """
+
+    pairing_code = request.form.get("pairing_code", "").strip().upper()
+    if len(pairing_code) not in (8, 9) or not pairing_code.isalnum():
+        return jsonify({"ok": False, "fehler": "Der Pairing-Code ist ungültig."}), 400
+
+    try:
+        antwort = sumup_anfrage(
+            "POST",
+            f"/v0.1/merchants/{urllib.parse.quote(SUMUP_MERCHANT_CODE)}/readers",
+            {"pairing_code": pairing_code, "name": "Kebab Höhle XXL Theke"}
+        )
+        daten = sumup_daten(antwort)
+        reader_id = daten.get("id") or antwort.get("id")
+        if not reader_id:
+            raise RuntimeError("SumUp hat keine Terminal-ID zurückgegeben.")
+        return jsonify({
+            "ok": True,
+            "reader_id": reader_id,
+            "hinweis": "Diese ID jetzt in Render als SUMUP_READER_ID speichern."
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "fehler": str(e)}), 502
+
+
+def sumup_zahlung_in_db_abschliessen(cur, bestellung_id, kunde_id, gesamtbetrag,
+                                      punkte_gutgeschrieben):
+    vergebene_punkte = 0
+    if kunde_id and not punkte_gutgeschrieben:
+        vergebene_punkte = int(gesamtbetrag)
+        if vergebene_punkte > 0:
+            cur.execute("""
+                INSERT INTO punkte_bewegungen (kunde_id, typ, punkte)
+                VALUES (%s, 'GUTSCHRIFT', %s)
+            """, (kunde_id, vergebene_punkte))
+
+    cur.execute("""
+        UPDATE bestellungen
+        SET status = 'BEZAHLT', bezahlt_am = CURRENT_TIMESTAMP,
+            zahlungsart = 'SUMUP', punkte_gutgeschrieben = TRUE,
+            sumup_status = 'SUCCESS', sumup_fehler = NULL
+        WHERE id = %s
+    """, (bestellung_id,))
+    return vergebene_punkte
+
+
+@app.route("/api/bestellung/<token>/sumup/start", methods=["POST"])
+def api_sumup_start(token):
+    if not theke_zugriff_erlaubt():
+        return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
+
+    fehlend = sumup_konfiguration()
+    if fehlend:
+        return jsonify({
+            "ok": False,
+            "fehler": "SumUp ist noch nicht vollständig eingerichtet: " + ", ".join(fehlend)
+        }), 503
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT id, gesamtbetrag, status, zahlungsart, sumup_checkout_id, sumup_status
+            FROM bestellungen WHERE token = %s FOR UPDATE
+        """, (token,))
+        bestellung = cur.fetchone()
+        if not bestellung:
+            return jsonify({"ok": False, "fehler": "Bestellung nicht gefunden."}), 404
+        if bestellung[2] == "BEZAHLT":
+            return jsonify({"ok": False, "fehler": "Die Bestellung ist bereits bezahlt."}), 409
+        if bestellung[3] == "BONUSPUNKTE":
+            return jsonify({"ok": False, "fehler": "Prämienbestellungen werden mit Punkten bezahlt."}), 409
+        if bestellung[4] and bestellung[5] in ("STARTED", "PENDING"):
+            return jsonify({"ok": True, "checkout_id": bestellung[4], "status": bestellung[5]})
+
+        transaction_id = str(uuid.uuid4())
+        betrag_cent = betrag_in_cent(bestellung[1])
+        if betrag_cent <= 0:
+            return jsonify({"ok": False, "fehler": "Der Zahlungsbetrag ist ungültig."}), 409
+
+        antwort = sumup_anfrage(
+            "POST",
+            f"/v0.1/merchants/{urllib.parse.quote(SUMUP_MERCHANT_CODE)}/readers/"
+            f"{urllib.parse.quote(SUMUP_READER_ID)}/checkout",
+            {
+                "total_amount": {"currency": "EUR", "minor_unit": 2, "value": betrag_cent},
+                "description": f"Bestellung #{token[:8]}",
+                "affiliate": {
+                    "app_id": SUMUP_APP_ID,
+                    "key": SUMUP_AFFILIATE_KEY,
+                    "foreign_transaction_id": transaction_id
+                }
+            }
+        )
+        daten = sumup_daten(antwort)
+        checkout_id = daten.get("checkout_id") or daten.get("id") or antwort.get("checkout_id") or antwort.get("id")
+        if not checkout_id:
+            raise RuntimeError("SumUp hat keine Zahlungs-ID zurückgegeben.")
+
+        cur.execute("""
+            UPDATE bestellungen
+            SET zahlungsart = 'SUMUP', sumup_checkout_id = %s,
+                sumup_transaction_id = %s, sumup_status = 'PENDING', sumup_fehler = NULL
+            WHERE id = %s
+        """, (checkout_id, transaction_id, bestellung[0]))
+        conn.commit()
+        return jsonify({"ok": True, "checkout_id": checkout_id, "status": "PENDING"})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"ok": False, "fehler": str(e)}), 502
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/api/bestellung/<token>/sumup/status")
+def api_sumup_status(token):
+    if not theke_zugriff_erlaubt():
+        return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT id, kunde_id, gesamtbetrag, status, punkte_gutgeschrieben,
+                   sumup_checkout_id, sumup_status
+            FROM bestellungen WHERE token = %s FOR UPDATE
+        """, (token,))
+        bestellung = cur.fetchone()
+        if not bestellung:
+            return jsonify({"ok": False, "fehler": "Bestellung nicht gefunden."}), 404
+        if bestellung[3] == "BEZAHLT":
+            return jsonify({"ok": True, "status": "SUCCESS", "bezahlt": True})
+        if not bestellung[5]:
+            return jsonify({"ok": False, "fehler": "Für diese Bestellung wurde keine SumUp-Zahlung gestartet."}), 409
+
+        antwort = sumup_anfrage(
+            "GET",
+            f"/v0.1/merchants/{urllib.parse.quote(SUMUP_MERCHANT_CODE)}/readers/"
+            f"{urllib.parse.quote(SUMUP_READER_ID)}/checkout/{urllib.parse.quote(bestellung[5])}"
+        )
+        daten = sumup_daten(antwort)
+        status = str(daten.get("status") or "pending").lower()
+        sumup_betrag = (daten.get("total_amount") or {}).get("value")
+
+        if status == "successful":
+            if sumup_betrag is not None and int(sumup_betrag) != betrag_in_cent(bestellung[2]):
+                raise RuntimeError("SumUp meldet einen abweichenden Zahlungsbetrag.")
+            punkte = sumup_zahlung_in_db_abschliessen(
+                cur, bestellung[0], bestellung[1], bestellung[2], bestellung[4]
+            )
+            conn.commit()
+            return jsonify({"ok": True, "status": "SUCCESS", "bezahlt": True, "punkte": punkte})
+
+        if status in ("failed", "cancelled"):
+            fehlertext = daten.get("payment_failure_reason") or "Zahlung fehlgeschlagen oder abgebrochen."
+            cur.execute("""
+                UPDATE bestellungen SET sumup_status = %s, sumup_fehler = %s WHERE id = %s
+            """, (status.upper(), fehlertext, bestellung[0]))
+            conn.commit()
+            return jsonify({"ok": True, "status": status.upper(), "fehler": fehlertext})
+
+        cur.execute("UPDATE bestellungen SET sumup_status = 'PENDING' WHERE id = %s", (bestellung[0],))
+        conn.commit()
+        return jsonify({"ok": True, "status": "PENDING"})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"ok": False, "fehler": str(e)}), 502
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/api/bestellung/<token>/sumup/abbrechen", methods=["POST"])
+def api_sumup_abbrechen(token):
+    if not theke_zugriff_erlaubt():
+        return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT id, status, sumup_checkout_id FROM bestellungen
+            WHERE token = %s FOR UPDATE
+        """, (token,))
+        bestellung = cur.fetchone()
+        if not bestellung:
+            return jsonify({"ok": False, "fehler": "Bestellung nicht gefunden."}), 404
+        if bestellung[1] == "BEZAHLT":
+            return jsonify({"ok": False, "fehler": "Die Zahlung wurde bereits abgeschlossen."}), 409
+        if bestellung[2]:
+            sumup_anfrage(
+                "POST",
+                f"/v0.1/merchants/{urllib.parse.quote(SUMUP_MERCHANT_CODE)}/readers/"
+                f"{urllib.parse.quote(SUMUP_READER_ID)}/terminate",
+                {}
+            )
+        cur.execute("""
+            UPDATE bestellungen
+            SET zahlungsart = 'BAR', sumup_status = 'CANCELLED', sumup_fehler = NULL
+            WHERE id = %s
+        """, (bestellung[0],))
+        conn.commit()
+        return jsonify({"ok": True, "status": "CANCELLED"})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"ok": False, "fehler": str(e)}), 502
+    finally:
+        cur.close()
+        conn.close()
+
+
 @app.route("/api/bestellung/<token>/bezahlt", methods=["POST"])
 def api_bestellung_bezahlt(token):
     if not theke_zugriff_erlaubt():
@@ -2115,7 +2423,8 @@ def api_bestellung_bezahlt(token):
                 punkte_gutgeschrieben,
                 zahlungsart,
                 punkte_betrag,
-                punkte_eingeloest
+                punkte_eingeloest,
+                sumup_status
             FROM bestellungen
             WHERE token = %s
             FOR UPDATE
@@ -2137,12 +2446,19 @@ def api_bestellung_bezahlt(token):
         zahlungsart = bestellung[5]
         punkte_betrag = int(bestellung[6] or 0)
         punkte_eingeloest = bool(bestellung[7])
+        sumup_status = bestellung[8]
 
         if status == "BEZAHLT":
             return jsonify({
                 "ok": True,
                 "bereits_bezahlt": True
             })
+
+        if zahlungsart == "SUMUP" and sumup_status in ("STARTED", "PENDING"):
+            return jsonify({
+                "ok": False,
+                "fehler": "Die SumUp-Zahlung läuft noch. Bitte den Zahlungsstatus abwarten."
+            }), 409
 
         if zahlungsart == "BONUSPUNKTE":
             if not kunde_id:
