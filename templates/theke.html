@@ -18,6 +18,7 @@
             --border: #2a2a2a;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        .ui-icon { width: 1.2em; height: 1.2em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.2em; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--dark); color: #fff; min-height: 100vh;
@@ -656,7 +657,7 @@ function renderOrders() {
 
     if (!orders.length) {
         container.innerHTML = '<div class="empty-state">' +
-            '<div class="empty-icon">📋</div>' +
+            '<div class="empty-icon"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#clipboard"></use></svg></div>' +
             '<div class="empty-title">Keine Bestellungen</div>' +
             '<p>Neue Bestellungen erscheinen hier automatisch.</p></div>';
         return;
@@ -832,14 +833,14 @@ function renderOrderCard(order) {
 
     h += '<div class="order-bonus' + (order.bonus_kunde ? ' hat-konto' : '') + '">';
     h += isBonusOrder(order)
-        ? '🪙 Prämienbestellung – Zahlung mit Bonuspunkten'
-        : (order.bonus_kunde ? '🎯 Bonus-Kunde (' + order.punkte + ' Pkte)' : 'Kein Bonus-Konto');
+        ? '<svg class="ui-icon"><use href="/static/icons/ui-icons.svg#coins"></use></svg> Prämienbestellung – Zahlung mit Bonuspunkten'
+        : (order.bonus_kunde ? '<svg class="ui-icon"><use href="/static/icons/ui-icons.svg#target"></use></svg> Bonus-Kunde (' + order.punkte + ' Pkte)' : 'Kein Bonus-Konto');
     h += '</div>';
 
     h += '<div class="order-bonus">';
-    h += '📍 ' + esc(order.bestellart || 'ABHOLUNG') + ' · ' + esc(order.bestellquelle || 'KUNDEN_APP');
+    h += '<svg class="ui-icon"><use href="/static/icons/ui-icons.svg#pin"></use></svg> ' + esc(order.bestellart || 'ABHOLUNG') + ' · ' + esc(order.bestellquelle || 'KUNDEN_APP');
     if (order.gewuenschte_zeit) h += ' · ⏰ ' + esc(order.gewuenschte_zeit);
-    if (order.druckstatus) h += ' · 🖨️ ' + esc(order.druckstatus);
+    if (order.druckstatus) h += ' · <svg class="ui-icon"><use href="/static/icons/ui-icons.svg#printer"></use></svg> ' + esc(order.druckstatus);
     h += '</div>';
     if (order.kundenname || order.kunden_telefon || order.lieferadresse || order.kundenhinweis) {
         h += '<div class="order-item"><div class="item-details">';
@@ -865,7 +866,7 @@ function renderOrderCard(order) {
         if (item.beilage) {
             var beilageName = typeof item.beilage === 'object' ? item.beilage.name : item.beilage;
             var beilagePreis = typeof item.beilage === 'object' ? (Number(item.beilage.preis) || 0) : 0;
-            h += '<div class="item-detail beilage">🍟 ' + esc(beilageName);
+            h += '<div class="item-detail beilage"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#food"></use></svg> ' + esc(beilageName);
             if (beilagePreis > 0) h += ' <span class="price-tag">+' + centToEuro(beilagePreis) + '</span>';
             h += '</div>';
         }

@@ -7,6 +7,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        .ui-icon { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.22em; flex: 0 0 auto; }
         :root {
             --red: #c41e3a; --red-dark: #a01830; --black: #0d0d0d; --dark: #1a1a1a;
             --card: #252525; --gray: #888; --green: #2ecc71; --radius: 16px;
@@ -478,15 +479,15 @@
                 <span>Bischofsheim • {% if app_mode == 'mitarbeiter' %}Mitarbeiterbestellung{% elif app_mode == 'terminal' %}Bestellterminal {{ station[-1] }}{% else %}Speisekarte{% endif %}</span>
             </div>
         </div>
-        <button class="cart-btn" onclick="toggleCart()">🛒<span class="cart-badge" id="cartBadge">0</span></button>
+        <button class="cart-btn" onclick="toggleCart()" aria-label="Warenkorb"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#cart"></use></svg><span class="cart-badge" id="cartBadge">0</span></button>
     </div>
     <div class="toggle-bar">
         {% if app_mode == 'terminal' %}
-        <button class="toggle-btn active" onclick="setMode(this,'VOR_ORT')">🍽️ Vor Ort</button>
+        <button class="toggle-btn active" onclick="setMode(this,'VOR_ORT')"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#dine"></use></svg> Vor Ort</button>
         {% else %}
-        <button class="toggle-btn active" onclick="setMode(this,'ABHOLUNG')">🚗 Abholung</button>
-        <button class="toggle-btn" onclick="setMode(this,'LIEFERUNG')">🛵 Lieferung</button>
-        {% if app_mode == 'mitarbeiter' %}<button class="toggle-btn" onclick="setMode(this,'VOR_ORT')">🍽️ Vor Ort</button>{% endif %}
+        <button class="toggle-btn active" onclick="setMode(this,'ABHOLUNG')"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#pickup"></use></svg> Abholung</button>
+        <button class="toggle-btn" onclick="setMode(this,'LIEFERUNG')"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#delivery"></use></svg> Lieferung</button>
+        {% if app_mode == 'mitarbeiter' %}<button class="toggle-btn" onclick="setMode(this,'VOR_ORT')"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#dine"></use></svg> Vor Ort</button>{% endif %}
         {% endif %}
     </div>
 </div>
@@ -510,7 +511,7 @@
     <div class="modal">
         <div class="modal-header">
             <h2 id="modalTitle">Anpassen</h2>
-            <button class="modal-close" onclick="closeModal()">✕</button>
+            <button class="modal-close" onclick="closeModal()" aria-label="Schließen"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#close"></use></svg></button>
         </div>
         <div class="modal-body" id="modalBody"></div>
         <div class="modal-footer">
@@ -519,7 +520,7 @@
                 <span class="qty-num" id="qtyNum">1</span>
                 <button class="qty-btn" onclick="changeQty(1)">+</button>
             </div>
-            <button class="add-to-cart-btn" id="addToCartBtn" onclick="addToCart()" disabled>🛒 In den Warenkorb • <span id="modalTotal">0,00€</span></button>
+            <button class="add-to-cart-btn" id="addToCartBtn" onclick="addToCart()" disabled><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#cart"></use></svg> In den Warenkorb • <span id="modalTotal">0,00€</span></button>
         </div>
     </div>
 </div>
@@ -527,7 +528,7 @@
 <!-- ===== MODAL: Weiter auswählen oder Warenkorb ===== -->
 <div class="choice-overlay" id="choiceModal">
     <div class="choice-box">
-        <div class="choice-icon">✅</div>
+        <div class="choice-icon"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#check"></use></svg></div>
         <div class="choice-title">Hinzugefügt!</div>
         <div class="choice-sub" id="choiceProductName"></div>
         <button class="choice-btn choice-btn-primary" onclick="continueShopping()">Weiter auswählen</button>
@@ -539,11 +540,11 @@
 <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
 <div class="cart-sidebar" id="cartSidebar">
     <div class="cart-header">
-        <h2>🛒 Warenkorb</h2>
-        <button class="modal-close" onclick="toggleCart()">✕</button>
+        <h2><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#cart"></use></svg> Warenkorb</h2>
+        <button class="modal-close" onclick="toggleCart()" aria-label="Schließen"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#close"></use></svg></button>
     </div>
     <div class="cart-items" id="cartItems">
-        <div class="cart-empty"><div class="cart-empty-icon">🛒</div><h3>Leer</h3><p>Füge Gerichte hinzu!</p></div>
+        <div class="cart-empty"><div class="cart-empty-icon"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#cart"></use></svg></div><h3>Leer</h3><p>Füge Gerichte hinzu!</p></div>
     </div>
     <div class="cart-footer" id="cartFooter" style="display:none;">
         <div class="cart-summary-row"><span>Zwischensumme</span><span id="cartSubtotal">0,00€</span></div>
@@ -557,7 +558,7 @@
             <label>Hinweis<textarea id="orderNote" maxlength="500" placeholder="Hinweis für Küche oder Lieferung"></textarea></label>
             <label>Zahlungsart<select id="paymentType"></select></label>
         </div>
-        <button class="checkout-btn" id="checkoutButton" onclick="checkout()">{% if app_mode == 'mitarbeiter' %}Bestellung drucken 🖨️{% elif app_mode == 'terminal' %}Bestellen &amp; Karte zahlen 💳{% else %}Jetzt bestellen 🎉{% endif %}</button>
+        <button class="checkout-btn" id="checkoutButton" onclick="checkout()">{% if app_mode == 'mitarbeiter' %}<svg class="ui-icon"><use href="/static/icons/ui-icons.svg#printer"></use></svg> Bestellung drucken{% elif app_mode == 'terminal' %}<svg class="ui-icon"><use href="/static/icons/ui-icons.svg#card"></use></svg> Bestellen &amp; Karte zahlen{% else %}<svg class="ui-icon"><use href="/static/icons/ui-icons.svg#check"></use></svg> Jetzt bestellen{% endif %}</button>
         <button class="clear-cart-btn" onclick="clearCart()">Warenkorb leeren</button>
     </div>
 </div>
@@ -565,7 +566,7 @@
 <!-- ===== SUCCESS ===== -->
 <div class="success-overlay" id="successModal">
     <div class="success-box">
-        <div class="success-icon">✅</div>
+        <div class="success-icon"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#check"></use></svg></div>
         <h2>Bestellung wurde erstellt</h2>
         <p style="color:var(--gray);margin-bottom:8px;">Deine Bestellnummer</p>
         <div class="order-number" id="orderNumber">#0000</div>
@@ -1319,7 +1320,7 @@ function renderCart() {
     var f = document.getElementById('cartFooter');
 
     if (!cart.length) {
-        c.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon">🛒</div><h3>Leer</h3><p>Füge Gerichte hinzu!</p></div>';
+        c.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#cart"></use></svg></div><h3>Leer</h3><p>Füge Gerichte hinzu!</p></div>';
         f.style.display = 'none';
         return;
     }
