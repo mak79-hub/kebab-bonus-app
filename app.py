@@ -292,6 +292,17 @@ def app_style():
     <meta name="theme-color" content="#ff2b2b">
     <style>
         * { box-sizing: border-box; }
+        .ui-icon {
+            width: 1.15em;
+            height: 1.15em;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vertical-align: -0.2em;
+            margin-right: .28em;
+        }
 
         
         :root {
@@ -982,7 +993,7 @@ def app_style():
     <script>
     if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
-            navigator.serviceWorker.register("/sw.js");
+            navigator.serviceWorker.register("/service-worker.js");
         });
     }
     </script>
@@ -1336,10 +1347,10 @@ def register():
                     Dieser QR-Code wird im Laden zum Sammeln und Einlösen der Punkte benötigt.
                 </div>
                 <a class="btn btn-red" href="/kunde/{kunden_id}/praemien">
-                    🎁 Prämien ansehen
+                    <svg class="ui-icon"><use href="/static/icons/ui-icons.svg#gift"></use></svg>Prämien ansehen
                 </a>
                 <a class="btn btn-green" href="/bestellen">
-                    🍽️ Jetzt bestellen
+                    <svg class="ui-icon"><use href="/static/icons/ui-icons.svg#food"></use></svg>Jetzt bestellen
                 </a>
                 
                 <a class="small-link" href="/">Neuen Kunden registrieren</a>
@@ -1494,10 +1505,10 @@ def kunde(kunden_id):
             </div>
             
             <a class="btn btn-red" href="/kunde/{kunde_daten[1]}/praemien">
-                🎁 Prämien ansehen
+                <svg class="ui-icon"><use href="/static/icons/ui-icons.svg#gift"></use></svg>Prämien ansehen
             </a>
             <a class="btn btn-green" href="/bestellen">
-                🍽️ Jetzt bestellen
+                <svg class="ui-icon"><use href="/static/icons/ui-icons.svg#food"></use></svg>Jetzt bestellen
             </a>
             
             
@@ -1506,8 +1517,9 @@ def kunde(kunden_id):
                 class="btn btn-dark"
                 type="button"
                 onclick="pushAktivieren()"
+                style="display:none;"
             >
-                🔔 Benachrichtigungen aktivieren
+                <svg class="ui-icon"><use href="/static/icons/ui-icons.svg#bell"></use></svg>Benachrichtigungen aktivieren
             </button>
             
             <div
@@ -1541,6 +1553,29 @@ def kunde(kunden_id):
                 }} else {{
                     meldung.style.borderColor = "#ff2b2b";
                     meldung.style.color = "#ff6b6b";
+                }}
+            }}
+
+            async function pushStatusPruefen() {{
+                const button = document.getElementById("pushButton");
+                if (!button || !("serviceWorker" in navigator) || !("PushManager" in window)) {{
+                    return;
+                }}
+                try {{
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (!registration) {{
+                        button.style.display = "block";
+                        return;
+                    }}
+                    const subscription = await registration.pushManager.getSubscription();
+                    if (Notification.permission === "granted" && subscription) {{
+                        button.style.display = "none";
+                    }} else {{
+                        button.style.display = "block";
+                    }}
+                }} catch (fehler) {{
+                    console.debug("Push-Status konnte nicht geprüft werden:", fehler);
+                    button.style.display = "block";
                 }}
             }}
             
@@ -1628,12 +1663,10 @@ def kunde(kunden_id):
                     }}
             
                     zeigePushMeldung(
-                        "✅ Benachrichtigungen wurden aktiviert.",
+                        "Benachrichtigungen wurden aktiviert.",
                         true
                     );
-            
-                    button.textContent = "✅ Benachrichtigungen aktiviert";
-                    button.disabled = true;
+                    button.style.display = "none";
             
                 }} catch (fehler) {{
                     console.error("Push-Fehler:", fehler);
@@ -1642,10 +1675,11 @@ def kunde(kunden_id):
                         "❌ " + fehler.message
                     );
             
-                    button.textContent = "🔔 Erneut versuchen";
+                    button.innerHTML = '<svg class="ui-icon"><use href="/static/icons/ui-icons.svg#bell"></use></svg>Erneut versuchen';
                     button.disabled = false;
                 }}
             }}
+            window.addEventListener("load", pushStatusPruefen);
             </script>
             
             </div>

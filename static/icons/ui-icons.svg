@@ -12,4 +12,6 @@
   <symbol id="target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
   <symbol id="pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></symbol>
   <symbol id="food" viewBox="0 0 24 24"><path d="M4 13h16M6 13a6 6 0 0 1 12 0M12 7V4M3 17h18"/></symbol>
+  <symbol id="gift" viewBox="0 0 24 24"><path d="M3 10h18v4H3zM5 14h14v7H5zM12 10v11M12 10H8a2.5 2.5 0 1 1 4-2.5zM12 10h4a2.5 2.5 0 1 0-4-2.5z"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
 </svg>
