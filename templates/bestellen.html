@@ -50,6 +50,14 @@
             border-radius: 10px; cursor: pointer; transition: all 0.3s;
         }
         .toggle-btn.active { background: var(--red); color: #fff; }
+        .order-data { margin: 14px 0; display: grid; gap: 9px; }
+        .order-data input, .order-data textarea, .order-data select {
+            width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #444;
+            background: #161616; color: #fff; font: inherit;
+        }
+        .order-data textarea { min-height: 68px; resize: vertical; }
+        .order-data label { font-size: .72rem; color: var(--gray); font-weight: 700; }
+        .delivery-only { display: none; }
 
         /* ===== VIEW: HOME – Kategorien-Kacheln ===== */
         .view { display: none; padding: 20px; }
@@ -467,14 +475,19 @@
             <img class="logo-icon" src="/static/bilder/logo.png" alt="Kebap Höhle XXL">
             <div class="logo-text">
                 <h1>Kebap Höhle XXL</h1>
-                <span>Bischofsheim • Speisekarte</span>
+                <span>Bischofsheim • {% if app_mode == 'mitarbeiter' %}Mitarbeiterbestellung{% elif app_mode == 'terminal' %}Bestellterminal {{ station[-1] }}{% else %}Speisekarte{% endif %}</span>
             </div>
         </div>
         <button class="cart-btn" onclick="toggleCart()">🛒<span class="cart-badge" id="cartBadge">0</span></button>
     </div>
     <div class="toggle-bar">
-        <button class="toggle-btn active" onclick="setMode(this)" style="flex:1">🚗 Abholung</button>
-        <button class="toggle-btn" onclick="setMode(this)" style="display:none">🛵 Lieferung</button>
+        {% if app_mode == 'terminal' %}
+        <button class="toggle-btn active" onclick="setMode(this,'VOR_ORT')">🍽️ Vor Ort</button>
+        {% else %}
+        <button class="toggle-btn active" onclick="setMode(this,'ABHOLUNG')">🚗 Abholung</button>
+        <button class="toggle-btn" onclick="setMode(this,'LIEFERUNG')">🛵 Lieferung</button>
+        {% if app_mode == 'mitarbeiter' %}<button class="toggle-btn" onclick="setMode(this,'VOR_ORT')">🍽️ Vor Ort</button>{% endif %}
+        {% endif %}
     </div>
 </div>
 
@@ -536,7 +549,15 @@
         <div class="cart-summary-row"><span>Zwischensumme</span><span id="cartSubtotal">0,00€</span></div>
         <div class="cart-summary-row" style="display:none"><span>Liefergebühr</span><span id="cartFee">Kostenlos</span></div>
         <div class="cart-total"><span>Gesamt</span><span id="cartTotal">0,00€</span></div>
-        <button class="checkout-btn" onclick="checkout()">Jetzt bestellen 🎉</button>
+        <div class="order-data">
+            <label>Name<input id="orderName" maxlength="100" placeholder="Name (bei Lieferung erforderlich)"></label>
+            <label>Telefon<input id="orderPhone" maxlength="40" inputmode="tel" placeholder="Telefon (bei Lieferung erforderlich)"></label>
+            <label class="delivery-only">Lieferadresse<textarea id="orderAddress" maxlength="300" placeholder="Straße, Hausnummer, PLZ und Ort"></textarea></label>
+            <label>Gewünschte Zeit<input id="orderTime" maxlength="80" placeholder="Sofort oder z. B. 18:30 Uhr"></label>
+            <label>Hinweis<textarea id="orderNote" maxlength="500" placeholder="Hinweis für Küche oder Lieferung"></textarea></label>
+            <label>Zahlungsart<select id="paymentType"></select></label>
+        </div>
+        <button class="checkout-btn" id="checkoutButton" onclick="checkout()">{% if app_mode == 'mitarbeiter' %}Bestellung drucken 🖨️{% elif app_mode == 'terminal' %}Bestellen &amp; Karte zahlen 💳{% else %}Jetzt bestellen 🎉{% endif %}</button>
         <button class="clear-cart-btn" onclick="clearCart()">Warenkorb leeren</button>
     </div>
 </div>
@@ -587,6 +608,7 @@ const DOENER_WITHOUT = ["Zwiebel", "Rotkraut", "Eisbergsalat", "Tomate", "Karott
 const DOENER_EXTRAS = [
     { name: "Fleisch", price: 1.50 },
     { name: "Gegrilltes Gemüse", price: 1.50 },
+    { name: "Käse", price: 1.50 },
 ];
 
 const PIZZA_EXTRAS = [
@@ -854,6 +876,10 @@ let selectedUpgrade = null;
 let selectedSide = null;
 let currentCategoryId = null;
 let menuPreselected = null;
+const APP_MODE = {{ app_mode|tojson }};
+const ORDER_STATION = {{ station|tojson }};
+const ORDER_SOURCE = {{ bestellquelle|tojson }};
+let orderMode = APP_MODE === 'terminal' ? 'VOR_ORT' : 'ABHOLUNG';
 
 function isDoenerProduct(item) {
     if (item.cat === 'doener-sandwich') return true;
@@ -1386,6 +1412,15 @@ function generateInternalId() {
 async function checkout() {
     if (!cart.length) return;
 
+    var kundenname = document.getElementById('orderName').value.trim();
+    var telefon = document.getElementById('orderPhone').value.trim();
+    var lieferadresse = document.getElementById('orderAddress').value.trim();
+    var zahlungsart = document.getElementById('paymentType').value;
+    if (orderMode === 'LIEFERUNG' && (!kundenname || !telefon || !lieferadresse)) {
+        alert('Für die Lieferung bitte Name, Telefonnummer und vollständige Adresse eintragen.');
+        return;
+    }
+
     toggleCart();
 
     try {
@@ -1395,7 +1430,16 @@ async function checkout() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                items: cart
+                items: cart,
+                bestellquelle: ORDER_SOURCE,
+                bestellart: orderMode,
+                station: ORDER_STATION,
+                zahlungsart: zahlungsart,
+                kundenname: kundenname,
+                telefon: telefon,
+                lieferadresse: lieferadresse,
+                gewuenschte_zeit: document.getElementById('orderTime').value.trim(),
+                hinweis: document.getElementById('orderNote').value.trim()
             })
         });
 
@@ -1424,20 +1468,74 @@ async function checkout() {
         updateCartBadge();
         document.getElementById('successModal').classList.add('show');
 
+        if (APP_MODE === 'terminal') {
+            document.querySelector('.order-hint').textContent = 'Die Bestellung wurde bereits an die Küche gesendet. Bitte jetzt am SumUp-Gerät bezahlen.';
+            await startTerminalPayment(data.token);
+        } else if (APP_MODE === 'mitarbeiter') {
+            document.querySelector('.order-hint').textContent = 'Der Druckauftrag wurde an die Küche übergeben.';
+        }
+
     } catch (error) {
         alert('Verbindung zum Server fehlgeschlagen.');
     }
 }
 
 function closeSuccess() {
-    window.location.href = "/";
+    if (APP_MODE === 'mitarbeiter') window.location.href = "/mitarbeiter-bestellung";
+    else if (APP_MODE === 'terminal') window.location.href = "/bestellterminal/" + ORDER_STATION.slice(-1);
+    else window.location.href = "/";
 }
-function setMode(btn) {
+function paymentOptions() {
+    var select = document.getElementById('paymentType');
+    if (APP_MODE === 'terminal') {
+        select.innerHTML = '<option value="SUMUP">Kartenzahlung am Terminal</option>';
+        return;
+    }
+    if (orderMode === 'LIEFERUNG') {
+        select.innerHTML = '<option value="BAR_LIEFERUNG">Bar beim Fahrer</option><option value="KARTE_LIEFERUNG">Karte beim Fahrer</option>';
+    } else if (APP_MODE === 'mitarbeiter') {
+        select.innerHTML = '<option value="BEI_ABHOLUNG">Bei Abholung / an der Theke</option><option value="BAR">Bar bezahlt</option>';
+    } else {
+        select.innerHTML = '<option value="BEI_ABHOLUNG">Bei Abholung bezahlen</option>';
+    }
+}
+function setMode(btn, mode) {
     document.querySelectorAll('.toggle-btn').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
+    orderMode = mode;
+    document.querySelectorAll('.delivery-only').forEach(function(el) {
+        el.style.display = mode === 'LIEFERUNG' ? 'block' : 'none';
+    });
+    paymentOptions();
+}
+
+async function startTerminalPayment(token) {
+    try {
+        var start = await fetch('/api/bestellung/' + encodeURIComponent(token) + '/sumup/start', {
+            method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}'
+        });
+        var result = await start.json();
+        if (!start.ok || !result.ok) throw new Error(result.fehler || 'SumUp konnte nicht gestartet werden.');
+        for (var i = 0; i < 120; i++) {
+            await new Promise(function(resolve) { setTimeout(resolve, 2000); });
+            var response = await fetch('/api/bestellung/' + encodeURIComponent(token) + '/sumup/status', {cache:'no-store'});
+            var status = await response.json();
+            if (status.status === 'SUCCESS') {
+                document.querySelector('.order-hint').textContent = '✓ Kartenzahlung erfolgreich. Die Küche bearbeitet deine Bestellung.';
+                return;
+            }
+            if (status.status === 'FAILED' || status.status === 'CANCELLED') {
+                throw new Error('Kartenzahlung nicht erfolgreich. Bitte beim Mitarbeiter bezahlen. Die Bestellung ist bereits in der Küche.');
+            }
+        }
+        throw new Error('Zahlung dauert zu lange. Bitte einen Mitarbeiter rufen.');
+    } catch (error) {
+        document.querySelector('.order-hint').textContent = error.message;
+    }
 }
 
 init();
+paymentOptions();
 </script>
 </body>
 </html>

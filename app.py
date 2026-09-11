@@ -22,12 +22,12 @@ from praemien_katalog import PRAEMIEN_KATALOG, PRAEMIEN_EXTRAS, PRAEMIEN_MENUES
 app = Flask(__name__)
 
 
-app.secret_key = os.environ.get("SECRET_KEY", "kebab-hoehe-test-secret-key")
+app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 app.permanent_session_lifetime = timedelta(days=365)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
-MITARBEITER_PIN = os.environ.get("MITARBEITER_PIN", "1234")
-CHEF_PIN = os.environ.get("CHEF_PIN", "9999")
+MITARBEITER_PIN = os.environ.get("MITARBEITER_PIN", "")
+CHEF_PIN = os.environ.get("CHEF_PIN", "")
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
@@ -40,6 +40,9 @@ SUMUP_MERCHANT_CODE = os.environ.get("SUMUP_MERCHANT_CODE", "").strip()
 SUMUP_AFFILIATE_KEY = os.environ.get("SUMUP_AFFILIATE_KEY", "").strip()
 SUMUP_APP_ID = os.environ.get("SUMUP_APP_ID", "de.kebabhoehlexxl.bonusapp").strip()
 SUMUP_READER_ID = os.environ.get("SUMUP_READER_ID", "").strip()
+SUMUP_READER_TERMINAL_1 = os.environ.get("SUMUP_READER_TERMINAL_1", "").strip()
+SUMUP_READER_TERMINAL_2 = os.environ.get("SUMUP_READER_TERMINAL_2", "").strip()
+PRINT_AGENT_TOKEN = os.environ.get("PRINT_AGENT_TOKEN", "").strip()
 
 PRAEMIEN = [
     {"name": "Ayran 0,25l", "punkte": 100, "bild": "ayran.png", "farbe": "#22c55e"},
@@ -63,10 +66,10 @@ def get_db_connection():
         return psycopg2.connect(DATABASE_URL)
 
     return psycopg2.connect(
-        host="localhost",
-        database="kebab_assistent",
-        user="postgres",
-        password="Auto2026!"
+        host=os.environ.get("DB_HOST", "localhost"),
+        database=os.environ.get("DB_NAME", "kebab_assistent"),
+        user=os.environ.get("DB_USER", "postgres"),
+        password=os.environ.get("DB_PASSWORD", "")
     )
 
 def get_einstellung(schluessel, standardwert=""):
@@ -187,6 +190,30 @@ def init_db():
         ALTER TABLE bestellungen
         ADD COLUMN IF NOT EXISTS sumup_fehler TEXT;
     """)
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS bestellquelle TEXT NOT NULL DEFAULT 'KUNDEN_APP';")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS bestellart TEXT NOT NULL DEFAULT 'ABHOLUNG';")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kundenname TEXT;")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kunden_telefon TEXT;")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS lieferadresse TEXT;")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kundenhinweis TEXT;")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS gewuenschte_zeit TEXT;")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS station TEXT;")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS sumup_reader_id TEXT;")
+    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS druckstatus TEXT NOT NULL DEFAULT 'OFFEN';")
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS druckauftraege (
+            id SERIAL PRIMARY KEY,
+            bestellung_id INTEGER NOT NULL REFERENCES bestellungen(id) ON DELETE CASCADE,
+            typ TEXT NOT NULL DEFAULT 'KUECHE',
+            status TEXT NOT NULL DEFAULT 'BEREIT',
+            versuche INTEGER NOT NULL DEFAULT 0,
+            payload JSONB NOT NULL,
+            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            gedruckt_am TIMESTAMP,
+            fehler TEXT
+        );
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_druckauftraege_status ON druckauftraege(status, erstellt_am);")
     
     
     conn.commit()
@@ -1626,7 +1653,24 @@ def kunde(kunden_id):
             """
 @app.route("/bestellen")
 def bestellen():
-    return render_template("bestellen.html")
+    return render_template("bestellen.html", app_mode="kunde", station="", bestellquelle="KUNDEN_APP")
+
+
+@app.route("/mitarbeiter-bestellung")
+def mitarbeiter_bestellung():
+    if not theke_zugriff_erlaubt():
+        return redirect(url_for("mitarbeiter_login", next="/mitarbeiter-bestellung"))
+    return render_template("bestellen.html", app_mode="mitarbeiter", station="THEKE", bestellquelle="MITARBEITER")
+
+
+@app.route("/bestellterminal/<int:nummer>")
+def bestellterminal(nummer):
+    if nummer not in (1, 2):
+        return "Bestellterminal nicht vorhanden.", 404
+    return render_template(
+        "bestellen.html", app_mode="terminal", station=f"TERMINAL_{nummer}",
+        bestellquelle=f"BESTELLMONITOR_{nummer}"
+    )
 
 
 def angemeldeter_kunde():
@@ -1774,6 +1818,7 @@ def api_praemien_bestellung():
     cur = conn.cursor()
 
     try:
+        cur.execute("SELECT pg_advisory_xact_lock(hashtext('bestellungen_tagesnummer_' || CURRENT_DATE::text));")
         cur.execute("""
             SELECT COALESCE(MAX(tagesnummer), 99) + 1
             FROM bestellungen
@@ -1815,6 +1860,21 @@ def api_praemien_bestellung():
                     "gesamtpunkte": position["gesamtpunkte"]
                 })
             ))
+
+        druckauftrag_anlegen(cur, bestellung_id, {
+            "bestellnummer": tagesnummer,
+            "quelle": "PRAEMIEN_APP",
+            "bestellart": "ABHOLUNG",
+            "zahlungsart": "BONUSPUNKTE",
+            "kunde": {"name": f"{kunde[2]} {kunde[3]}", "telefon": "", "adresse": "", "zeit": "", "hinweis": ""},
+            "positionen": [
+                {"menge": p["menge"], "produkt": p["produkt_name"], "variante": p["variante"],
+                 "beilage": p["optionen"].get("side"), "menue": p["optionen"].get("upgrade"),
+                 "saucen": p["optionen"].get("sauces", []), "ohne": p["optionen"].get("without", []),
+                 "extras": p["optionen"].get("extras", []), "hinweis": ""}
+                for p in positionen
+            ]
+        })
 
         conn.commit()
 
@@ -1906,6 +1966,32 @@ def normalisiere_bestelloption(option):
     }
 
 
+def text_feld(daten, name, max_laenge=300):
+    return str(daten.get(name) or "").strip()[:max_laenge]
+
+
+def reader_fuer_station(station):
+    station = str(station or "THEKE").upper()
+    if station == "TERMINAL_1":
+        return SUMUP_READER_TERMINAL_1
+    if station == "TERMINAL_2":
+        return SUMUP_READER_TERMINAL_2
+    return SUMUP_READER_ID
+
+
+def druckauftrag_anlegen(cur, bestellung_id, payload):
+    cur.execute("""
+        INSERT INTO druckauftraege (bestellung_id, payload)
+        VALUES (%s, %s)
+    """, (bestellung_id, Json(payload)))
+    cur.execute("UPDATE bestellungen SET druckstatus = 'BEREIT' WHERE id = %s", (bestellung_id,))
+
+
+def druck_agent_erlaubt():
+    token = request.headers.get("X-Print-Agent-Token", "")
+    return bool(PRINT_AGENT_TOKEN and secrets.compare_digest(token, PRINT_AGENT_TOKEN))
+
+
 @app.route("/theke")
 def theke():
     if not theke_zugriff_erlaubt():
@@ -1947,7 +2033,16 @@ def api_theke_bestellungen():
                 b.sumup_checkout_id,
                 b.sumup_transaction_id,
                 b.sumup_status,
-                b.sumup_fehler
+                b.sumup_fehler,
+                b.bestellquelle,
+                b.bestellart,
+                b.kundenname,
+                b.kunden_telefon,
+                b.lieferadresse,
+                b.kundenhinweis,
+                b.gewuenschte_zeit,
+                b.station,
+                b.druckstatus
             FROM bestellungen b
             WHERE b.bestelldatum = CURRENT_DATE
             ORDER BY b.erstellt_am ASC
@@ -2000,6 +2095,7 @@ def api_theke_bestellungen():
                     "beilage": optionen.get("side"),
                     "saucen": optionen.get("sauces") or [],
                     "ohne": optionen.get("without") or [],
+                    "hinweis": optionen.get("note") or "",
                     "punkte_einzel": int(optionen.get("einzelpunkte", 0) or 0),
                     "punkte_gesamt": int(optionen.get("gesamtpunkte", 0) or 0),
                     "kueche": position[8],
@@ -2030,6 +2126,15 @@ def api_theke_bestellungen():
                 "sumup_transaction_id": zeile[13],
                 "sumup_status": zeile[14],
                 "sumup_fehler": zeile[15],
+                "bestellquelle": zeile[16],
+                "bestellart": zeile[17],
+                "kundenname": zeile[18] or "",
+                "kunden_telefon": zeile[19] or "",
+                "lieferadresse": zeile[20] or "",
+                "kundenhinweis": zeile[21] or "",
+                "gewuenschte_zeit": zeile[22] or "",
+                "station": zeile[23] or "",
+                "druckstatus": zeile[24],
                 "erstellt_am": zeile[7].isoformat(),
                 "items": positionen_nach_bestellung.get(zeile[0], [])
             })
@@ -2051,15 +2156,18 @@ def api_theke_bestellungen():
 
 @app.route("/api/bestellung", methods=["POST"])
 def api_bestellung():
-    daten = request.get_json()
+    daten = request.get_json(silent=True) or {}
 
     if not daten or not daten.get("items"):
         return jsonify({"ok": False, "fehler": "Warenkorb ist leer."}), 400
+    if not isinstance(daten.get("items"), list) or len(daten["items"]) > 50:
+        return jsonify({"ok": False, "fehler": "Die Bestellung enthält zu viele Positionen."}), 400
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
+        cur.execute("SELECT pg_advisory_xact_lock(hashtext('bestellungen_tagesnummer_' || CURRENT_DATE::text));")
         cur.execute("""
             SELECT COALESCE(MAX(tagesnummer), 99) + 1
             FROM bestellungen
@@ -2083,26 +2191,63 @@ def api_bestellung():
             if kunde:
                 kunden_id = kunde[0]
 
-        gesamtbetrag = sum(
-            float(item.get("total", 0))
-            for item in daten["items"]
-        )
+        gesamtbetrag = 0.0
+        for item in daten["items"]:
+            if not isinstance(item, dict):
+                return jsonify({"ok": False, "fehler": "Eine Bestellposition ist ungültig."}), 400
+            try:
+                menge_pruefung = int(item.get("qty", 1))
+                positionsbetrag = float(item.get("total", 0))
+            except (TypeError, ValueError):
+                return jsonify({"ok": False, "fehler": "Menge oder Preis ist ungültig."}), 400
+            if menge_pruefung < 1 or menge_pruefung > 20 or positionsbetrag < 0 or positionsbetrag > 1000:
+                return jsonify({"ok": False, "fehler": "Menge oder Preis liegt außerhalb des erlaubten Bereichs."}), 400
+            gesamtbetrag += positionsbetrag
+        if gesamtbetrag <= 0 or gesamtbetrag > 2500:
+            return jsonify({"ok": False, "fehler": "Gesamtbetrag ist ungültig."}), 400
+
+        bestellquelle = text_feld(daten, "bestellquelle", 30).upper() or "KUNDEN_APP"
+        bestellart = text_feld(daten, "bestellart", 20).upper() or "ABHOLUNG"
+        station = text_feld(daten, "station", 30).upper()
+        erlaubte_quellen = {"KUNDEN_APP", "MITARBEITER", "BESTELLMONITOR_1", "BESTELLMONITOR_2"}
+        erlaubte_arten = {"ABHOLUNG", "VOR_ORT", "LIEFERUNG"}
+        if bestellquelle not in erlaubte_quellen or bestellart not in erlaubte_arten:
+            return jsonify({"ok": False, "fehler": "Bestellquelle oder Bestellart ist ungültig."}), 400
+        if bestellquelle == "MITARBEITER" and not theke_zugriff_erlaubt():
+            return jsonify({"ok": False, "fehler": "Nicht als Mitarbeiter angemeldet."}), 401
+
+        zahlungsart = text_feld(daten, "zahlungsart", 30).upper() or "BAR"
+        erlaubte_zahlungen = {"BAR", "SUMUP", "BAR_LIEFERUNG", "KARTE_LIEFERUNG", "BEI_ABHOLUNG"}
+        if zahlungsart not in erlaubte_zahlungen:
+            return jsonify({"ok": False, "fehler": "Zahlungsart ist ungültig."}), 400
+        kundenname = text_feld(daten, "kundenname", 100)
+        kunden_telefon = text_feld(daten, "telefon", 40)
+        lieferadresse = text_feld(daten, "lieferadresse", 300)
+        kundenhinweis = text_feld(daten, "hinweis", 500)
+        gewuenschte_zeit = text_feld(daten, "gewuenschte_zeit", 80)
+        if bestellart == "LIEFERUNG" and (not kundenname or not kunden_telefon or not lieferadresse):
+            return jsonify({"ok": False, "fehler": "Für die Lieferung werden Name, Telefon und vollständige Adresse benötigt."}), 400
 
         cur.execute("""
             INSERT INTO bestellungen
-                (token, tagesnummer, kunde_id, gesamtbetrag)
+                (token, tagesnummer, kunde_id, gesamtbetrag, zahlungsart,
+                 bestellquelle, bestellart, kundenname, kunden_telefon,
+                 lieferadresse, kundenhinweis, gewuenschte_zeit, station, sumup_reader_id)
             VALUES
-                (%s, %s, %s, %s)
+                (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             token,
             tagesnummer,
             kunden_id,
-            gesamtbetrag
+            gesamtbetrag, zahlungsart, bestellquelle, bestellart, kundenname,
+            kunden_telefon, lieferadresse, kundenhinweis, gewuenschte_zeit,
+            station or None, reader_fuer_station(station) or None
         ))
 
         bestellung_id = cur.fetchone()[0]
 
+        druck_positionen = []
         for item in daten["items"]:
             produkt = item.get("product") or {}
             variante = item.get("variant") or {}
@@ -2118,7 +2263,8 @@ def api_bestellung():
                 "upgrade": upgrade,
                 "sauces": item.get("sauces") or [],
                 "without": item.get("without") or [],
-                "side": item.get("side")
+                "side": item.get("side"),
+                "note": str(item.get("note") or "")[:300]
             }
 
             cur.execute("""
@@ -2146,6 +2292,21 @@ def api_bestellung():
                 Json(optionen)
             ))
 
+            druck_positionen.append({
+                "menge": menge, "produkt": item.get("name", produkt.get("name", "Produkt")),
+                "variante": variante.get("name") or "", "beilage": optionen["side"],
+                "menue": upgrade, "saucen": optionen["sauces"],
+                "ohne": optionen["without"], "extras": extras, "hinweis": optionen["note"]
+            })
+
+        druckauftrag_anlegen(cur, bestellung_id, {
+            "bestellnummer": tagesnummer, "quelle": bestellquelle, "bestellart": bestellart,
+            "zahlungsart": zahlungsart,
+            "kunde": {"name": kundenname, "telefon": kunden_telefon, "adresse": lieferadresse,
+                      "zeit": gewuenschte_zeit, "hinweis": kundenhinweis},
+            "positionen": druck_positionen
+        })
+
         conn.commit()
 
         return jsonify({
@@ -2153,7 +2314,8 @@ def api_bestellung():
             "bestellung_id": bestellung_id,
             "bestellnummer": tagesnummer,
             "token": token,
-            "qr": "ORDER:" + token
+            "qr": "ORDER:" + token,
+            "druckstatus": "BEREIT"
         })
 
     except Exception as e:
@@ -2180,19 +2342,31 @@ def sumup_einrichten():
         }), 503
 
     if request.method == "GET":
-        return """
+        station = request.args.get("station", "THEKE").strip().upper()
+        if station not in {"THEKE", "TERMINAL_1", "TERMINAL_2"}:
+            station = "THEKE"
+        return f"""
         <!doctype html><html lang="de"><meta name="viewport" content="width=device-width,initial-scale=1">
         <title>SumUp einrichten</title>
         <body style="font-family:Arial;background:#0d0d0d;color:white;padding:30px;max-width:650px;margin:auto">
-        <h1>SumUp-Terminal koppeln</h1>
+        <h1>SumUp-Terminal koppeln: {station}</h1>
         <p>Pairing-Code vom virtuellen oder echten Solo eingeben. Er ist nur 5 Minuten gültig.</p>
-        <form method="post"><input name="pairing_code" required minlength="8" maxlength="9"
+        <form method="post"><input type="hidden" name="station" value="{station}">
+        <input name="pairing_code" required minlength="8" maxlength="9"
         style="font-size:24px;padding:14px;width:100%;box-sizing:border-box;text-transform:uppercase">
         <button style="margin-top:15px;padding:15px;font-size:18px">TERMINAL KOPPELN</button></form>
         </body></html>
         """
 
     pairing_code = request.form.get("pairing_code", "").strip().upper()
+    station = request.form.get("station", "THEKE").strip().upper()
+    env_namen = {
+        "THEKE": "SUMUP_READER_ID",
+        "TERMINAL_1": "SUMUP_READER_TERMINAL_1",
+        "TERMINAL_2": "SUMUP_READER_TERMINAL_2"
+    }
+    if station not in env_namen:
+        return jsonify({"ok": False, "fehler": "Unbekannte Station."}), 400
     if len(pairing_code) not in (8, 9) or not pairing_code.isalnum():
         return jsonify({"ok": False, "fehler": "Der Pairing-Code ist ungültig."}), 400
 
@@ -2200,7 +2374,7 @@ def sumup_einrichten():
         antwort = sumup_anfrage(
             "POST",
             f"/v0.1/merchants/{urllib.parse.quote(SUMUP_MERCHANT_CODE)}/readers",
-            {"pairing_code": pairing_code, "name": "Kebab Höhle XXL Theke"}
+            {"pairing_code": pairing_code, "name": "Kebab Höhle XXL " + station}
         )
         daten = sumup_daten(antwort)
         reader_id = daten.get("id") or antwort.get("id")
@@ -2209,7 +2383,8 @@ def sumup_einrichten():
         return jsonify({
             "ok": True,
             "reader_id": reader_id,
-            "hinweis": "Diese ID jetzt in Render als SUMUP_READER_ID speichern."
+            "station": station,
+            "hinweis": "Diese ID jetzt in Render als " + env_namen[station] + " speichern."
         })
     except Exception as e:
         return jsonify({"ok": False, "fehler": str(e)}), 502
@@ -2238,24 +2413,36 @@ def sumup_zahlung_in_db_abschliessen(cur, bestellung_id, kunde_id, gesamtbetrag,
 
 @app.route("/api/bestellung/<token>/sumup/start", methods=["POST"])
 def api_sumup_start(token):
-    if not theke_zugriff_erlaubt():
-        return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
-
-    fehlend = sumup_konfiguration()
-    if fehlend:
-        return jsonify({
-            "ok": False,
-            "fehler": "SumUp ist noch nicht vollständig eingerichtet: " + ", ".join(fehlend)
-        }), 503
-
+    # Mitarbeiter dürfen Thekenzahlungen starten; ein Bestellmonitor nur seine eigene Bestellung.
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT id, gesamtbetrag, status, zahlungsart, sumup_checkout_id, sumup_status
+            SELECT id, gesamtbetrag, status, zahlungsart, sumup_checkout_id, sumup_status,
+                   bestellquelle, sumup_reader_id
             FROM bestellungen WHERE token = %s FOR UPDATE
         """, (token,))
         bestellung = cur.fetchone()
+        terminal_bestellung = bool(bestellung and str(bestellung[6] or "").startswith("BESTELLMONITOR_"))
+        if not theke_zugriff_erlaubt() and not terminal_bestellung:
+            return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
+        reader_id = bestellung[7] if bestellung else ""
+    except Exception:
+        cur.close()
+        conn.close()
+        raise
+
+    fehlend = sumup_konfiguration(vollstaendig=False)
+    if not reader_id:
+        fehlend.append("Kartenterminal dieser Station")
+    if fehlend:
+        cur.close()
+        conn.close()
+        return jsonify({
+            "ok": False,
+            "fehler": "SumUp ist noch nicht vollständig eingerichtet: " + ", ".join(fehlend)
+        }), 503
+    try:
         if not bestellung:
             return jsonify({"ok": False, "fehler": "Bestellung nicht gefunden."}), 404
         if bestellung[2] == "BEZAHLT":
@@ -2273,7 +2460,7 @@ def api_sumup_start(token):
         antwort = sumup_anfrage(
             "POST",
             f"/v0.1/merchants/{urllib.parse.quote(SUMUP_MERCHANT_CODE)}/readers/"
-            f"{urllib.parse.quote(SUMUP_READER_ID)}/checkout",
+            f"{urllib.parse.quote(reader_id)}/checkout",
             {
                 "total_amount": {"currency": "EUR", "minor_unit": 2, "value": betrag_cent},
                 "description": f"Bestellung #{token[:8]}",
@@ -2307,20 +2494,19 @@ def api_sumup_start(token):
 
 @app.route("/api/bestellung/<token>/sumup/status")
 def api_sumup_status(token):
-    if not theke_zugriff_erlaubt():
-        return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
-
     conn = get_db_connection()
     cur = conn.cursor()
     try:
         cur.execute("""
             SELECT id, kunde_id, gesamtbetrag, status, punkte_gutgeschrieben,
-                   sumup_checkout_id, sumup_status
+                   sumup_checkout_id, sumup_status, bestellquelle, sumup_reader_id
             FROM bestellungen WHERE token = %s FOR UPDATE
         """, (token,))
         bestellung = cur.fetchone()
         if not bestellung:
             return jsonify({"ok": False, "fehler": "Bestellung nicht gefunden."}), 404
+        if not theke_zugriff_erlaubt() and not str(bestellung[7] or "").startswith("BESTELLMONITOR_"):
+            return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
         if bestellung[3] == "BEZAHLT":
             return jsonify({"ok": True, "status": "SUCCESS", "bezahlt": True})
         if not bestellung[5]:
@@ -2329,7 +2515,7 @@ def api_sumup_status(token):
         antwort = sumup_anfrage(
             "GET",
             f"/v0.1/merchants/{urllib.parse.quote(SUMUP_MERCHANT_CODE)}/readers/"
-            f"{urllib.parse.quote(SUMUP_READER_ID)}/checkout/{urllib.parse.quote(bestellung[5])}"
+            f"{urllib.parse.quote(bestellung[8] or SUMUP_READER_ID)}/checkout/{urllib.parse.quote(bestellung[5])}"
         )
         daten = sumup_daten(antwort)
         status = str(daten.get("status") or "pending").lower()
@@ -2358,6 +2544,54 @@ def api_sumup_status(token):
     except Exception as e:
         conn.rollback()
         return jsonify({"ok": False, "fehler": str(e)}), 502
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/api/druckauftraege")
+def api_druckauftraege():
+    if not theke_zugriff_erlaubt() and not druck_agent_erlaubt():
+        return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT id, bestellung_id, typ, status, payload, erstellt_am
+            FROM druckauftraege WHERE status = 'BEREIT'
+            ORDER BY erstellt_am ASC LIMIT 50
+        """)
+        return jsonify({"ok": True, "drucker_eingerichtet": bool(PRINT_AGENT_TOKEN), "auftraege": [
+            {"id": z[0], "bestellung_id": z[1], "typ": z[2], "status": z[3],
+             "payload": z[4], "erstellt_am": z[5].isoformat()} for z in cur.fetchall()
+        ]})
+    finally:
+        cur.close()
+        conn.close()
+
+
+@app.route("/api/druckauftraege/<int:auftrag_id>/status", methods=["POST"])
+def api_druckauftrag_status(auftrag_id):
+    if not theke_zugriff_erlaubt() and not druck_agent_erlaubt():
+        return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
+    daten = request.get_json(silent=True) or {}
+    status = str(daten.get("status") or "").upper()
+    if status not in {"GEDRUCKT", "FEHLER"}:
+        return jsonify({"ok": False, "fehler": "Ungültiger Druckstatus."}), 400
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            UPDATE druckauftraege SET status=%s, versuche=versuche+1,
+                gedruckt_am=CASE WHEN %s='GEDRUCKT' THEN CURRENT_TIMESTAMP ELSE gedruckt_am END,
+                fehler=%s WHERE id=%s RETURNING bestellung_id
+        """, (status, status, text_feld(daten, "fehler", 500) or None, auftrag_id))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"ok": False, "fehler": "Druckauftrag nicht gefunden."}), 404
+        cur.execute("UPDATE bestellungen SET druckstatus=%s WHERE id=%s", (status, row[0]))
+        conn.commit()
+        return jsonify({"ok": True, "status": status})
     finally:
         cur.close()
         conn.close()
@@ -2877,6 +3111,8 @@ def mitarbeiter():
             </div>
 
             <a class="btn btn-green" href="/theke">🧾 Theke / Bestellungen</a>
+
+            <a class="btn btn-orange" href="/mitarbeiter-bestellung">🛒 Neue Bestellung aufnehmen</a>
 
             <a class="btn btn-red" href="/scanner">QR-Code scannen</a>
 

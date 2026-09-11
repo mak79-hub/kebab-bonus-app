@@ -297,6 +297,7 @@
     </div>
     <div class="header-badges">
         {% if theke_ist_mitarbeiter %}<a class="header-link" href="/mitarbeiter">Bonusverwaltung</a>{% endif %}
+        <a class="header-link" href="/mitarbeiter-bestellung">+ Bestellung</a>
         {% if theke_ist_chef %}<a class="header-link" href="/chef-dashboard">Chef-Dashboard</a>{% endif %}
         <button class="header-badge camera-btn" id="cameraButton" onclick="startQrScanner(false)">Kamera aktivieren</button>
         <div class="header-badge badge-open" id="badgeOpen">0 offen</div>
@@ -835,6 +836,20 @@ function renderOrderCard(order) {
         : (order.bonus_kunde ? '🎯 Bonus-Kunde (' + order.punkte + ' Pkte)' : 'Kein Bonus-Konto');
     h += '</div>';
 
+    h += '<div class="order-bonus">';
+    h += '📍 ' + esc(order.bestellart || 'ABHOLUNG') + ' · ' + esc(order.bestellquelle || 'KUNDEN_APP');
+    if (order.gewuenschte_zeit) h += ' · ⏰ ' + esc(order.gewuenschte_zeit);
+    if (order.druckstatus) h += ' · 🖨️ ' + esc(order.druckstatus);
+    h += '</div>';
+    if (order.kundenname || order.kunden_telefon || order.lieferadresse || order.kundenhinweis) {
+        h += '<div class="order-item"><div class="item-details">';
+        if (order.kundenname) h += '<div class="item-detail">Kunde: ' + esc(order.kundenname) + '</div>';
+        if (order.kunden_telefon) h += '<div class="item-detail">Telefon: ' + esc(order.kunden_telefon) + '</div>';
+        if (order.lieferadresse) h += '<div class="item-detail">Lieferadresse: ' + esc(order.lieferadresse) + '</div>';
+        if (order.kundenhinweis) h += '<div class="item-detail extra">Hinweis: ' + esc(order.kundenhinweis) + '</div>';
+        h += '</div></div>';
+    }
+
     h += '<div class="order-items">';
     order.items.forEach(function(item) {
         h += '<div class="order-item">';
@@ -875,6 +890,7 @@ function renderOrderCard(order) {
             else if (item.upgrade.preis > 0) h += ' <span class="price-tag">+' + centToEuro(item.upgrade.preis) + '</span>';
             h += '</div>';
         }
+        if (item.hinweis) h += '<div class="item-detail extra">Hinweis: ' + esc(item.hinweis) + '</div>';
         h += '</div></div>';
     });
     h += '</div>';
@@ -899,10 +915,15 @@ function renderOrderCard(order) {
         h += '<button class="retry-btn" onclick="markStorniert(\'' + order.internalId + '\')">STORNIEREN</button>';
     } else {
         var isProcessing = processingPayments[order.internalId];
-        h += '<button class="pay-btn" id="payBtn-' + order.internalId + '"' +
-            (isProcessing ? ' disabled' : '') +
-            ' onclick="openPaymentDialog(\'' + order.internalId + '\')">' +
-            (isBonusOrder(order) ? 'PUNKTE EINLÖSEN' : 'ZAHLUNG STARTEN') + '</button>';
+        if (isBonusOrder(order)) {
+            h += '<button class="pay-btn" id="payBtn-' + order.internalId + '"' + (isProcessing ? ' disabled' : '') +
+                ' onclick="confirmBonusPayment(\'' + order.internalId + '\')">PUNKTE DIREKT EINLÖSEN</button>';
+        } else {
+            h += '<button class="pay-btn" id="payBtn-' + order.internalId + '"' + (isProcessing ? ' disabled' : '') +
+                ' onclick="confirmBarPayment(\'' + order.internalId + '\')">BAR DIREKT BEZAHLT</button>';
+            h += '<button class="retry-btn" ' + (isProcessing ? ' disabled' : '') +
+                ' onclick="startSumUpPayment(\'' + order.internalId + '\')">SUMUP</button>';
+        }
     }
     h += '</div>';
     h += '</div>';
@@ -1258,4 +1279,3 @@ if (localStorage.getItem('theke_kamera_erlaubt') === '1') {
 
 </body>
 </html>
-
