@@ -79,6 +79,10 @@
         .category-tile-img {
             width: 100%; height: 120px; object-fit: cover; display: block;
         }
+        .category-tile span.category-tile-img {
+            display: grid; place-items: center; font-size: 4rem;
+            background: linear-gradient(135deg, #f8eee8, #edcdb4);
+        }
         .category-tile-name {
             font-size: 0.85rem; font-weight: 700; line-height: 1.2;
             padding: 10px 8px; background: var(--card);
@@ -579,8 +583,8 @@
 <script>
 // ============================================================
 // OFFIZIELLE SPEISEKARTE – KEBAP HÖHLE XXL
-// Quelle: https://kebap-hoehle.de/speisekarte/
-// Stand: August 2026
+// Quelle: Flyer_NEU.pdf (aktuelle Speisekarte)
+// Prämienpreise werden separat verwaltet.
 // ============================================================
 
 const CATEGORIES = [
@@ -591,6 +595,7 @@ const CATEGORIES = [
     { id: "salate", name: "Salate", emoji: "🥗", img: "/static/bilder/salat.png" },
     { id: "boxenstopp", name: "Boxenstopp", emoji: "📦", img: "/static/bilder/boxenstopp.png" },
     { id: "bowls", name: "Bowls", emoji: "🥣", img: "/static/bilder/bowls.png" },
+    { id: "koefte", name: "Köfte", emoji: "🍖", img: "" },
     { id: "falafel", name: "Falafel", emoji: "🧆", img: "/static/bilder/falafel.png" },
     { id: "alaturka", name: "Alaturka", emoji: "🌭", img: "/static/bilder/alaturka.png" },
     { id: "pide", name: "Pide", emoji: "🥧", img: "/static/bilder/pide.png" },
@@ -607,8 +612,8 @@ const CATEGORIES = [
 const DOENER_SAUCE = ["Knoblauch", "Cocktail", "Chili", "Kräuter", "Joghurt"];
 const DOENER_WITHOUT = ["Zwiebel", "Rotkraut", "Eisbergsalat", "Tomate", "Karotte", "Gurke", "Rucola"];
 const DOENER_EXTRAS = [
-    { name: "Fleisch", price: 1.50 },
-    { name: "Gegrilltes Gemüse", price: 1.50 },
+    { name: "Steak", price: 2.50 },
+    { name: "Chicken", price: 1.50 },
     { name: "Käse", price: 1.50 },
 ];
 
@@ -631,84 +636,84 @@ const PIZZA_EXTRAS = [
 
 const MENU = [
     // ===== 1. DÖNER SANDWICH =====
-    { id:1, cat:"doener-sandwich", name:"Döner Sandwich Beef", desc:"", emoji:"🥙", img:"/static/bilder/doener.png",
-      variants:[{name:"Classic",price:10.00},{name:"XXL",price:12.50}], extras:[], menuUpgradeAllowed:false },
-    { id:2, cat:"doener-sandwich", name:"Döner Sandwich Beef Cheese", desc:"", emoji:"🧀", img:"/static/bilder/doener.png",
-      variants:[{name:"Classic",price:12.00},{name:"XXL",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:1, cat:"doener-sandwich", name:"Döner Sandwich Steak", desc:"", emoji:"🥙", img:"/static/bilder/doener.png",
+      variants:[{name:"Classic",price:12.50},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
+    { id:2, cat:"doener-sandwich", name:"Döner Sandwich Steak Cheese", desc:"", emoji:"🧀", img:"/static/bilder/doener.png",
+      variants:[{name:"Classic",price:14.50},{name:"XXL",price:17.00}], extras:[], menuUpgradeAllowed:false },
     { id:3, cat:"doener-sandwich", name:"Döner Sandwich Chicken", desc:"", emoji:"🍗", img:"/static/bilder/doenerchicken.png",
-      variants:[{name:"Classic",price:8.00},{name:"XXL",price:10.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
     { id:4, cat:"doener-sandwich", name:"Döner Sandwich Chicken Cheese", desc:"", emoji:"🧀", img:"/static/bilder/doenerchicken.png",
-      variants:[{name:"Classic",price:10.00},{name:"XXL",price:12.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:11.00},{name:"XXL",price:13.00}], extras:[], menuUpgradeAllowed:false },
     { id:5, cat:"doener-sandwich", name:"Döner Sandwich Vegetarisch mit Käse", desc:"", emoji:"🥬", img:"/static/bilder/doenervegetarisch.png?v=2",
-      variants:[{name:"Classic",price:6.50},{name:"XXL",price:8.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:7.50},{name:"XXL",price:9.00}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 2. WRAP DÖNER =====
-    { id:6, cat:"wrap-doener", name:"Wrap Beef", desc:"", emoji:"🌯", img:"/static/bilder/wrapbeef.png",
-      variants:[{name:"Classic",price:10.00},{name:"XXL",price:12.50}], extras:[], menuUpgradeAllowed:false },
+    { id:6, cat:"wrap-doener", name:"Wrap Steak", desc:"", emoji:"🌯", img:"/static/bilder/wrapbeef.png",
+      variants:[{name:"Classic",price:12.50},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
     { id:7, cat:"wrap-doener", name:"Wrap Chicken", desc:"", emoji:"🌯", img:"/static/bilder/wrapchicken.png",
-      variants:[{name:"Classic",price:8.00},{name:"XXL",price:10.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
     { id:8, cat:"wrap-doener", name:"Wrap Vegetarisch", desc:"", emoji:"🌯", img:"/static/bilder/wrapvegetarisch.png",
-      variants:[{name:"Classic",price:6.50},{name:"XXL",price:8.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:7.50},{name:"XXL",price:9.00}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 3. DÖNER TELLER =====
-    { id:9, cat:"doener-teller", name:"Döner Teller Beef mit Pommes", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerbeefmitpommes.png",
-      variants:[{name:"Classic",price:14.00},{name:"XXL",price:17.00}], extras:[], menuUpgradeAllowed:false },
-    { id:10, cat:"doener-teller", name:"Döner Teller Beef mit Reis", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerbeefmitreis.png",
-      variants:[{name:"Classic",price:14.00},{name:"XXL",price:17.00}], extras:[], menuUpgradeAllowed:false },
+    { id:9, cat:"doener-teller", name:"Döner Teller Steak mit Pommes", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerbeefmitpommes.png",
+      variants:[{name:"Classic",price:16.00},{name:"XXL",price:18.00}], extras:[], menuUpgradeAllowed:false },
+    { id:10, cat:"doener-teller", name:"Döner Teller Steak mit Reis", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerbeefmitreis.png",
+      variants:[{name:"Classic",price:16.00},{name:"XXL",price:18.00}], extras:[], menuUpgradeAllowed:false },
     { id:11, cat:"doener-teller", name:"Döner Teller Chicken mit Pommes", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerchickenmitpommes.png",
-      variants:[{name:"Classic",price:12.00},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:13.50},{name:"XXL",price:15.50}], extras:[], menuUpgradeAllowed:false },
     { id:12, cat:"doener-teller", name:"Döner Teller Chicken mit Reis", desc:"", emoji:"🍽️", img:"/static/bilder/doenertellerchickenmitreis.png",
-      variants:[{name:"Classic",price:12.00},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:13.50},{name:"XXL",price:15.50}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 4. LAHMACUN =====
-    { id:13, cat:"lahmacun", name:"Lahmacun Beef", desc:"", emoji:"🫓", img:"/static/bilder/lahmacunbeef.png",
-      variants:[{name:"Classic",price:11.00},{name:"XXL",price:13.50}], extras:[], menuUpgradeAllowed:false },
+    { id:13, cat:"lahmacun", name:"Lahmacun Steak", desc:"", emoji:"🫓", img:"/static/bilder/lahmacunbeef.png",
+      variants:[{name:"Classic",price:13.50},{name:"XXL",price:16.00}], extras:[], menuUpgradeAllowed:false },
     { id:14, cat:"lahmacun", name:"Lahmacun Chicken", desc:"", emoji:"🫓", img:"/static/bilder/lahmacunchicken.png",
-      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:11.00},{name:"XXL",price:13.00}], extras:[], menuUpgradeAllowed:false },
     { id:15, cat:"lahmacun", name:"Lahmacun Salat u. Käse", desc:"", emoji:"🫓", img:"/static/bilder/lahmacunsalatundkaese.png",
-      variants:[{name:"Classic",price:7.50},{name:"XXL",price:9.50}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:8.50},{name:"XXL",price:10.50}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 5. SALATE =====
-    { id:16, cat:"salate", name:"Höhlen Salat", desc:"Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Ei, Truthahn, Käse, Soße", emoji:"🥗", img:"/static/bilder/hoehlensalat.png",
-      variants:[{name:"",price:10.50}], extras:[], menuUpgradeAllowed:false },
-    { id:17, cat:"salate", name:"Döner Salat", desc:"Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/doenersalat.png",
-      variants:[{name:"",price:10.50}], extras:[], menuUpgradeAllowed:false },
-    { id:18, cat:"salate", name:"Thunfisch Salat", desc:"Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/thunfischsalat.png",
-      variants:[{name:"",price:10.00}], extras:[], menuUpgradeAllowed:false },
-    { id:19, cat:"salate", name:"Gemischter Salat", desc:"Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Paprika, Oliven, Soße", emoji:"🥗", img:"/static/bilder/gemischtersalat.png",
-      variants:[{name:"",price:9.50}], extras:[], menuUpgradeAllowed:false },
-    { id:20, cat:"salate", name:"Falafel Salat", desc:"Falafel, Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/falafelsalat.png",
-      variants:[{name:"",price:10.50}], extras:[], menuUpgradeAllowed:false },
-    { id:21, cat:"salate", name:"Beilagen Salat", desc:"Eisberg, Zwiebel, Weißkraut, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/beilagensalat.png",
-      variants:[{name:"",price:4.00}], extras:[], menuUpgradeAllowed:false },
+    { id:16, cat:"salate", name:"Höhlen Salat", desc:"Grüner Salat, Zwiebel, Rotkraut, Tomate, Gurke, Karotte, Ei, Truthahn, Käse, Soße", emoji:"🥗", img:"/static/bilder/hoehlensalat.png",
+      variants:[{name:"Classic",price:8.00},{name:"XXL",price:12.00}], extras:[], menuUpgradeAllowed:false },
+    { id:17, cat:"salate", name:"Steak Salat", desc:"Grüner Salat, Zwiebel, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/doenersalat.png",
+      variants:[{name:"Classic",price:11.50},{name:"XXL",price:13.50}], extras:[], menuUpgradeAllowed:false },
+    { id:18, cat:"salate", name:"Thunfisch Salat", desc:"Grüner Salat, Zwiebel, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/thunfischsalat.png",
+      variants:[{name:"Classic",price:8.00},{name:"XXL",price:12.00}], extras:[], menuUpgradeAllowed:false },
+    { id:19, cat:"salate", name:"Gemischter Salat", desc:"Grüner Salat, Zwiebel, Rotkraut, Tomate, Gurke, Karotte, Paprika, Oliven, Soße", emoji:"🥗", img:"/static/bilder/gemischtersalat.png",
+      variants:[{name:"Classic",price:6.00},{name:"XXL",price:10.00}], extras:[], menuUpgradeAllowed:false },
+    { id:20, cat:"salate", name:"Falafel Salat", desc:"Falafel, Grüner Salat, Zwiebel, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/falafelsalat.png",
+      variants:[{name:"Classic",price:8.00},{name:"XXL",price:12.00}], extras:[], menuUpgradeAllowed:false },
+    { id:21, cat:"salate", name:"Beilagen Salat", desc:"Grüner Salat, Zwiebel, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"/static/bilder/beilagensalat.png",
+      variants:[{name:"",price:5.00}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 6. BOXENSTOPP =====
-    { id:22, cat:"boxenstopp", name:"Boxenstopp Beef", desc:"", emoji:"📦", img:"/static/bilder/boxenstopp-beef.png",
-      variants:[{name:"Classic",price:8.50},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
+    { id:22, cat:"boxenstopp", name:"Boxenstopp Steak", desc:"", emoji:"📦", img:"/static/bilder/boxenstopp-beef.png",
+      variants:[{name:"Classic",price:12.50},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
     { id:23, cat:"boxenstopp", name:"Boxenstopp Chicken", desc:"", emoji:"📦", img:"/static/bilder/boxenstopp-chicken.png",
-      variants:[{name:"Classic",price:7.50},{name:"XXL",price:10.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
     { id:24, cat:"boxenstopp", name:"Boxenstopp Falafel", desc:"", emoji:"📦", img:"/static/bilder/boxenstopp-falafel.png",
-      variants:[{name:"Classic",price:8.50},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
-    { id:25, cat:"boxenstopp", name:"Pommes", desc:"", emoji:"🍟", img:"/static/bilder/pommes-mitnehmen.png",
-      variants:[{name:"Classic",price:4.00},{name:"XXL",price:5.00}], extras:[], menuUpgradeAllowed:false },
-    { id:26, cat:"boxenstopp", name:"Portion Fleisch Beef", desc:"", emoji:"🥩", img:"/static/bilder/portion-fleisch-beef.png",
-      variants:[{name:"Classic",price:9.50},{name:"XXL",price:11.50}], extras:[], menuUpgradeAllowed:false },
-    { id:27, cat:"boxenstopp", name:"Portion Fleisch Chicken", desc:"", emoji:"🍗", img:"/static/bilder/portion-fleisch-chicken.png",
       variants:[{name:"Classic",price:8.50},{name:"XXL",price:10.50}], extras:[], menuUpgradeAllowed:false },
+    { id:25, cat:"boxenstopp", name:"Pommes", desc:"", emoji:"🍟", img:"/static/bilder/pommes-mitnehmen.png",
+      variants:[{name:"Classic",price:4.50},{name:"XXL",price:6.50}], extras:[], menuUpgradeAllowed:false },
+    { id:26, cat:"boxenstopp", name:"Portion Fleisch Steak", desc:"", emoji:"🥩", img:"/static/bilder/portion-fleisch-beef.png",
+      variants:[{name:"Classic",price:13.00},{name:"XXL",price:17.00}], extras:[], menuUpgradeAllowed:false },
+    { id:27, cat:"boxenstopp", name:"Portion Fleisch Chicken", desc:"", emoji:"🍗", img:"/static/bilder/portion-fleisch-chicken.png",
+      variants:[{name:"Classic",price:10.50},{name:"XXL",price:14.50}], extras:[], menuUpgradeAllowed:false },
     { id:28, cat:"boxenstopp", name:"Portion Reis", desc:"", emoji:"🍚", img:"/static/bilder/portion-reis.png",
-      variants:[{name:"Classic",price:6.00},{name:"XXL",price:8.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:4.50},{name:"XXL",price:6.50}], extras:[], menuUpgradeAllowed:false },
     { id:29, cat:"boxenstopp", name:"Falafel", desc:"", emoji:"🧆", img:"/static/bilder/falafel-mitnahme.png",
       variants:[{name:"5 Stück",price:8.50},{name:"8 Stück",price:11.00}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 7. BOWLS =====
-    { id:30, cat:"bowls", name:"Bowl Beef mit Reis", desc:"", emoji:"🥣", img:"/static/bilder/bowlbeefmitreis.png",
-      variants:[{name:"",price:14.50}], extras:[], menuUpgradeAllowed:false },
-    { id:31, cat:"bowls", name:"Bowl Beef mit Pommes", desc:"", emoji:"🥣", img:"/static/bilder/bowlbeefmitpommes.png",
-      variants:[{name:"",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:30, cat:"bowls", name:"Bowl Steak mit Reis", desc:"", emoji:"🥣", img:"/static/bilder/bowlbeefmitreis.png",
+      variants:[{name:"",price:16.00}], extras:[], menuUpgradeAllowed:false },
+    { id:31, cat:"bowls", name:"Bowl Steak mit Pommes", desc:"", emoji:"🥣", img:"/static/bilder/bowlbeefmitpommes.png",
+      variants:[{name:"",price:16.00}], extras:[], menuUpgradeAllowed:false },
     { id:32, cat:"bowls", name:"Bowl Chicken mit Reis", desc:"", emoji:"🥣", img:"/static/bilder/bowlchickenmitreis.png",
-      variants:[{name:"",price:12.50}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"",price:13.50}], extras:[], menuUpgradeAllowed:false },
     { id:33, cat:"bowls", name:"Bowl Chicken mit Pommes", desc:"", emoji:"🥣", img:"/static/bilder/bowlchickenmitpommes.png",
-      variants:[{name:"",price:12.50}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"",price:13.50}], extras:[], menuUpgradeAllowed:false },
     { id:34, cat:"bowls", name:"Bowl Falafel mit Reis", desc:"", emoji:"🥣", img:"/static/bilder/bowlfalafelmitreis.png",
       variants:[{name:"",price:12.50}], extras:[], menuUpgradeAllowed:false },
     { id:35, cat:"bowls", name:"Bowl Falafel mit Pommes", desc:"", emoji:"🥣", img:"/static/bilder/bowlfalafelmitpommes.png",
@@ -722,7 +727,7 @@ const MENU = [
     { id:38, cat:"falafel", name:"Falafel Lahmacun", desc:"", emoji:"🧆", img:"/static/bilder/falafellahmacun.png",
       variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
     { id:39, cat:"falafel", name:"Falafel", desc:"", emoji:"🧆", img:"/static/bilder/falafel.png",
-      variants:[{name:"5 Stück",price:6.00},{name:"8 Stück",price:9.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"5 Stück",price:8.50},{name:"8 Stück",price:11.00}], extras:[], menuUpgradeAllowed:false },
     { id:40, cat:"falafel", name:"Falafel Teller mit Pommes", desc:"", emoji:"🧆", img:"/static/bilder/bowlfalafelmitpommes.png",
       variants:[{name:"Classic",price:11.50},{name:"XXL",price:13.50}], extras:[], menuUpgradeAllowed:false },
     { id:41, cat:"falafel", name:"Falafel Teller mit Reis", desc:"", emoji:"🧆", img:"/static/bilder/bowlfalafelmitreis.png",
@@ -736,25 +741,21 @@ const MENU = [
 
     // ===== 9. ALATURKA =====
     { id:45, cat:"alaturka", name:"Sucuk Sandwich", desc:"", emoji:"🌭", img:"/static/bilder/sucuksandwich.png",
-      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
-    { id:46, cat:"alaturka", name:"Döner Burger Beef", desc:"", emoji:"🍔", img:"/static/bilder/doenerburgerbeef.png",
-      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
-    { id:47, cat:"alaturka", name:"Döner Burger Chicken", desc:"", emoji:"🍔", img:"/static/bilder/doenerburgerchicken.png",
-      variants:[{name:"Classic",price:7.50},{name:"XXL",price:9.50}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:10.00},{name:"XXL",price:12.50}], extras:[], menuUpgradeAllowed:false },
     { id:48, cat:"alaturka", name:"Börek Sticks", desc:"", emoji:"🥟", img:"/static/bilder/boereksticks.png",
       variants:[{name:"1 Stück",price:1.50},{name:"5 Stück",price:6.00}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 10. PIDE =====
     { id:49, cat:"pide", name:"Pide Hackfleisch", desc:"", emoji:"🥧", img:"/static/bilder/pidehackfleisch.png",
-      variants:[{name:"Classic",price:11.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:11.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.50,priceXXL:3.00}], menuUpgradeAllowed:false },
     { id:50, cat:"pide", name:"Pide Spinat", desc:"", emoji:"🥧", img:"/static/bilder/pidespinat.png",
-      variants:[{name:"Classic",price:10.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:10.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.50,priceXXL:3.00}], menuUpgradeAllowed:false },
     { id:51, cat:"pide", name:"Pide Weichkäse", desc:"", emoji:"🥧", img:"/static/bilder/pideweichkaese.png",
-      variants:[{name:"Classic",price:10.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:10.50},{name:"XXL",price:15.50}], extras:[{name:"Extra Ei",priceClassic:1.50,priceXXL:3.00}], menuUpgradeAllowed:false },
     { id:52, cat:"pide", name:"Pide Sucuk Knoblauchwurst", desc:"", emoji:"🥧", img:"/static/bilder/pidesucuk.png",
-      variants:[{name:"Classic",price:11.00},{name:"XXL",price:16.00}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:11.00},{name:"XXL",price:16.00}], extras:[{name:"Extra Ei",priceClassic:1.50,priceXXL:3.00}], menuUpgradeAllowed:false },
     { id:53, cat:"pide", name:"Pide Gemischt", desc:"Dönerfleisch, Käse, Paprika und Zwiebel", emoji:"🥧", img:"/static/bilder/pidegemischt.png",
-      variants:[{name:"Classic",price:12.00},{name:"XXL",price:17.00}], extras:[{name:"Extra Ei",priceClassic:1.00,priceXXL:2.00}], menuUpgradeAllowed:false },
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:17.00}], extras:[{name:"Extra Ei",priceClassic:1.50,priceXXL:3.00}], menuUpgradeAllowed:false },
 
     // ===== 11. FINGERFOOD =====
     { id:54, cat:"fingerfood", name:"Chicken Nuggets", desc:"", emoji:"🍗", img:"/static/bilder/chickennuggets.png",
@@ -765,17 +766,17 @@ const MENU = [
       variants:[{name:"6 Stück",price:8.00},{name:"9 Stück",price:10.00},{name:"20 Stück",price:14.50}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 12. KATMER =====
-    { id:57, cat:"katmer", name:"Katmer Beef", desc:"", emoji:"🫓", img:"/static/bilder/katmerbeef.png",
+    { id:57, cat:"katmer", name:"Katmer Steak", desc:"", emoji:"🫓", img:"/static/bilder/katmerbeef.png",
       variants:[{name:"Classic",price:12.00},{name:"XXL",price:15.00}], extras:[], menuUpgradeAllowed:false },
     { id:58, cat:"katmer", name:"Katmer Chicken", desc:"", emoji:"🫓", img:"/static/bilder/katmerchicken.png",
       variants:[{name:"Classic",price:10.00},{name:"XXL",price:13.00}], extras:[], menuUpgradeAllowed:false },
 
     // ===== 13. KIDS =====
-    { id:59, cat:"kids", name:"Beef Wrap", desc:"", emoji:"👶", img:"/static/bilder/beefwrapkids.png",
+    { id:59, cat:"kids", name:"Steak Wrap", desc:"", emoji:"👶", img:"/static/bilder/beefwrapkids.png",
       variants:[{name:"",price:6.50}], extras:[], menuUpgradeAllowed:false },
     { id:60, cat:"kids", name:"Chicken Wrap", desc:"", emoji:"👶", img:"/static/bilder/chickenwrapkids.png",
       variants:[{name:"",price:5.50}], extras:[], menuUpgradeAllowed:false },
-    { id:61, cat:"kids", name:"Beef Box", desc:"", emoji:"👶", img:"/static/bilder/beefboxkids.png",
+    { id:61, cat:"kids", name:"Steak Box", desc:"", emoji:"👶", img:"/static/bilder/beefboxkids.png",
       variants:[{name:"",price:6.50}], extras:[], menuUpgradeAllowed:false },
     { id:62, cat:"kids", name:"Chicken Box", desc:"", emoji:"👶", img:"/static/bilder/chickenboxkids.png",
       variants:[{name:"",price:5.50}], extras:[], menuUpgradeAllowed:false },
@@ -800,13 +801,13 @@ const MENU = [
     { id:71, cat:"pizza", name:"Pizza Mozzarella", desc:"", emoji:"🧀", img:"/static/bilder/pizzamozzarella.png",
       variants:[{name:"Classic 32 cm",price:10.00},{name:"XXL 40 cm",price:15.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:72, cat:"pizza", name:"Pizza Sucuk", desc:"Knoblauchwurst", emoji:"🍕", img:"/static/bilder/pizzasucuk.png",
-      variants:[{name:"Classic 32 cm",price:11.00},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+      variants:[{name:"Classic 32 cm",price:12.00},{name:"XXL 40 cm",price:17.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:73, cat:"pizza", name:"Pizza Milano", desc:"Rindersalami & Pilze", emoji:"🍕", img:"/static/bilder/pizzamilano.png",
       variants:[{name:"Classic 32 cm",price:10.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:74, cat:"pizza", name:"Pizza Truthan Funghi", desc:"Truthahnbelag, Pilze", emoji:"🍕", img:"/static/bilder/pizzatruthanfunghi.png",
       variants:[{name:"Classic 32 cm",price:10.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:75, cat:"pizza", name:"Pizza Thunfisch", desc:"mit Zwiebel", emoji:"🐟", img:"/static/bilder/pizzathunfisch.png",
-      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:16.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:76, cat:"pizza", name:"Pizza Rindersalami Spezial", desc:"Salami, Zwiebel, Knoblauch", emoji:"🍕", img:"/static/bilder/pizzarindersalamispezoal.png",
       variants:[{name:"Classic 32 cm",price:10.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:77, cat:"pizza", name:"Pizza Vegetarisch", desc:"Paprika, Pilze, Mais, Zwiebel, Oliven", emoji:"🥬", img:"/static/bilder/pizzavegetarisch.png",
@@ -814,11 +815,11 @@ const MENU = [
     { id:78, cat:"pizza", name:"Pizza Quattro Stagioni", desc:"Truthahnbelag, Rindersalami, Peperoniwurst, Pilze", emoji:"🍕", img:"/static/bilder/pizzaquattrostagioni.png",
       variants:[{name:"Classic 32 cm",price:11.00},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:79, cat:"pizza", name:"Pizza Döner Chicken", desc:"Dönerfleisch & Zwiebel", emoji:"🍕", img:"/static/bilder/pizzadoenerchicken.png",
-      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
-    { id:80, cat:"pizza", name:"Pizza Döner Beef", desc:"Dönerfleisch & Zwiebel", emoji:"🍕", img:"/static/bilder/pizzadoenerbeef.png",
+      variants:[{name:"Classic 32 cm",price:10.50},{name:"XXL 40 cm",price:15.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+    { id:80, cat:"pizza", name:"Pizza Döner Steak", desc:"Dönerfleisch & Zwiebel", emoji:"🍕", img:"/static/bilder/pizzadoenerbeef.png",
       variants:[{name:"Classic 32 cm",price:12.50},{name:"XXL 40 cm",price:17.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:81, cat:"pizza", name:"Pizza Europa", desc:"Truthahnbelag, Rindersalami, Pilze, Paprika, Zwiebel", emoji:"🍕", img:"/static/bilder/pizzaeuropa.png",
-      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
+      variants:[{name:"Classic 32 cm",price:11.50},{name:"XXL 40 cm",price:16.50}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:82, cat:"pizza", name:"Pizza Toni", desc:"Sucuk, Pilze, Mais, Zwiebel", emoji:"🍕", img:"/static/bilder/pizzatoni.png",
       variants:[{name:"Classic 32 cm",price:11.00},{name:"XXL 40 cm",price:16.00}], extras:PIZZA_EXTRAS, menuUpgradeAllowed:false },
     { id:83, cat:"pizza", name:"Pizza El Chapo", desc:"Dönerfleisch, Mais, BBQ Soße", emoji:"🍕", img:"/static/bilder/pizzaelchapo.png",
@@ -833,7 +834,7 @@ const MENU = [
       variants:[{name:"",price:7.00}], extras:[], menuUpgradeAllowed:false },
     { id:87, cat:"pizzabroetchen", name:"Pizzabrötchen Chicken - Käse", desc:"", emoji:"🧈", img:"/static/bilder/pizzabroetchenchickenkaese.png",
       variants:[{name:"",price:8.50}], extras:[], menuUpgradeAllowed:false },
-    { id:88, cat:"pizzabroetchen", name:"Pizzabrötchen Beef - Käse", desc:"", emoji:"🧈", img:"/static/bilder/pizzabroetchenbeefkaese.png",
+    { id:88, cat:"pizzabroetchen", name:"Pizzabrötchen Steak - Käse", desc:"", emoji:"🧈", img:"/static/bilder/pizzabroetchenbeefkaese.png",
       variants:[{name:"",price:9.50}], extras:[], menuUpgradeAllowed:false },
     { id:89, cat:"pizzabroetchen", name:"Pizzabrötchen Sucuk - Käse", desc:"", emoji:"🧈", img:"/static/bilder/pizzabroetchensucukkaese.png",
       variants:[{name:"",price:9.50}], extras:[], menuUpgradeAllowed:false },
@@ -846,21 +847,38 @@ const MENU = [
 
     // ===== 17. GETRÄNKE =====
     { id:92, cat:"getraenke", name:"Softdrink 0,33 l", desc:"inkl. Pfand", emoji:"🥤", img:"/static/bilder/cola.png",
-      variants:[{name:"",price:2.50}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"",price:3.00}], extras:[], menuUpgradeAllowed:false },
     { id:93, cat:"getraenke", name:"Softdrink 1 l", desc:"inkl. Pfand", emoji:"🥤", img:"/static/bilder/softdrink1liter.png",
-      variants:[{name:"",price:4.00}], extras:[], menuUpgradeAllowed:false },
-    { id:94, cat:"getraenke", name:"Ayran 0,25 l", desc:"", emoji:"🥛", img:"/static/bilder/ayran.png",
-      variants:[{name:"",price:2.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"",price:4.50}], extras:[], menuUpgradeAllowed:false },
+    { id:94, cat:"getraenke", name:"Ayran 0,25 l", desc:"inkl. Pfand", emoji:"🥛", img:"/static/bilder/ayran.png",
+      variants:[{name:"",price:2.50}], extras:[], menuUpgradeAllowed:false },
     { id:95, cat:"getraenke", name:"Mineralwasser mit Kohlensäure 0,5 l", desc:"inkl. Pfand", emoji:"💧", img:"/static/bilder/wasser.png",
-      variants:[{name:"",price:2.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"",price:2.50}], extras:[], menuUpgradeAllowed:false },
     { id:96, cat:"getraenke", name:"Mineralwasser still 0,5 l", desc:"inkl. Pfand", emoji:"💧", img:"/static/bilder/wasser.png",
-      variants:[{name:"",price:2.00}], extras:[], menuUpgradeAllowed:false },
+      variants:[{name:"",price:2.50}], extras:[], menuUpgradeAllowed:false },
+    // ===== KÖFTE – neue Produkte laut Flyer =====
+    { id:97, cat:"koefte", name:"Köfte Sandwich", desc:"", emoji:"🥙", img:"",
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:98, cat:"koefte", name:"Köfte Dürüm", desc:"", emoji:"🌯", img:"",
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:99, cat:"koefte", name:"Köfte Teller mit Reis", desc:"", emoji:"🍽️", img:"",
+      variants:[{name:"Classic",price:15.50},{name:"XXL",price:17.50}], extras:[], menuUpgradeAllowed:false },
+    { id:100, cat:"koefte", name:"Köfte Teller mit Pommes", desc:"", emoji:"🍽️", img:"",
+      variants:[{name:"Classic",price:15.50},{name:"XXL",price:17.50}], extras:[], menuUpgradeAllowed:false },
+    { id:101, cat:"koefte", name:"Köfte Box", desc:"Mit Reis oder Pommes", emoji:"📦", img:"",
+      variants:[{name:"Classic",price:12.00},{name:"XXL",price:14.50}], extras:[], menuUpgradeAllowed:false },
+    { id:102, cat:"koefte", name:"Köfte Bowl mit Reis", desc:"", emoji:"🥣", img:"",
+      variants:[{name:"",price:15.50}], extras:[], menuUpgradeAllowed:false },
+    { id:103, cat:"koefte", name:"Köfte Bowl mit Pommes", desc:"", emoji:"🥣", img:"",
+      variants:[{name:"",price:15.50}], extras:[], menuUpgradeAllowed:false },
+    { id:104, cat:"salate", name:"Chicken Salat", desc:"Grüner Salat, Zwiebel, Rotkraut, Tomate, Gurke, Karotte, Soße", emoji:"🥗", img:"",
+      variants:[{name:"Classic",price:9.00},{name:"XXL",price:11.00}], extras:[], menuUpgradeAllowed:false },
 ];
 
 const MENU_UPGRADES = [
-    { name:"Menü L", desc:"Kleine Pommes + Softgetränk 0,33 l", price:4.00 },
-    { name:"Menü XL", desc:"Mittlere Pommes + Softgetränk 0,33 l", price:5.00 },
-    { name:"Menü XXL", desc:"Große Pommes + Softgetränk 1 l", price:6.50 },
+    { name:"Menü L", desc:"Kleine Pommes + Softgetränk 0,33 l", price:4.50 },
+    { name:"Menü XL", desc:"Mittlere Pommes + Softgetränk 0,33 l", price:5.50 },
+    { name:"Menü XXL", desc:"Große Pommes + Softgetränk 1 l", price:7.00 },
 ];
 
 // ============================================================
@@ -883,19 +901,20 @@ const ORDER_SOURCE = {{ bestellquelle|tojson }};
 let orderMode = APP_MODE === 'terminal' ? 'VOR_ORT' : 'ABHOLUNG';
 
 function isDoenerProduct(item) {
+    if (item.cat === 'koefte') return true;
     if (item.cat === 'doener-sandwich') return true;
     if (item.cat === 'wrap-doener') return true;
     if (item.cat === 'doener-teller') return true;
     if (item.cat === 'lahmacun') return true;
     if (item.cat === 'boxenstopp') {
         var n = item.name.toLowerCase();
-        if (n.indexOf('beef') >= 0 || n.indexOf('chicken') >= 0) return true;
+        if (n.indexOf('steak') >= 0 || n.indexOf('chicken') >= 0) return true;
     }
     return false;
 }
 
 function needsSideSelection(item) {
-    return item.id === 22 || item.id === 23 || item.id === 24;
+    return item.id === 22 || item.id === 23 || item.id === 24 || item.id === 101;
 }
 
 function selectMenuFromCategory(idx) {
@@ -1024,7 +1043,7 @@ function init() {
     let h = '';
     CATEGORIES.forEach(cat => {
         h += '<div class="category-tile" onclick="showCategory(\'' + cat.id + '\')">' +
-            '<img class="category-tile-img" src="' + cat.img + '" alt="' + cat.name + '" loading="lazy" onerror="this.style.display=\'none\'">' +
+            (cat.img ? '<img class="category-tile-img" src="' + cat.img + '" alt="' + cat.name + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<span class="category-tile-img" aria-hidden="true">' + cat.emoji + '</span>') +
             '<div class="category-tile-name">' + cat.name + '</div>' +
             '</div>';
     });
@@ -1119,7 +1138,7 @@ function openModal(id) {
         });
         html += '</div>';
 
-        html += '<div class="extra-group"><div class="extra-group-title">Extras +1,50€</div>';
+        html += '<div class="extra-group"><div class="extra-group-title">Extras</div>';
         DOENER_EXTRAS.forEach(function(ex) {
             html += '<div class="extra-item" onclick="toggleExtra(this,\'' + ex.name + '\',' + ex.price + ')">' +
                 '<div class="extra-left"><div class="extra-checkbox"></div><span class="extra-name">' + ex.name + '</span></div>' +
