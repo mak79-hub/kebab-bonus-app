@@ -481,7 +481,7 @@
 
 <div class="header">
     <div class="header-top">
-        <button class="back-btn" onclick="window.location.href='/'">←</button>
+        <button class="back-btn" onclick="bestellseiteZurueck()" aria-label="Zurück">←</button>
         <div class="logo">
             <img class="logo-icon" src="/static/bilder/logo.png" alt="Kebap Höhle XXL">
             <div class="logo-text">
@@ -925,6 +925,18 @@ let menuPreselected = null;
 const APP_MODE = {{ app_mode|tojson }};
 const ORDER_STATION = {{ station|tojson }};
 const ORDER_SOURCE = {{ bestellquelle|tojson }};
+const CUSTOMER_ID = {{ session.get('kunde_id')|tojson }};
+
+function bestellseiteZurueck() {
+    if (APP_MODE === 'mitarbeiter') {
+        window.location.href = '/mitarbeiter';
+    } else if (APP_MODE === 'kunde' && CUSTOMER_ID) {
+        window.location.href = '/kunde/' + encodeURIComponent(CUSTOMER_ID);
+    } else {
+        window.location.href = '/';
+    }
+}
+
 let bestellstatus = null;
 let serverZeitOffset = 0;
 
