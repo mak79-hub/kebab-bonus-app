@@ -63,6 +63,8 @@
         .ordering-info strong { color: #fff; }
         .delivery-info { margin-top: 6px; color: #f4c6bd; }
         .minimum-note { color: #f4c6bd; font-size: .78rem; line-height: 1.35; }
+        .closed-notice { margin: 8px 12px 4px; padding: 11px 12px; background: #52221d; border: 1px solid #d64b3b; border-radius: 10px; color: #fff; font-size: .85rem; line-height: 1.4; }
+        .checkout-btn:disabled { opacity: .55; cursor: not-allowed; }
 
         /* ===== VIEW: HOME – Kategorien-Kacheln ===== */
         .view { display: none; padding: 20px; }
@@ -504,6 +506,7 @@
         <div class="delivery-only delivery-info"><strong>Lieferung ab:</strong> 25 € Bischofsheim, Ginsheim, Gustavsburg · 35 € Bauschheim, Mainz-Kostheim · 45 € Rüsselsheim, Mainz-Kastel, Nauheim, Trebur, Astheim</div>
     </div>
     {% endif %}
+    {% if app_mode == 'kunde' %}<div class="closed-notice" id="closedNotice" role="status" style="display:none;"></div>{% endif %}
 </div>
 
 <!-- ===== EBENE 1: STARTSEITE – Kategorien-Kacheln ===== -->
@@ -922,6 +925,39 @@ let menuPreselected = null;
 const APP_MODE = {{ app_mode|tojson }};
 const ORDER_STATION = {{ station|tojson }};
 const ORDER_SOURCE = {{ bestellquelle|tojson }};
+let bestellstatus = null;
+let serverZeitOffset = 0;
+
+function zeigeBestellstatus() {
+    if (APP_MODE !== 'kunde' || !bestellstatus) return;
+    var notice = document.getElementById('closedNotice');
+    var button = document.getElementById('checkoutButton');
+    button.disabled = !bestellstatus.offen;
+    if (bestellstatus.offen) { notice.style.display = 'none'; return; }
+    var ziel = new Date(bestellstatus.naechste_oeffnung);
+    var sekunden = Math.max(0, Math.ceil((ziel.getTime() - Date.now() - serverZeitOffset) / 1000));
+    var tage = Math.floor(sekunden / 86400);
+    var stunden = Math.floor(sekunden % 86400 / 3600);
+    var minuten = Math.floor(sekunden % 3600 / 60);
+    var uhrzeit = new Intl.DateTimeFormat('de-DE', {weekday:'long', hour:'2-digit', minute:'2-digit', timeZone:'Europe/Berlin'}).format(ziel);
+    notice.textContent = (bestellstatus.ruhetag ? 'Heute ist Ruhetag. ' : 'Noch nicht für Bestellungen verfügbar. ') +
+        'Bestellungen wieder ab ' + uhrzeit + ' Uhr. Verbleibend: ' +
+        (tage ? tage + ' Tag' + (tage === 1 ? ', ' : 'e, ') : '') +
+        stunden + ' Std. ' + minuten + ' Min.';
+    notice.style.display = 'block';
+}
+
+async function ladeBestellstatus() {
+    if (APP_MODE !== 'kunde') return;
+    try {
+        var response = await fetch('/api/bestellstatus', {cache:'no-store'});
+        if (!response.ok) return;
+        var status = await response.json();
+        serverZeitOffset = new Date(status.server_zeit).getTime() - Date.now();
+        bestellstatus = status;
+        zeigeBestellstatus();
+    } catch (error) { /* Beim Absenden prüft der Server erneut. */ }
+}
 let orderMode = APP_MODE === 'terminal' ? 'VOR_ORT' : 'ABHOLUNG';
 
 function isDoenerProduct(item) {
@@ -1466,6 +1502,10 @@ function generateInternalId() {
 
 async function checkout() {
     if (!cart.length) return;
+    if (APP_MODE === 'kunde' && bestellstatus && !bestellstatus.offen) {
+        zeigeBestellstatus();
+        return;
+    }
 
     var kundenname = document.getElementById('orderName').value.trim();
     var telefon = document.getElementById('orderPhone').value.trim();
@@ -1480,7 +1520,8 @@ async function checkout() {
         var minimum = Number(document.getElementById('orderDistrict').selectedOptions[0].dataset.minimum);
         var summe = cart.reduce(function(s, i) { return s + i.total; }, 0);
         if (Math.round(summe * 100) < minimum * 100) {
-            alert('Für ' + lieferort + ' beträgt der Mindestbestellwert ' + minimum + ' €.');
+            var fehlt = Math.max(0, minimum * 100 - Math.round(summe * 100)) / 100;
+            alert('Es fehlen noch ' + fehlt.toFixed(2).replace('.', ',') + ' € für Ihren Lieferort ' + lieferort + '.');
             return;
         }
     }
@@ -1502,6 +1543,7 @@ async function checkout() {
                 kundenname: kundenname,
                 telefon: telefon,
                 lieferadresse: orderMode === 'LIEFERUNG' ? lieferadresse + ', ' + lieferort : lieferadresse,
+                lieferort: orderMode === 'LIEFERUNG' ? lieferort : '',
                 gewuenschte_zeit: document.getElementById('orderTime').value.trim(),
                 hinweis: document.getElementById('orderNote').value.trim()
             })
@@ -1510,6 +1552,12 @@ async function checkout() {
         const data = await response.json();
 
         if (!response.ok || !data.ok) {
+            if (response.status === 403 && data.naechste_oeffnung) {
+                serverZeitOffset = new Date(data.server_zeit).getTime() - Date.now();
+                bestellstatus = data;
+                zeigeBestellstatus();
+            }
+            toggleCart();
             alert(data.fehler || 'Bestellung konnte nicht gespeichert werden.');
             return;
         }
@@ -1601,6 +1649,11 @@ async function startTerminalPayment(token) {
 
 init();
 paymentOptions();
+ladeBestellstatus();
+if (APP_MODE === 'kunde') {
+    setInterval(ladeBestellstatus, 30000);
+    setInterval(zeigeBestellstatus, 1000);
+}
 </script>
 </body>
 </html>
