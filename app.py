@@ -6,7 +6,7 @@ import urllib.error
 import secrets
 import uuid
 from io import BytesIO
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 from psycopg2.extras import Json
 from flask import jsonify
@@ -275,6 +275,42 @@ def send_telegram_message(text):
         return False, f"Telegram Fehler: {str(e)}"
 
 DE_ZEITZONE = ZoneInfo("Europe/Berlin")
+
+# Wochentage: Montag=0, Sonntag=6. Dienstag bleibt geschlossen.
+BESTELLZEITEN = {
+    0: (time(11, 0), time(21, 30)),
+    2: (time(11, 0), time(21, 30)),
+    3: (time(11, 0), time(21, 30)),
+    4: (time(11, 0), time(21, 30)),
+    5: (time(12, 0), time(21, 30)),
+    6: (time(12, 0), time(21, 30)),
+}
+LIEFERMINDESTWERTE = {
+    "Bischofsheim": 25, "Ginsheim": 25, "Gustavsburg": 25,
+    "Bauschheim": 35, "Mainz-Kostheim": 35,
+    "Rüsselsheim": 45, "Mainz-Kastel": 45, "Nauheim": 45,
+    "Trebur": 45, "Astheim": 45,
+}
+
+
+def aktueller_bestellstatus(zeitpunkt=None):
+    jetzt = zeitpunkt.astimezone(DE_ZEITZONE) if zeitpunkt else datetime.now(DE_ZEITZONE)
+    zeiten = BESTELLZEITEN.get(jetzt.weekday())
+    if zeiten:
+        beginn = datetime.combine(jetzt.date(), zeiten[0], tzinfo=DE_ZEITZONE)
+        ende = datetime.combine(jetzt.date(), zeiten[1], tzinfo=DE_ZEITZONE)
+        if beginn <= jetzt < ende:
+            return {"offen": True, "ruhetag": False, "naechste_oeffnung": None,
+                    "server_zeit": jetzt.isoformat()}
+
+    for tage in range(8):
+        datum = jetzt.date() + timedelta(days=tage)
+        tageszeiten = BESTELLZEITEN.get(datum.weekday())
+        if tageszeiten:
+            beginn = datetime.combine(datum, tageszeiten[0], tzinfo=DE_ZEITZONE)
+            if beginn > jetzt:
+                return {"offen": False, "ruhetag": jetzt.weekday() == 1,
+                        "naechste_oeffnung": beginn.isoformat(), "server_zeit": jetzt.isoformat()}
 
 
 def format_datetime(dt):
@@ -1690,6 +1726,13 @@ def bestellen():
     return render_template("bestellen.html", app_mode="kunde", station="", bestellquelle="KUNDEN_APP")
 
 
+@app.route("/api/bestellstatus")
+def api_bestellstatus():
+    antwort = jsonify(aktueller_bestellstatus())
+    antwort.headers["Cache-Control"] = "no-store"
+    return antwort
+
+
 @app.route("/mitarbeiter-bestellung")
 def mitarbeiter_bestellung():
     if not theke_zugriff_erlaubt():
@@ -2197,6 +2240,13 @@ def api_bestellung():
     if not isinstance(daten.get("items"), list) or len(daten["items"]) > 50:
         return jsonify({"ok": False, "fehler": "Die Bestellung enthält zu viele Positionen."}), 400
 
+    bestellquelle_vorab = text_feld(daten, "bestellquelle", 30).upper() or "KUNDEN_APP"
+    if not (bestellquelle_vorab == "MITARBEITER" and theke_zugriff_erlaubt()):
+        status = aktueller_bestellstatus()
+        if not status["offen"]:
+            meldung = "Dienstag ist Ruhetag. Bestellungen sind heute nicht möglich." if status["ruhetag"] else "Bestellungen sind zurzeit nicht verfügbar."
+            return jsonify({"ok": False, "fehler": meldung, **status}), 403
+
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -2257,10 +2307,21 @@ def api_bestellung():
         kundenname = text_feld(daten, "kundenname", 100)
         kunden_telefon = text_feld(daten, "telefon", 40)
         lieferadresse = text_feld(daten, "lieferadresse", 300)
+        lieferort = text_feld(daten, "lieferort", 80)
         kundenhinweis = text_feld(daten, "hinweis", 500)
         gewuenschte_zeit = text_feld(daten, "gewuenschte_zeit", 80)
         if bestellart == "LIEFERUNG" and (not kundenname or not kunden_telefon or not lieferadresse):
             return jsonify({"ok": False, "fehler": "Für die Lieferung werden Name, Telefon und vollständige Adresse benötigt."}), 400
+        if bestellart == "LIEFERUNG":
+            if lieferort not in LIEFERMINDESTWERTE:
+                return jsonify({"ok": False, "fehler": "Bitte einen gültigen Lieferort auswählen."}), 400
+            mindestwert = LIEFERMINDESTWERTE[lieferort]
+            fehlbetrag_cent = max(0, mindestwert * 100 - round(gesamtbetrag * 100))
+            if fehlbetrag_cent:
+                fehlbetrag = f"{fehlbetrag_cent / 100:.2f}".replace(".", ",")
+                return jsonify({"ok": False, "fehler": f"Es fehlen noch {fehlbetrag} € für Ihren Lieferort {lieferort} (Mindestbestellwert: {mindestwert} €)."}), 400
+            if not lieferadresse.endswith(", " + lieferort):
+                return jsonify({"ok": False, "fehler": "Bitte Lieferadresse und Lieferort erneut prüfen."}), 400
 
         cur.execute("""
             INSERT INTO bestellungen
