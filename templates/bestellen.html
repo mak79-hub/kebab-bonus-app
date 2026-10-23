@@ -59,6 +59,10 @@
         .order-data textarea { min-height: 68px; resize: vertical; }
         .order-data label { font-size: .72rem; color: var(--gray); font-weight: 700; }
         .delivery-only { display: none; }
+        .ordering-info { padding: 9px 12px 2px; font-size: .74rem; color: #ddd; line-height: 1.45; }
+        .ordering-info strong { color: #fff; }
+        .delivery-info { margin-top: 6px; color: #f4c6bd; }
+        .minimum-note { color: #f4c6bd; font-size: .78rem; line-height: 1.35; }
 
         /* ===== VIEW: HOME – Kategorien-Kacheln ===== */
         .view { display: none; padding: 20px; }
@@ -494,6 +498,12 @@
         {% if app_mode == 'mitarbeiter' %}<button class="toggle-btn" onclick="setMode(this,'VOR_ORT')"><svg class="ui-icon"><use href="/static/icons/ui-icons.svg#dine"></use></svg> Vor Ort</button>{% endif %}
         {% endif %}
     </div>
+    {% if app_mode != 'terminal' %}
+    <div class="ordering-info">
+        <strong>Bestellzeiten:</strong> Mo, Mi, Do, Fr 11:00–21:30 · Sa, So 12:00–21:30 · Di Ruhetag
+        <div class="delivery-only delivery-info"><strong>Lieferung ab:</strong> 25 € Bischofsheim, Ginsheim, Gustavsburg · 35 € Bauschheim, Mainz-Kostheim · 45 € Rüsselsheim, Mainz-Kastel, Nauheim, Trebur, Astheim</div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- ===== EBENE 1: STARTSEITE – Kategorien-Kacheln ===== -->
@@ -554,10 +564,24 @@
         <div class="cart-summary-row"><span>Zwischensumme</span><span id="cartSubtotal">0,00€</span></div>
         <div class="cart-summary-row" style="display:none"><span>Liefergebühr</span><span id="cartFee">Kostenlos</span></div>
         <div class="cart-total"><span>Gesamt</span><span id="cartTotal">0,00€</span></div>
+        <div class="delivery-only minimum-note" id="minimumNote">Bitte Lieferort auswählen.</div>
         <div class="order-data">
             <label>Name<input id="orderName" maxlength="100" placeholder="Name (bei Lieferung erforderlich)"></label>
             <label>Telefon<input id="orderPhone" maxlength="40" inputmode="tel" placeholder="Telefon (bei Lieferung erforderlich)"></label>
-            <label class="delivery-only">Lieferadresse<textarea id="orderAddress" maxlength="300" placeholder="Straße, Hausnummer, PLZ und Ort"></textarea></label>
+            <label class="delivery-only">Lieferort<select id="orderDistrict" onchange="updateMinimumNote()">
+                <option value="">Bitte Lieferort auswählen</option>
+                <option value="Bischofsheim" data-minimum="25">Bischofsheim · ab 25 €</option>
+                <option value="Ginsheim" data-minimum="25">Ginsheim · ab 25 €</option>
+                <option value="Gustavsburg" data-minimum="25">Gustavsburg · ab 25 €</option>
+                <option value="Bauschheim" data-minimum="35">Bauschheim · ab 35 €</option>
+                <option value="Mainz-Kostheim" data-minimum="35">Mainz-Kostheim · ab 35 €</option>
+                <option value="Rüsselsheim" data-minimum="45">Rüsselsheim · ab 45 €</option>
+                <option value="Mainz-Kastel" data-minimum="45">Mainz-Kastel · ab 45 €</option>
+                <option value="Nauheim" data-minimum="45">Nauheim · ab 45 €</option>
+                <option value="Trebur" data-minimum="45">Trebur · ab 45 €</option>
+                <option value="Astheim" data-minimum="45">Astheim · ab 45 €</option>
+            </select></label>
+            <label class="delivery-only">Lieferadresse<textarea id="orderAddress" maxlength="300" placeholder="Straße, Hausnummer und PLZ"></textarea></label>
             <label>Gewünschte Zeit<input id="orderTime" maxlength="80" placeholder="Sofort oder z. B. 18:30 Uhr"></label>
             <label>Hinweis<textarea id="orderNote" maxlength="500" placeholder="Hinweis für Küche oder Lieferung"></textarea></label>
             <label>Zahlungsart<select id="paymentType"></select></label>
@@ -1376,6 +1400,17 @@ function renderCart() {
     document.getElementById('cartSubtotal').textContent = sub.toFixed(2).replace('.',',') + '€';
     document.getElementById('cartTotal').textContent = sub.toFixed(2).replace('.',',') + '€';
     f.style.display = 'block';
+    updateMinimumNote();
+}
+
+function updateMinimumNote() {
+    var select = document.getElementById('orderDistrict');
+    var note = document.getElementById('minimumNote');
+    var minimum = Number(select.selectedOptions[0].dataset.minimum || 0);
+    if (!minimum) { note.textContent = 'Bitte Lieferort auswählen.'; return; }
+    var total = cart.reduce(function(s, i) { return s + i.total; }, 0);
+    var missing = Math.max(0, Math.round(minimum * 100 - total * 100)) / 100;
+    note.textContent = missing ? 'Mindestbestellwert für ' + select.value + ': ' + minimum + ' € · Es fehlen noch ' + missing.toFixed(2).replace('.', ',') + ' €.' : 'Mindestbestellwert für ' + select.value + ': ' + minimum + ' € erreicht.';
 }
 
 function cartQty(cid, d) {
@@ -1435,10 +1470,19 @@ async function checkout() {
     var kundenname = document.getElementById('orderName').value.trim();
     var telefon = document.getElementById('orderPhone').value.trim();
     var lieferadresse = document.getElementById('orderAddress').value.trim();
+    var lieferort = document.getElementById('orderDistrict').value;
     var zahlungsart = document.getElementById('paymentType').value;
-    if (orderMode === 'LIEFERUNG' && (!kundenname || !telefon || !lieferadresse)) {
-        alert('Für die Lieferung bitte Name, Telefonnummer und vollständige Adresse eintragen.');
+    if (orderMode === 'LIEFERUNG' && (!kundenname || !telefon || !lieferadresse || !lieferort)) {
+        alert('Für die Lieferung bitte Name, Telefonnummer, Lieferort und Adresse eintragen.');
         return;
+    }
+    if (orderMode === 'LIEFERUNG') {
+        var minimum = Number(document.getElementById('orderDistrict').selectedOptions[0].dataset.minimum);
+        var summe = cart.reduce(function(s, i) { return s + i.total; }, 0);
+        if (Math.round(summe * 100) < minimum * 100) {
+            alert('Für ' + lieferort + ' beträgt der Mindestbestellwert ' + minimum + ' €.');
+            return;
+        }
     }
 
     toggleCart();
@@ -1457,7 +1501,7 @@ async function checkout() {
                 zahlungsart: zahlungsart,
                 kundenname: kundenname,
                 telefon: telefon,
-                lieferadresse: lieferadresse,
+                lieferadresse: orderMode === 'LIEFERUNG' ? lieferadresse + ', ' + lieferort : lieferadresse,
                 gewuenschte_zeit: document.getElementById('orderTime').value.trim(),
                 hinweis: document.getElementById('orderNote').value.trim()
             })
@@ -1527,6 +1571,7 @@ function setMode(btn, mode) {
         el.style.display = mode === 'LIEFERUNG' ? 'block' : 'none';
     });
     paymentOptions();
+    updateMinimumNote();
 }
 
 async function startTerminalPayment(token) {
