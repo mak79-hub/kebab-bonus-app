@@ -5,3 +5,6 @@ gunicorn
 Pillow
 pywebpush
 cryptography
+pyotp
+beautifulsoup4
+

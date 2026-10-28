@@ -1,17 +1,23 @@
-const CACHE_NAME = "kebab-bonus-v4";
+const CACHE_NAME = "kebab-bonus-v5-private-pages-never-cached";
 
 self.addEventListener("install", () => {
     self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-    event.waitUntil(self.clients.claim());
+    event.waitUntil(Promise.all([
+        caches.keys().then(names => Promise.all(names.filter(name => name.startsWith('kebab-bonus-')).map(name => caches.delete(name)))),
+        self.clients.claim()
+    ]));
 });
 
 self.addEventListener("fetch", (event) => {
-    event.respondWith(
-        fetch(event.request).catch(() => caches.match(event.request))
-    );
+    if (event.request.method !== 'GET') return;
+    // Never display an old customer/staff page after logout or offline.
+    event.respondWith(fetch(event.request).catch(() => new Response(
+        'Keine Verbindung. Bitte Internetverbindung prüfen und erneut laden.',
+        {status:503,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}}
+    )));
 });
 
 self.addEventListener("push", (event) => {
@@ -60,10 +66,11 @@ self.addEventListener("notificationclick", (event) => {
             ? event.notification.data.url
             : "/";
 
-    const zielUrl = new URL(
+    let zielUrl = new URL(
         zielPfad,
         self.location.origin
     ).href;
+    if (new URL(zielUrl).origin !== self.location.origin) zielUrl = self.location.origin + '/';
 
     event.waitUntil(
         clients.matchAll({
@@ -97,3 +104,4 @@ self.addEventListener("notificationclick", (event) => {
         })
     );
 });
+

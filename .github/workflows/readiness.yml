@@ -1,0 +1,40 @@
+name: Readiness and security regression tests
+on:
+  push:
+    branches: [main, 'fix/start-readiness-*']
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: kebab_test
+          POSTGRES_USER: test_user
+          # Throwaway local CI database only; never a production credential.
+          POSTGRES_PASSWORD: ci-only-disposable-database
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd 'pg_isready -U test_user -d kebab_test'
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      TEST_DATABASE_URL: postgresql://test_user:ci-only-disposable-database@127.0.0.1:5432/kebab_test
+      PGOPTIONS: '-c statement_timeout=15000'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: python -m compileall -q .
+      - run: python -m pytest tests -q --junitxml=test-results/readiness.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: readiness-results
+          path: test-results/readiness.xml
