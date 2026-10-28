@@ -1183,13 +1183,22 @@ function applyPaymentSuccess(order, zahlungsart) {
     renderOrders();
 }
 
-function markStorniert(internalId) {
+async function markStorniert(internalId) {
     var order = orders.find(function(o) { return o.internalId === internalId; });
     if (!order || order.status === STATUS.BEZAHLT || processingPayments[internalId]) return;
     if (!window.confirm('Bestellung #' + order.visibleNumber + ' wirklich stornieren?')) return;
-    order.status = STATUS.STORNIERT;
-    order.zahlungsstatus = 'STORNIERT';
-    renderOrders();
+    processingPayments[internalId] = true;
+    try {
+        const response = await fetch('/api/bestellung/' + encodeURIComponent(order.token) + '/stornieren', {method: 'POST'});
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.fehler || 'Stornierung fehlgeschlagen.');
+        await loadThekenBestellungen();
+    } catch (error) {
+        window.alert(error.message);
+    } finally {
+        processingPayments[internalId] = false;
+        renderOrders();
+    }
 }
 
 // ============================================================
@@ -1280,3 +1289,4 @@ if (localStorage.getItem('theke_kamera_erlaubt') === '1') {
 
 </body>
 </html>
+

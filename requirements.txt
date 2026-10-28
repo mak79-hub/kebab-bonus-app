@@ -1,7 +1,3 @@
-flask
-psycopg2-binary
-qrcode
-gunicorn
-Pillow
-pywebpush
-cryptography
+# Tested dependency versions. Update this lock deliberately and rerun CI.
+-r requirements.lock.txt
+

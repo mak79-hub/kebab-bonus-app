@@ -36,9 +36,18 @@ def namen(liste):
 
 
 def beleg(payload):
+    def sauber(value):
+        if isinstance(value, str):
+            return "".join(c if ord(c) >= 32 and ord(c) != 127 else " " for c in value)
+        if isinstance(value, dict):
+            return {k: sauber(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [sauber(v) for v in value]
+        return value
+    payload = sauber(payload)
     kunde = payload.get("kunde") or {}
     lines = [
-        "KEBAP HOEHLE XXL",
+        payload.get("shop_name") or "KEBAP HOEHLE XXL",
         "BESTELLUNG #" + str(payload.get("bestellnummer", "")),
         f"{payload.get('bestellart', '')} | {payload.get('quelle', '')}",
         "=" * 42,
@@ -105,3 +114,4 @@ def run():
 
 if __name__ == "__main__":
     run()
+

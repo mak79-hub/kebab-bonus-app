@@ -42,3 +42,10 @@ Die Kopplung erfolgt als Chef über:
 - `/sumup-einrichten?station=THEKE`
 - `/sumup-einrichten?station=TERMINAL_1`
 - `/sumup-einrichten?station=TERMINAL_2`
+
+# Aktueller Stand
+
+Die maßgebliche Einrichtungs-, Sicherheits- und Abnahmebeschreibung steht in
+[STARTBEREIT.md](STARTBEREIT.md). Die folgenden älteren Projektnotizen bleiben
+zur Nachvollziehbarkeit erhalten.
+

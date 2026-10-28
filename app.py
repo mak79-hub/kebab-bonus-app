@@ -1,3 +1,8 @@
+from markupsafe import escape as html_escape, Markup
+
+def message_html(message):
+    return Markup("<div class='message'>") + html_escape(message) + Markup("</div>") if message else ""
+
 import os
 import base64
 import urllib.parse
@@ -17,12 +22,15 @@ from flask import Flask, request, render_template, url_for, redirect, session, s
 from werkzeug.security import generate_password_hash, check_password_hash
 from pywebpush import webpush, WebPushException
 from praemien_katalog import PRAEMIEN_KATALOG, PRAEMIEN_EXTRAS, PRAEMIEN_MENUES
+from schema import foundation, complete
+from shop import paid_positions, purchase_points
+from decimal import Decimal
 
 
 app = Flask(__name__)
 
 
-app.secret_key = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.secret_key = os.environ.get("SECRET_KEY")  # Stable DB-backed fallback is loaded by install().
 app.permanent_session_lifetime = timedelta(days=365)
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -90,135 +98,134 @@ def get_einstellung(schluessel, standardwert=""):
     return ergebnis[0] if ergebnis else standardwert
 
 def init_db():
-    conn = get_db_connection()
-    cur = conn.cursor()
+    from shop import transaction
+    with transaction(get_db_connection) as cur:
+        foundation(cur)
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS kunden (
-            id SERIAL PRIMARY KEY,
-            kunden_id TEXT UNIQUE,
-            vorname TEXT NOT NULL,
-            nachname TEXT NOT NULL,
-            geburtsdatum DATE NOT NULL,
-            telefon TEXT,
-            adresse TEXT,
-            werbeeinwilligung BOOLEAN DEFAULT FALSE,
-            werbeeinwilligung_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS kunden (
+                id SERIAL PRIMARY KEY,
+                kunden_id TEXT UNIQUE,
+                vorname TEXT NOT NULL,
+                nachname TEXT NOT NULL,
+                geburtsdatum DATE NOT NULL,
+                telefon TEXT,
+                adresse TEXT,
+                werbeeinwilligung BOOLEAN DEFAULT FALSE,
+                werbeeinwilligung_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS kunden_laeden (
-            id SERIAL PRIMARY KEY,
-            kunde_id INTEGER REFERENCES kunden(id),
-            laden_id INTEGER DEFAULT 1,
-            punkte INTEGER DEFAULT 0,
-            letzter_besuch TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(kunde_id, laden_id)
-        );
-    """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS kunden_laeden (
+                id SERIAL PRIMARY KEY,
+                kunde_id INTEGER REFERENCES kunden(id),
+                laden_id INTEGER DEFAULT 1,
+                punkte INTEGER DEFAULT 0,
+                letzter_besuch TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(kunde_id, laden_id)
+            );
+        """)
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS punkte_bewegungen (
-            id SERIAL PRIMARY KEY,
-            kunde_id INTEGER REFERENCES kunden(id),
-            typ TEXT NOT NULL,
-            punkte INTEGER NOT NULL,
-            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS punkte_bewegungen (
+                id SERIAL PRIMARY KEY,
+                kunde_id INTEGER REFERENCES kunden(id),
+                typ TEXT NOT NULL,
+                punkte INTEGER NOT NULL,
+                erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS bestellungen (
-            id SERIAL PRIMARY KEY,
-            token TEXT UNIQUE NOT NULL,
-            tagesnummer INTEGER NOT NULL,
-            bestelldatum DATE NOT NULL DEFAULT CURRENT_DATE,
-            kunde_id INTEGER REFERENCES kunden(id) ON DELETE SET NULL,
-            gesamtbetrag NUMERIC(10,2) NOT NULL,
-            status TEXT NOT NULL DEFAULT 'WARTET_AUF_ZAHLUNG',
-            punkte_gutgeschrieben BOOLEAN NOT NULL DEFAULT FALSE,
-            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            bezahlt_am TIMESTAMP,
-            UNIQUE(bestelldatum, tagesnummer)
-        );
-    """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS bestellungen (
+                id SERIAL PRIMARY KEY,
+                token TEXT UNIQUE NOT NULL,
+                tagesnummer INTEGER NOT NULL,
+                bestelldatum DATE NOT NULL DEFAULT CURRENT_DATE,
+                kunde_id INTEGER REFERENCES kunden(id) ON DELETE SET NULL,
+                gesamtbetrag NUMERIC(10,2) NOT NULL,
+                status TEXT NOT NULL DEFAULT 'WARTET_AUF_ZAHLUNG',
+                punkte_gutgeschrieben BOOLEAN NOT NULL DEFAULT FALSE,
+                erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                bezahlt_am TIMESTAMP,
+                UNIQUE(bestelldatum, tagesnummer)
+            );
+        """)
     
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS bestellpositionen (
-            id SERIAL PRIMARY KEY,
-            bestellung_id INTEGER NOT NULL REFERENCES bestellungen(id) ON DELETE CASCADE,
-            produkt_id INTEGER,
-            produkt_name TEXT NOT NULL,
-            variante TEXT,
-            menge INTEGER NOT NULL DEFAULT 1,
-            einzelpreis NUMERIC(10,2) NOT NULL,
-            gesamtpreis NUMERIC(10,2) NOT NULL,
-            extras JSONB,
-            kueche INTEGER DEFAULT 1,
-            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS bestellpositionen (
+                id SERIAL PRIMARY KEY,
+                bestellung_id INTEGER NOT NULL REFERENCES bestellungen(id) ON DELETE CASCADE,
+                produkt_id INTEGER,
+                produkt_name TEXT NOT NULL,
+                variante TEXT,
+                menge INTEGER NOT NULL DEFAULT 1,
+                einzelpreis NUMERIC(10,2) NOT NULL,
+                gesamtpreis NUMERIC(10,2) NOT NULL,
+                extras JSONB,
+                kueche INTEGER DEFAULT 1,
+                erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
 
-    # Bestehende Datenbanken werden ohne Löschen erweitert.
-    cur.execute("""
-        ALTER TABLE bestellungen
-        ADD COLUMN IF NOT EXISTS zahlungsart TEXT NOT NULL DEFAULT 'BAR';
-    """)
-    cur.execute("""
-        ALTER TABLE bestellungen
-        ADD COLUMN IF NOT EXISTS punkte_betrag INTEGER NOT NULL DEFAULT 0;
-    """)
-    cur.execute("""
-        ALTER TABLE bestellungen
-        ADD COLUMN IF NOT EXISTS punkte_eingeloest BOOLEAN NOT NULL DEFAULT FALSE;
-    """)
-    cur.execute("""
-        ALTER TABLE bestellungen
-        ADD COLUMN IF NOT EXISTS sumup_checkout_id TEXT;
-    """)
-    cur.execute("""
-        ALTER TABLE bestellungen
-        ADD COLUMN IF NOT EXISTS sumup_transaction_id TEXT;
-    """)
-    cur.execute("""
-        ALTER TABLE bestellungen
-        ADD COLUMN IF NOT EXISTS sumup_status TEXT;
-    """)
-    cur.execute("""
-        ALTER TABLE bestellungen
-        ADD COLUMN IF NOT EXISTS sumup_fehler TEXT;
-    """)
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS bestellquelle TEXT NOT NULL DEFAULT 'KUNDEN_APP';")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS bestellart TEXT NOT NULL DEFAULT 'ABHOLUNG';")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kundenname TEXT;")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kunden_telefon TEXT;")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS lieferadresse TEXT;")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kundenhinweis TEXT;")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS gewuenschte_zeit TEXT;")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS station TEXT;")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS sumup_reader_id TEXT;")
-    cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS druckstatus TEXT NOT NULL DEFAULT 'OFFEN';")
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS druckauftraege (
-            id SERIAL PRIMARY KEY,
-            bestellung_id INTEGER NOT NULL REFERENCES bestellungen(id) ON DELETE CASCADE,
-            typ TEXT NOT NULL DEFAULT 'KUECHE',
-            status TEXT NOT NULL DEFAULT 'BEREIT',
-            versuche INTEGER NOT NULL DEFAULT 0,
-            payload JSONB NOT NULL,
-            erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            gedruckt_am TIMESTAMP,
-            fehler TEXT
-        );
-    """)
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_druckauftraege_status ON druckauftraege(status, erstellt_am);")
+        # Bestehende Datenbanken werden ohne Löschen erweitert.
+        cur.execute("""
+            ALTER TABLE bestellungen
+            ADD COLUMN IF NOT EXISTS zahlungsart TEXT NOT NULL DEFAULT 'BAR';
+        """)
+        cur.execute("""
+            ALTER TABLE bestellungen
+            ADD COLUMN IF NOT EXISTS punkte_betrag INTEGER NOT NULL DEFAULT 0;
+        """)
+        cur.execute("""
+            ALTER TABLE bestellungen
+            ADD COLUMN IF NOT EXISTS punkte_eingeloest BOOLEAN NOT NULL DEFAULT FALSE;
+        """)
+        cur.execute("""
+            ALTER TABLE bestellungen
+            ADD COLUMN IF NOT EXISTS sumup_checkout_id TEXT;
+        """)
+        cur.execute("""
+            ALTER TABLE bestellungen
+            ADD COLUMN IF NOT EXISTS sumup_transaction_id TEXT;
+        """)
+        cur.execute("""
+            ALTER TABLE bestellungen
+            ADD COLUMN IF NOT EXISTS sumup_status TEXT;
+        """)
+        cur.execute("""
+            ALTER TABLE bestellungen
+            ADD COLUMN IF NOT EXISTS sumup_fehler TEXT;
+        """)
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS bestellquelle TEXT NOT NULL DEFAULT 'KUNDEN_APP';")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS bestellart TEXT NOT NULL DEFAULT 'ABHOLUNG';")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kundenname TEXT;")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kunden_telefon TEXT;")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS lieferadresse TEXT;")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS kundenhinweis TEXT;")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS gewuenschte_zeit TEXT;")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS station TEXT;")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS sumup_reader_id TEXT;")
+        cur.execute("ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS druckstatus TEXT NOT NULL DEFAULT 'OFFEN';")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS druckauftraege (
+                id SERIAL PRIMARY KEY,
+                bestellung_id INTEGER NOT NULL REFERENCES bestellungen(id) ON DELETE CASCADE,
+                typ TEXT NOT NULL DEFAULT 'KUECHE',
+                status TEXT NOT NULL DEFAULT 'BEREIT',
+                versuche INTEGER NOT NULL DEFAULT 0,
+                payload JSONB NOT NULL,
+                erstellt_am TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                gedruckt_am TIMESTAMP,
+                fehler TEXT
+            );
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_druckauftraege_status ON druckauftraege(status, erstellt_am);")
     
     
-    conn.commit()
-    cur.close()
-    conn.close()
+        complete(cur)
 
 
 def make_qr_code(data):
@@ -1044,11 +1051,11 @@ def auto_back_to_scanner_page(titel, text):
     <div class="page">
         <div class="card">
             <div class="logo">KEBAB HÖHLE</div>
-            <div class="subtitle">{titel}</div>
+            <div class="subtitle">{html_escape(titel)}</div>
 
             <div class="success-icon">✓</div>
 
-            <div class="message">{text}</div>
+            <div class="message">{html_escape(text)}</div>
 
             <div class="hint">
                 Du wirst automatisch zurück zum Scanner geleitet.
@@ -1227,7 +1234,7 @@ def login():
             text-align: center;
             font-weight: bold;
         ">
-            {fehler}
+            {html_escape(fehler)}
         </div>
         """
 
@@ -1246,7 +1253,7 @@ def login():
                 <input
                     type="text"
                     name="kennung"
-                    value="{request.form.get('kennung', '')}"
+                    value="{html_escape(request.form.get('kennung', ''))}"
                     required
                 >
 
@@ -1358,31 +1365,31 @@ def register():
 
                 <h1 class="success-title">Registrierung erfolgreich</h1>
                 <p class="success-subtitle">
-                    Willkommen {vorname} {nachname}
+                    Willkommen {html_escape(vorname)} {html_escape(nachname)}
                 </p>
 
                 <div class="info-box">
                     <div class="label">Kunden-ID</div>
-                    <div class="value">{kunden_id}</div>
+                    <div class="value">{html_escape(kunden_id)}</div>
 
                     <div class="label">Name</div>
-                    <div class="value">{vorname} {nachname}</div>
+                    <div class="value">{html_escape(vorname)} {html_escape(nachname)}</div>
                 </div>
 
                 <div class="points">
-                    <div class="number">{punktestand}</div>
+                    <div class="number">{html_escape(punktestand)}</div>
                     <div class="text">Punkte</div>
                 </div>
 
                 <div class="qr-box">
-                    <img src="data:image/png;base64,{qr_code}">
+                    <img src="data:image/png;base64,{html_escape(qr_code)}">
                 </div>
 
                 <div class="hint">
                     Bitte speichere diesen QR-Code oder mache einen Screenshot.
                     Dieser QR-Code wird im Laden zum Sammeln und Einlösen der Punkte benötigt.
                 </div>
-                <a class="btn btn-red" href="/kunde/{kunden_id}/praemien">
+                <a class="btn btn-red" href="/kunde/{html_escape(kunden_id)}/praemien">
                     <svg class="ui-icon"><use href="/static/icons/ui-icons.svg#gift"></use></svg>Prämien ansehen
                 </a>
                 <a class="btn btn-green" href="/bestellen">
@@ -1492,21 +1499,21 @@ def kunde(kunden_id):
                 font-weight:800;
                 margin-bottom:12px;
             ">
-                {aktuelles_angebot[1]}
+                {html_escape(aktuelles_angebot[1])}
             </div>
 
             <div style="
                 font-size:20px;
                 line-height:1.5;
                 white-space:pre-wrap;
-            ">{aktuelles_angebot[2]}</div>
+            ">{html_escape(aktuelles_angebot[2])}</div>
 
             <div style="
                 margin-top:16px;
                 font-size:15px;
                 opacity:0.7;
             ">
-                Gesendet am {angebot_datum}
+                Gesendet am {html_escape(angebot_datum)}
             </div>
         </div>
         """
@@ -1521,26 +1528,26 @@ def kunde(kunden_id):
 
             <div class="info-box">
                 <div class="label">Kunden-ID</div>
-                <div class="value">{kunde_daten[1]}</div>
+                <div class="value">{html_escape(kunde_daten[1])}</div>
 
                 <div class="label">Name</div>
-                <div class="value">{kunde_daten[2]} {kunde_daten[3]}</div>
+                <div class="value">{html_escape(kunde_daten[2])} {html_escape(kunde_daten[3])}</div>
             </div>
 
             <div class="points">
-                <div class="number">{punktestand}</div>
+                <div class="number">{html_escape(punktestand)}</div>
                 <div class="text">Punkte</div>
             </div>
 
             <div class="qr-box">
-                <img src="data:image/png;base64,{qr_code}">
+                <img src="data:image/png;base64,{html_escape(qr_code)}">
             </div>
 
             <div class="hint">
                 Zeige diesen QR-Code im Laden vor, um Punkte zu sammeln oder einzulösen.
             </div>
             
-            <a class="btn btn-red" href="/kunde/{kunde_daten[1]}/praemien">
+            <a class="btn btn-red" href="/kunde/{html_escape(kunde_daten[1])}/praemien">
                 <svg class="ui-icon"><use href="/static/icons/ui-icons.svg#gift"></use></svg>Prämien ansehen
             </a>
             <a class="btn btn-green" href="/bestellen">
@@ -1683,7 +1690,7 @@ def kunde(kunden_id):
                             "Content-Type": "application/json"
                         }},
                         body: JSON.stringify({{
-                            kunde_id: {kunde_daten[0]},
+                            kunde_id: {html_escape(kunde_daten[0])},
                             endpoint: subscription.endpoint,
                             keys: subscriptionDaten.keys
                         }})
@@ -1877,6 +1884,7 @@ def api_praemien_bestellung():
     daten = request.get_json(silent=True) or {}
 
     try:
+        meta = order_metadata(daten, 'reward')
         positionen, benoetigte_punkte = praemien_positionen_pruefen(
             daten.get("items")
         )
@@ -1895,6 +1903,9 @@ def api_praemien_bestellung():
     cur = conn.cursor()
 
     try:
+        wiederholung = repeated_order(cur, meta)
+        if wiederholung is not None:
+            return wiederholung
         cur.execute("SELECT pg_advisory_xact_lock(hashtext('bestellungen_tagesnummer_' || CURRENT_DATE::text));")
         cur.execute("""
             SELECT COALESCE(MAX(tagesnummer), 99) + 1
@@ -1908,12 +1919,12 @@ def api_praemien_bestellung():
             INSERT INTO bestellungen
                 (
                     token, tagesnummer, kunde_id, gesamtbetrag,
-                    zahlungsart, punkte_betrag
+                    zahlungsart, punkte_betrag, anfrage_id, anfrage_hash
                 )
             VALUES
-                (%s, %s, %s, 0, 'BONUSPUNKTE', %s)
+                (%s, %s, %s, 0, 'BONUSPUNKTE', %s, %s, %s)
             RETURNING id
-        """, (token, tagesnummer, kunde[0], benoetigte_punkte))
+        """, (token, tagesnummer, kunde[0], benoetigte_punkte, meta[0], meta[1]))
         bestellung_id = cur.fetchone()[0]
 
         for position in positionen:
@@ -2044,7 +2055,10 @@ def normalisiere_bestelloption(option):
 
 
 def text_feld(daten, name, max_laenge=300):
-    return str(daten.get(name) or "").strip()[:max_laenge]
+    wert = daten.get(name) or ""
+    if not isinstance(wert, str):
+        return ""
+    return "".join(c for c in wert if ord(c) >= 32 or c in "\n\t").strip()[:max_laenge]
 
 
 def reader_fuer_station(station):
@@ -2119,7 +2133,8 @@ def api_theke_bestellungen():
                 b.kundenhinweis,
                 b.gewuenschte_zeit,
                 b.station,
-                b.druckstatus
+                b.druckstatus,
+                b.vergebene_punkte
             FROM bestellungen b
             WHERE b.bestelldatum = CURRENT_DATE
             ORDER BY b.erstellt_am ASC
@@ -2192,7 +2207,7 @@ def api_theke_bestellungen():
                 "Gesamtbetrag": gesamtbetrag_cent,
                 "status": zeile[4],
                 "bonus_kunde": ist_bonus_kunde,
-                "punkte": int(float(zeile[3])) if ist_bonus_kunde else 0,
+                "punkte": (int(zeile[25]) if zeile[25] is not None else purchase_points(cur, zeile[3])) if ist_bonus_kunde else 0,
                 "bonus_gutgeschrieben": bool(zeile[6]),
                 "zahlungsart": zeile[9],
                 "punkte_betrag": int(zeile[10] or 0),
@@ -2235,6 +2250,9 @@ def api_theke_bestellungen():
 def api_bestellung():
     daten = request.get_json(silent=True) or {}
 
+    if not isinstance(daten, dict):
+        return jsonify({"ok": False, "fehler": "Ungültige Bestelldaten."}), 400
+
     if not daten or not daten.get("items"):
         return jsonify({"ok": False, "fehler": "Warenkorb ist leer."}), 400
     if not isinstance(daten.get("items"), list) or len(daten["items"]) > 50:
@@ -2244,13 +2262,22 @@ def api_bestellung():
     if not (bestellquelle_vorab == "MITARBEITER" and theke_zugriff_erlaubt()):
         status = aktueller_bestellstatus()
         if not status["offen"]:
-            meldung = "Dienstag ist Ruhetag. Bestellungen sind heute nicht möglich." if status["ruhetag"] else "Bestellungen sind zurzeit nicht verfügbar."
+            meldung = "Heute ist Ruhetag. Bestellungen sind heute nicht möglich." if status["ruhetag"] else "Bestellungen sind zurzeit nicht verfügbar."
             return jsonify({"ok": False, "fehler": meldung, **status}), 403
+
+    try:
+        meta = order_metadata(daten, 'paid')
+        daten["items"], gesamt_cent = paid_positions(daten["items"])
+    except ValueError as error:
+        return jsonify({"ok": False, "fehler": str(error)}), 400
 
     conn = get_db_connection()
     cur = conn.cursor()
 
     try:
+        wiederholung = repeated_order(cur, meta)
+        if wiederholung is not None:
+            return wiederholung
         cur.execute("SELECT pg_advisory_xact_lock(hashtext('bestellungen_tagesnummer_' || CURRENT_DATE::text));")
         cur.execute("""
             SELECT COALESCE(MAX(tagesnummer), 99) + 1
@@ -2275,20 +2302,7 @@ def api_bestellung():
             if kunde:
                 kunden_id = kunde[0]
 
-        gesamtbetrag = 0.0
-        for item in daten["items"]:
-            if not isinstance(item, dict):
-                return jsonify({"ok": False, "fehler": "Eine Bestellposition ist ungültig."}), 400
-            try:
-                menge_pruefung = int(item.get("qty", 1))
-                positionsbetrag = float(item.get("total", 0))
-            except (TypeError, ValueError):
-                return jsonify({"ok": False, "fehler": "Menge oder Preis ist ungültig."}), 400
-            if menge_pruefung < 1 or menge_pruefung > 20 or positionsbetrag < 0 or positionsbetrag > 1000:
-                return jsonify({"ok": False, "fehler": "Menge oder Preis liegt außerhalb des erlaubten Bereichs."}), 400
-            gesamtbetrag += positionsbetrag
-        if gesamtbetrag <= 0 or gesamtbetrag > 2500:
-            return jsonify({"ok": False, "fehler": "Gesamtbetrag ist ungültig."}), 400
+        gesamtbetrag = Decimal(gesamt_cent) / 100
 
         bestellquelle = text_feld(daten, "bestellquelle", 30).upper() or "KUNDEN_APP"
         bestellart = text_feld(daten, "bestellart", 20).upper() or "ABHOLUNG"
@@ -2316,7 +2330,7 @@ def api_bestellung():
             if lieferort not in LIEFERMINDESTWERTE:
                 return jsonify({"ok": False, "fehler": "Bitte einen gültigen Lieferort auswählen."}), 400
             mindestwert = LIEFERMINDESTWERTE[lieferort]
-            fehlbetrag_cent = max(0, mindestwert * 100 - round(gesamtbetrag * 100))
+            fehlbetrag_cent = max(0, int(Decimal(str(mindestwert)) * 100) - gesamt_cent)
             if fehlbetrag_cent:
                 fehlbetrag = f"{fehlbetrag_cent / 100:.2f}".replace(".", ",")
                 return jsonify({"ok": False, "fehler": f"Es fehlen noch {fehlbetrag} € für Ihren Lieferort {lieferort} (Mindestbestellwert: {mindestwert} €)."}), 400
@@ -2327,9 +2341,10 @@ def api_bestellung():
             INSERT INTO bestellungen
                 (token, tagesnummer, kunde_id, gesamtbetrag, zahlungsart,
                  bestellquelle, bestellart, kundenname, kunden_telefon,
-                 lieferadresse, kundenhinweis, gewuenschte_zeit, station, sumup_reader_id)
+                 lieferadresse, kundenhinweis, gewuenschte_zeit, station, sumup_reader_id,
+                 anfrage_id, anfrage_hash)
             VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
             token,
@@ -2337,7 +2352,7 @@ def api_bestellung():
             kunden_id,
             gesamtbetrag, zahlungsart, bestellquelle, bestellart, kundenname,
             kunden_telefon, lieferadresse, kundenhinweis, gewuenschte_zeit,
-            station or None, reader_fuer_station(station) or None
+            station or None, reader_fuer_station(station) or None, meta[0], meta[1]
         ))
 
         bestellung_id = cur.fetchone()[0]
@@ -2350,8 +2365,8 @@ def api_bestellung():
             upgrade = item.get("upgrade")
 
             menge = int(item.get("qty", 1))
-            gesamtpreis = float(item.get("total", 0))
-            einzelpreis = gesamtpreis / menge if menge > 0 else 0
+            gesamtpreis = Decimal(item["total_cents"]) / 100
+            einzelpreis = Decimal(item["unit_cents"]) / 100
 
             optionen = {
                 "extras": extras,
@@ -2444,9 +2459,9 @@ def sumup_einrichten():
         <!doctype html><html lang="de"><meta name="viewport" content="width=device-width,initial-scale=1">
         <title>SumUp einrichten</title>
         <body style="font-family:Arial;background:#0d0d0d;color:white;padding:30px;max-width:650px;margin:auto">
-        <h1>SumUp-Terminal koppeln: {station}</h1>
+        <h1>SumUp-Terminal koppeln: {html_escape(station)}</h1>
         <p>Pairing-Code vom virtuellen oder echten Solo eingeben. Er ist nur 5 Minuten gültig.</p>
-        <form method="post"><input type="hidden" name="station" value="{station}">
+        <form method="post"><input type="hidden" name="station" value="{html_escape(station)}">
         <input name="pairing_code" required minlength="8" maxlength="9"
         style="font-size:24px;padding:14px;width:100%;box-sizing:border-box;text-transform:uppercase">
         <button style="margin-top:15px;padding:15px;font-size:18px">TERMINAL KOPPELN</button></form>
@@ -2489,7 +2504,7 @@ def sumup_zahlung_in_db_abschliessen(cur, bestellung_id, kunde_id, gesamtbetrag,
                                       punkte_gutgeschrieben):
     vergebene_punkte = 0
     if kunde_id and not punkte_gutgeschrieben:
-        vergebene_punkte = int(gesamtbetrag)
+        vergebene_punkte = purchase_points(cur, gesamtbetrag)
         if vergebene_punkte > 0:
             cur.execute("""
                 INSERT INTO punkte_bewegungen (kunde_id, typ, punkte)
@@ -2500,9 +2515,9 @@ def sumup_zahlung_in_db_abschliessen(cur, bestellung_id, kunde_id, gesamtbetrag,
         UPDATE bestellungen
         SET status = 'BEZAHLT', bezahlt_am = CURRENT_TIMESTAMP,
             zahlungsart = 'SUMUP', punkte_gutgeschrieben = TRUE,
-            sumup_status = 'SUCCESS', sumup_fehler = NULL
+            sumup_status = 'SUCCESS', sumup_fehler = NULL, vergebene_punkte = %s
         WHERE id = %s
-    """, (bestellung_id,))
+    """, (vergebene_punkte, bestellung_id))
     return vergebene_punkte
 
 
@@ -2540,8 +2555,8 @@ def api_sumup_start(token):
     try:
         if not bestellung:
             return jsonify({"ok": False, "fehler": "Bestellung nicht gefunden."}), 404
-        if bestellung[2] == "BEZAHLT":
-            return jsonify({"ok": False, "fehler": "Die Bestellung ist bereits bezahlt."}), 409
+        if bestellung[2] in ("BEZAHLT", "STORNIERT"):
+            return jsonify({"ok": False, "fehler": "Die Bestellung ist bereits bezahlt oder storniert."}), 409
         if bestellung[3] == "BONUSPUNKTE":
             return jsonify({"ok": False, "fehler": "Prämienbestellungen werden mit Punkten bezahlt."}), 409
         if bestellung[4] and bestellung[5] in ("STARTED", "PENDING"):
@@ -2602,6 +2617,8 @@ def api_sumup_status(token):
             return jsonify({"ok": False, "fehler": "Bestellung nicht gefunden."}), 404
         if not theke_zugriff_erlaubt() and not str(bestellung[7] or "").startswith("BESTELLMONITOR_"):
             return jsonify({"ok": False, "fehler": "Nicht angemeldet."}), 401
+        if bestellung[3] == "STORNIERT":
+            return jsonify({"ok": False, "fehler": "Diese Bestellung wurde storniert."}), 409
         if bestellung[3] == "BEZAHLT":
             return jsonify({"ok": True, "status": "SUCCESS", "bezahlt": True})
         if not bestellung[5]:
@@ -2617,8 +2634,12 @@ def api_sumup_status(token):
         sumup_betrag = (daten.get("total_amount") or {}).get("value")
 
         if status == "successful":
-            if sumup_betrag is not None and int(sumup_betrag) != betrag_in_cent(bestellung[2]):
-                raise RuntimeError("SumUp meldet einen abweichenden Zahlungsbetrag.")
+            geld = daten.get("total_amount") or {}
+            if (isinstance(sumup_betrag, bool) or not isinstance(sumup_betrag, int)
+                    or sumup_betrag != betrag_in_cent(bestellung[2])
+                    or geld.get("currency") != "EUR" or geld.get("minor_unit") != 2
+                    or daten.get("checkout_id") != bestellung[5]):
+                raise RuntimeError("SumUp-Zahlungskennung, Betrag oder Währung konnten nicht bestätigt werden.")
             punkte = sumup_zahlung_in_db_abschliessen(
                 cur, bestellung[0], bestellung[1], bestellung[2], bestellung[4]
             )
@@ -2777,6 +2798,9 @@ def api_bestellung_bezahlt(token):
         punkte_eingeloest = bool(bestellung[7])
         sumup_status = bestellung[8]
 
+        if status == "STORNIERT":
+            return jsonify({"ok": False, "fehler": "Diese Bestellung wurde storniert."}), 409
+
         if status == "BEZAHLT":
             return jsonify({
                 "ok": True,
@@ -2854,7 +2878,7 @@ def api_bestellung_bezahlt(token):
         vergebene_punkte = 0
 
         if kunde_id and not punkte_gutgeschrieben:
-            vergebene_punkte = int(gesamtbetrag)
+            vergebene_punkte = purchase_points(cur, gesamtbetrag)
 
             if vergebene_punkte > 0:
                 cur.execute("""
@@ -2870,9 +2894,9 @@ def api_bestellung_bezahlt(token):
 
             cur.execute("""
                 UPDATE bestellungen
-                SET punkte_gutgeschrieben = TRUE
+                SET punkte_gutgeschrieben = TRUE, vergebene_punkte = %s
                 WHERE id = %s
-            """, (bestellung_id,))
+            """, (vergebene_punkte, bestellung_id))
 
         cur.execute("""
             UPDATE bestellungen
@@ -2997,13 +3021,13 @@ def kunde_praemien_alt(kunden_id):
     ):
         if punktestand >= praemie["punkte"]:
             einloesbar_html += f"""
-            <div class="info-box" style="border-left:6px solid {praemie['farbe']};">
+            <div class="info-box" style="border-left:6px solid {html_escape(praemie['farbe'])};">
                 <div class="product-row">
-                    <img src="/static/images/{praemie['bild']}" class="product-image">
+                    <img src="/static/images/{html_escape(praemie['bild'])}" class="product-image">
 
                     <div class="product-info">
-                        <div class="product-name">{praemie["name"]}</div>
-                        <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                        <div class="product-name">{html_escape(praemie["name"])}</div>
+                        <div class="points-badge">🪙 {html_escape(praemie["punkte"])} Punkte</div>
                     </div>
 
                     <div class="status-ok">✅ Einlösbar</div>
@@ -3013,16 +3037,16 @@ def kunde_praemien_alt(kunden_id):
         else:
             fehlt = praemie["punkte"] - punktestand
             nicht_einloesbar_html += f"""
-            <div class="info-box" style="border-left:6px solid {praemie['farbe']};">
+            <div class="info-box" style="border-left:6px solid {html_escape(praemie['farbe'])};">
                 <div class="product-row locked">
-                    <img src="/static/images/{praemie['bild']}" class="product-image">
+                    <img src="/static/images/{html_escape(praemie['bild'])}" class="product-image">
 
                     <div class="product-info">
-                        <div class="product-name">{praemie["name"]}</div>
-                        <div class="points-badge">🪙 {praemie["punkte"]} Punkte</div>
+                        <div class="product-name">{html_escape(praemie["name"])}</div>
+                        <div class="points-badge">🪙 {html_escape(praemie["punkte"])} Punkte</div>
                     </div>
 
-                    <div class="status-no">🔒 Noch {fehlt}</div>
+                    <div class="status-no">🔒 Noch {html_escape(fehlt)}</div>
                 </div>
             </div>
             """
@@ -3050,10 +3074,10 @@ def kunde_praemien_alt(kunden_id):
 
             <div class="info-box">
                 <div class="label">Kunde</div>
-                <div class="value">{kunde_daten[2]} {kunde_daten[3]}</div>
+                <div class="value">{html_escape(kunde_daten[2])} {html_escape(kunde_daten[3])}</div>
 
                 <div class="label">Aktuelle Punkte</div>
-                <div class="value">{punktestand}</div>
+                <div class="value">{html_escape(punktestand)}</div>
             </div>
 
             <div class="status-banner">
@@ -3076,7 +3100,7 @@ def kunde_praemien_alt(kunden_id):
 
             {nicht_einloesbar_html}
 
-            <a class="btn btn-dark" href="/kunde/{kunde_daten[1]}">Zurück zur Kundenkarte</a>
+            <a class="btn btn-dark" href="/kunde/{html_escape(kunde_daten[1])}">Zurück zur Kundenkarte</a>
         </div>
     </div>
     """
@@ -3135,7 +3159,7 @@ def mitarbeiter_login():
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Mitarbeiter Login</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <form method="POST">
 
@@ -3156,7 +3180,7 @@ def mitarbeiter_login():
                 <input
                     type="hidden"
                     name="next"
-                    value="{next_url}"
+                    value="{html_escape(next_url)}"
                 >
 
                 <button class="btn-red" type="submit">
@@ -3202,7 +3226,7 @@ def mitarbeiter():
 
             <div class="info-box">
                 <div class="label">Angemeldet als</div>
-                <div class="value">👤 {mitarbeiter_name}</div>
+                <div class="value">👤 {html_escape(mitarbeiter_name)}</div>
             </div>
 
             <a class="btn btn-green" href="/theke">🧾 Theke / Bestellungen</a>
@@ -3267,8 +3291,8 @@ def scanner():
             let kundenId = null;
             decodedText = decodedText.trim();
 
-            const matchUrl = decodedText.match(/\\/kunde\\/(KH-\\d+)/i);
-            const matchPlain = decodedText.match(/^(KH-\\d+)$/i);
+            const matchUrl = decodedText.match(/\\/kunde\\/(KH-[A-Z0-9-]+)(?:[/?#]|$)/i);
+            const matchPlain = decodedText.match(/^(KH-[A-Z0-9-]+)$/i);
 
             if (matchUrl) {{
                 kundenId = matchUrl[1].toUpperCase();
@@ -3348,7 +3372,7 @@ def mitarbeiter_kunde(kunden_id):
 
         try:
             betrag = float(betrag_text)
-            punkte = int(betrag)
+            punkte = purchase_points(cur, betrag)
         except ValueError:
             punkte = 0
 
@@ -3395,18 +3419,18 @@ def mitarbeiter_kunde(kunden_id):
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Mitarbeiterbereich</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <div class="info-box">
                 <div class="label">Kunden-ID</div>
-                <div class="value">{kunde_daten[1]}</div>
+                <div class="value">{html_escape(kunde_daten[1])}</div>
 
                 <div class="label">Name</div>
-                <div class="value">{kunde_daten[2]} {kunde_daten[3]}</div>
+                <div class="value">{html_escape(kunde_daten[2])} {html_escape(kunde_daten[3])}</div>
             </div>
 
             <div class="points">
-                <div class="number">{punktestand}</div>
+                <div class="number">{html_escape(punktestand)}</div>
                 <div class="text">Punkte</div>
             </div>
 
@@ -3419,7 +3443,7 @@ def mitarbeiter_kunde(kunden_id):
 
             <div class="divider"></div>
 
-            <a class="btn btn-orange" href="/mitarbeiter/{kunde_daten[1]}/einloesen">Punkte einlösen</a>
+            <a class="btn btn-orange" href="/mitarbeiter/{html_escape(kunde_daten[1])}/einloesen">Punkte einlösen</a>
             <a class="btn btn-red" href="/scanner">Nächsten Kunden scannen</a>
             <a class="btn btn-dark" href="/mitarbeiter">Manuell suchen</a>
             <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
@@ -3524,18 +3548,18 @@ def punkte_einloesen(kunden_id):
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Punkte einlösen</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <div class="info-box">
                 <div class="label">Kunden-ID</div>
-                <div class="value">{kunde_daten[1]}</div>
+                <div class="value">{html_escape(kunde_daten[1])}</div>
 
                 <div class="label">Name</div>
-                <div class="value">{kunde_daten[2]} {kunde_daten[3]}</div>
+                <div class="value">{html_escape(kunde_daten[2])} {html_escape(kunde_daten[3])}</div>
             </div>
 
             <div class="points">
-                <div class="number">{punktestand}</div>
+                <div class="number">{html_escape(punktestand)}</div>
                 <div class="text">Punkte</div>
             </div>
 
@@ -3550,7 +3574,7 @@ def punkte_einloesen(kunden_id):
                 <button class="btn-orange" type="submit">Punkte jetzt einlösen</button>
             </form>
 
-            <a class="btn btn-dark" href="/mitarbeiter/{kunde_daten[1]}">Zurück zur Kundenseite</a>
+            <a class="btn btn-dark" href="/mitarbeiter/{html_escape(kunde_daten[1])}">Zurück zur Kundenseite</a>
             <a class="btn btn-red" href="/scanner">Nächsten Kunden scannen</a>
             <a class="small-link" href="/mitarbeiter-logout">Abmelden</a>
         </div>
@@ -3584,7 +3608,7 @@ def chef_login():
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Chef Login</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <form method="POST">
                 <div class="section-title">Chef-PIN eingeben</div>
@@ -3628,7 +3652,7 @@ def chef_dashboard():
     cur.execute("""
         SELECT COALESCE(SUM(ABS(punkte)), 0)
         FROM punkte_bewegungen
-        WHERE typ = 'EINLOESUNG'
+        WHERE typ IN ('EINLOESUNG', 'EINLOESUNG_BESTELLUNG')
           AND erstellt_am::date = CURRENT_DATE
     """)
     einloesungen_heute = cur.fetchone()[0]
@@ -3664,12 +3688,12 @@ def chef_dashboard():
         typ_text = "Einlösung" if b[4] == "EINLOESUNG" else "Gutschrift"
         rows += f"""
             <tr>
-                <td>{b[0]}</td>
-                <td>{b[1]}</td>
-                <td>{b[2]} {b[3]}</td>
-                <td>{typ_text}</td>
-                <td>{b[5]}</td>
-                <td>{b[6]}</td>
+                <td>{html_escape(b[0])}</td>
+                <td>{html_escape(b[1])}</td>
+                <td>{html_escape(b[2])} {html_escape(b[3])}</td>
+                <td>{html_escape(typ_text)}</td>
+                <td>{html_escape(b[5])}</td>
+                <td>{html_escape(b[6])}</td>
             </tr>
         """
 
@@ -3686,19 +3710,19 @@ def chef_dashboard():
             <div class="stat-grid">
                 <div class="stat-box">
                     <div class="stat-label">Kunden gesamt</div>
-                    <div class="stat-value">{kunden_gesamt}</div>
+                    <div class="stat-value">{html_escape(kunden_gesamt)}</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">Buchungen heute</div>
-                    <div class="stat-value">{buchungen_heute}</div>
+                    <div class="stat-value">{html_escape(buchungen_heute)}</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">Gutgeschriebene Punkte heute</div>
-                    <div class="stat-value">{punkte_heute}</div>
+                    <div class="stat-value">{html_escape(punkte_heute)}</div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-label">Eingelöste Punkte heute</div>
-                    <div class="stat-value">{einloesungen_heute}</div>
+                    <div class="stat-value">{html_escape(einloesungen_heute)}</div>
                 </div>
             </div>
             <div class="menu-grid">
@@ -3800,11 +3824,11 @@ def chef_kunden():
     for k in kunden:
         rows += f"""
         <tr>
-            <td>{k[1]}</td>
-            <td>{k[2]} {k[3]}</td>
-            <td>{k[4]}</td>
-            <td>{k[5] or ""}</td>
-            <td>{k[6]}</td>
+            <td>{html_escape(k[1])}</td>
+            <td>{html_escape(k[2])} {html_escape(k[3])}</td>
+            <td>{html_escape(k[4])}</td>
+            <td>{html_escape(k[5] or "")}</td>
+            <td>{html_escape(k[6])}</td>
         </tr>
         """
 
@@ -3820,7 +3844,7 @@ def chef_kunden():
 
             <form method="GET">
                 <label class="label">Kunde suchen</label>
-                <input type="text" name="suche" value="{suche}" placeholder="Name, Kunden-ID oder Telefon">
+                <input type="text" name="suche" value="{html_escape(suche)}" placeholder="Name, Kunden-ID oder Telefon">
                 <button class="btn-red" type="submit">Suchen</button>
             </form>
 
@@ -3892,12 +3916,12 @@ def chef_gutschriften():
     for d in daten:
         rows += f"""
         <tr>
-            <td>{d[0]}</td>
-            <td>{d[1]}</td>
-            <td>{d[2]}</td>
-            <td>{d[3]}</td>
-            <td>{format_datetime(d[4])}</td>
-            <td>{d[5]}</td>
+            <td>{html_escape(d[0])}</td>
+            <td>{html_escape(d[1])}</td>
+            <td>{html_escape(d[2])}</td>
+            <td>{html_escape(d[3])}</td>
+            <td>{html_escape(format_datetime(d[4]))}</td>
+            <td>{html_escape(d[5])}</td>
         </tr>
         """
 
@@ -3914,10 +3938,10 @@ def chef_gutschriften():
 
             <form method="GET">
                 <label class="label">Von</label>
-                <input type="date" name="von" value="{von}">
+                <input type="date" name="von" value="{html_escape(von)}">
 
                 <label class="label">Bis</label>
-                <input type="date" name="bis" value="{bis}">
+                <input type="date" name="bis" value="{html_escape(bis)}">
 
                 <button class="btn-red" type="submit">Filtern</button>
             </form>
@@ -3969,7 +3993,7 @@ def chef_einloesungen():
         FROM punkte_bewegungen p
         JOIN kunden k ON k.id = p.kunde_id
         LEFT JOIN mitarbeiter m ON m.id = p.mitarbeiter_id
-        WHERE p.typ = 'EINLOESUNG'
+        WHERE p.typ IN ('EINLOESUNG', 'EINLOESUNG_BESTELLUNG')
     """
 
     params = []
@@ -3995,12 +4019,12 @@ def chef_einloesungen():
     for d in daten:
         rows += f"""
         <tr>
-            <td>{d[0]}</td>
-            <td>{d[1]}</td>
-            <td>{d[2]}</td>
-            <td>{d[3]}</td>
-            <td>{format_datetime(d[4])}</td>
-            <td>{d[5]}</td>
+            <td>{html_escape(d[0])}</td>
+            <td>{html_escape(d[1])}</td>
+            <td>{html_escape(d[2])}</td>
+            <td>{html_escape(d[3])}</td>
+            <td>{html_escape(format_datetime(d[4]))}</td>
+            <td>{html_escape(d[5])}</td>
         </tr>
         """
 
@@ -4017,10 +4041,10 @@ def chef_einloesungen():
 
             <form method="GET">
                 <label class="label">Von</label>
-                <input type="date" name="von" value="{von}">
+                <input type="date" name="von" value="{html_escape(von)}">
 
                 <label class="label">Bis</label>
-                <input type="date" name="bis" value="{bis}">
+                <input type="date" name="bis" value="{html_escape(bis)}">
 
                 <button class="btn-red" type="submit">Filtern</button>
             </form>
@@ -4107,7 +4131,7 @@ def chef_statistiken():
 
     gutschriften_anzahl, gutschriften_punkte = cur.fetchone()
 
-    einloesung_bedingungen = ["typ = 'EINLOESUNG'"]
+    einloesung_bedingungen = ["typ IN ('EINLOESUNG', 'EINLOESUNG_BESTELLUNG')"]
     einloesung_params = []
 
     if von:
@@ -4194,9 +4218,9 @@ def chef_statistiken():
     for kunde in aktive_kunden:
         kunden_rows += f"""
         <tr>
-            <td>{kunde[0]}</td>
-            <td>{kunde[1]} {kunde[2]}</td>
-            <td>{kunde[3]}</td>
+            <td>{html_escape(kunde[0])}</td>
+            <td>{html_escape(kunde[1])} {html_escape(kunde[2])}</td>
+            <td>{html_escape(kunde[3])}</td>
         </tr>
         """
 
@@ -4226,47 +4250,47 @@ def chef_statistiken():
 
             <form method="GET">
                 <label class="label">Von</label>
-                <input type="date" name="von" value="{von}">
+                <input type="date" name="von" value="{html_escape(von)}">
 
                 <label class="label">Bis</label>
-                <input type="date" name="bis" value="{bis}">
+                <input type="date" name="bis" value="{html_escape(bis)}">
 
                 <button class="btn-red" type="submit">Zeitraum anzeigen</button>
             </form>
 
             <div class="hint">
-                Ausgewählter Zeitraum: {zeitraum_text}
+                Ausgewählter Zeitraum: {html_escape(zeitraum_text)}
             </div>
 
             <div class="stat-grid">
                 <div class="stat-box">
                     <div class="stat-label">Neue Kunden</div>
-                    <div class="stat-value">{neue_kunden}</div>
+                    <div class="stat-value">{html_escape(neue_kunden)}</div>
                 </div>
 
                 <div class="stat-box">
                     <div class="stat-label">Buchungen</div>
-                    <div class="stat-value">{buchungen_gesamt}</div>
+                    <div class="stat-value">{html_escape(buchungen_gesamt)}</div>
                 </div>
 
                 <div class="stat-box">
                     <div class="stat-label">Gutschriften</div>
-                    <div class="stat-value">{gutschriften_anzahl}</div>
+                    <div class="stat-value">{html_escape(gutschriften_anzahl)}</div>
                 </div>
 
                 <div class="stat-box">
                     <div class="stat-label">Vergebene Punkte</div>
-                    <div class="stat-value">{gutschriften_punkte}</div>
+                    <div class="stat-value">{html_escape(gutschriften_punkte)}</div>
                 </div>
 
                 <div class="stat-box">
                     <div class="stat-label">Einlösungen</div>
-                    <div class="stat-value">{einloesungen_anzahl}</div>
+                    <div class="stat-value">{html_escape(einloesungen_anzahl)}</div>
                 </div>
 
                 <div class="stat-box">
                     <div class="stat-label">Eingelöste Punkte</div>
-                    <div class="stat-value">{einloesungen_punkte}</div>
+                    <div class="stat-value">{html_escape(einloesungen_punkte)}</div>
                 </div>
             </div>
 
@@ -4328,12 +4352,12 @@ def chef_praemien():
 
         rows += f"""
         <tr>
-            <td>{p[0]}</td>
+            <td>{html_escape(p[0])}</td>
 
             <td>
                 <img
-                    src="/static/images/{p[3]}"
-                    alt="{p[1]}"
+                    src="/static/images/{html_escape(p[3])}"
+                    alt="{html_escape(p[1])}"
                     style="
                         width:70px;
                         height:70px;
@@ -4343,8 +4367,8 @@ def chef_praemien():
                 >
             </td>
 
-            <td>{p[1]}</td>
-            <td>{p[2]}</td>
+            <td>{html_escape(p[1])}</td>
+            <td>{html_escape(p[2])}</td>
 
             <td>
                 <span style="
@@ -4352,18 +4376,18 @@ def chef_praemien():
                     width:28px;
                     height:28px;
                     border-radius:8px;
-                    background:{p[4]};
+                    background:{html_escape(p[4])};
                     border:1px solid #777;
                 "></span>
             </td>
 
-            <td>{status}</td>
-            <td>{p[6]}</td>
+            <td>{html_escape(status)}</td>
+            <td>{html_escape(p[6])}</td>
 
             <td>
                 <a
                     class="btn btn-dark"
-                    href="/chef-praemien/{p[0]}/bearbeiten"
+                    href="/chef-praemien/{html_escape(p[0])}/bearbeiten"
                     style="
                         padding:12px 16px;
                         font-size:18px;
@@ -4515,7 +4539,7 @@ def chef_praemie_neu():
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Neue Prämie</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <div class="hint">
                 Bild und Farbe werden später vom Systembetreiber angepasst.
@@ -4544,7 +4568,7 @@ def chef_praemie_neu():
                 <input
                     type="number"
                     name="position"
-                    value="{vorgeschlagene_position}"
+                    value="{html_escape(vorgeschlagene_position)}"
                     min="1"
                     required
                 >
@@ -4665,8 +4689,8 @@ def chef_praemie_bearbeiten(praemie_id):
 
             <div class="info-box">
                 <img
-                    src="/static/images/{praemie[3]}"
-                    alt="{praemie[1]}"
+                    src="/static/images/{html_escape(praemie[3])}"
+                    alt="{html_escape(praemie[1])}"
                     style="
                         width:140px;
                         height:140px;
@@ -4674,7 +4698,7 @@ def chef_praemie_bearbeiten(praemie_id):
                         border-radius:20px;
                         display:block;
                         margin:0 auto 20px auto;
-                        border:4px solid {praemie[4]};
+                        border:4px solid {html_escape(praemie[4])};
                     "
                 >
 
@@ -4689,7 +4713,7 @@ def chef_praemie_bearbeiten(praemie_id):
                 <input
                     type="text"
                     name="name"
-                    value="{praemie[1]}"
+                    value="{html_escape(praemie[1])}"
                     required
                 >
 
@@ -4697,7 +4721,7 @@ def chef_praemie_bearbeiten(praemie_id):
                 <input
                     type="number"
                     name="punkte"
-                    value="{praemie[2]}"
+                    value="{html_escape(praemie[2])}"
                     min="1"
                     required
                 >
@@ -4733,7 +4757,7 @@ def chef_praemie_bearbeiten(praemie_id):
                 
                 <form
                     method="POST"
-                    action="/chef-praemien/{praemie[0]}/loeschen"
+                    action="/chef-praemien/{html_escape(praemie[0])}/loeschen"
                     onsubmit="return confirm('Soll diese Prämie wirklich endgültig gelöscht werden?');"
                 >
                     <button
@@ -4793,8 +4817,8 @@ def chef_punkte_regel():
         except ValueError:
             punkte_pro_euro = 0
 
-        if punkte_pro_euro < 1:
-            meldung = "❌ Der Wert muss mindestens 1 sein."
+        if not 1 <= punkte_pro_euro <= 1000:
+            meldung = "❌ Der Wert muss zwischen 1 und 1000 liegen."
         else:
             cur.execute("""
                 INSERT INTO einstellungen (schluessel, wert)
@@ -4827,13 +4851,13 @@ def chef_punkte_regel():
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Punkte-Regel</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <div class="info-box">
                 <div class="section-title">Aktuelle Regel</div>
 
                 <div class="value">
-                    1 € = {punkte_pro_euro} Punkt
+                    1 € = {html_escape(punkte_pro_euro)} Punkt
                 </div>
 
                 <div class="hint">
@@ -4848,7 +4872,7 @@ def chef_punkte_regel():
                 <input
                     type="number"
                     name="punkte_pro_euro"
-                    value="{punkte_pro_euro}"
+                    value="{html_escape(punkte_pro_euro)}"
                     min="1"
                     required
                 >
@@ -4915,7 +4939,7 @@ def chef_pin_verwaltung():
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Chef-PIN verwalten</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <form method="POST">
 
@@ -4926,7 +4950,7 @@ def chef_pin_verwaltung():
                         id="chefPin"
                         type="password"
                         name="chef_pin"
-                        value="{chef_pin}"
+                        value="{html_escape(chef_pin)}"
                         inputmode="numeric"
                         minlength="4"
                         required
@@ -5040,7 +5064,7 @@ def chef_mitarbeiter_neu():
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Neuer Mitarbeiter</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <form method="POST">
 
@@ -5130,15 +5154,15 @@ def chef_mitarbeiter():
 
         rows += f"""
         <tr>
-            <td>{m[0]}</td>
-            <td>{m[1]}</td>
+            <td>{html_escape(m[0])}</td>
+            <td>{html_escape(m[1])}</td>
             <td>••••</td>
-            <td>{status}</td>
-            <td>{format_datetime(m[4])}</td>
+            <td>{html_escape(status)}</td>
+            <td>{html_escape(format_datetime(m[4]))}</td>
             <td>
                 <a
                     class="btn btn-dark"
-                    href="/chef-mitarbeiter/{m[0]}/bearbeiten"
+                    href="/chef-mitarbeiter/{html_escape(m[0])}/bearbeiten"
                     style="
                         padding:12px 16px;
                         font-size:18px;
@@ -5292,14 +5316,14 @@ def chef_mitarbeiter_bearbeiten(mitarbeiter_id):
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Mitarbeiter bearbeiten</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <div class="info-box">
                 <div class="label">Erstellt am</div>
-                <div class="value">{erstellt_am}</div>
+                <div class="value">{html_escape(erstellt_am)}</div>
 
                 <div class="label">Letzter Login</div>
-                <div class="value">{letzter_login}</div>
+                <div class="value">{html_escape(letzter_login)}</div>
             </div>
 
             <form method="POST">
@@ -5308,7 +5332,7 @@ def chef_mitarbeiter_bearbeiten(mitarbeiter_id):
                 <input
                     type="text"
                     name="name"
-                    value="{mitarbeiter[1]}"
+                    value="{html_escape(mitarbeiter[1])}"
                     required
                 >
 
@@ -5319,7 +5343,7 @@ def chef_mitarbeiter_bearbeiten(mitarbeiter_id):
                         id="mitarbeiterPin"
                         type="password"
                         name="pin"
-                        value="{mitarbeiter[2]}"
+                        value="{html_escape(mitarbeiter[2])}"
                         inputmode="numeric"
                         minlength="4"
                         required
@@ -5434,13 +5458,18 @@ def chef_einstellungen():
                 </a>
                 
 
-                <a class="menu-box menu-blue" href="#">
+                <a class="menu-box menu-blue" href="/chef-nachrichten">
                     🔔 Push-Nachrichten
                 </a>
 
                 <a class="menu-box menu-red" href="/chef-mitarbeiter">
                     👨‍💼 Mitarbeiter verwalten
                 </a>
+
+                <a class="menu-box menu-purple" href="/chef-laden">Laden &amp; Module</a>
+                <a class="menu-box menu-orange" href="/chef-speisekarte">Speisekarte &amp; Preise</a>
+                <a class="menu-box menu-blue" href="/chef-sicherheit">Zwei-Faktor-Anmeldung</a>
+                <a class="menu-box menu-gray" href="/chef-terminals">Bestellgeräte autorisieren</a>
                 
 
                 <a class="menu-box menu-gray" href="/chef-logout">
@@ -5645,7 +5674,7 @@ def chef_nachrichten():
             <div class="logo">KEBAB HÖHLE</div>
             <div class="subtitle">Push-Nachrichten</div>
 
-            {"<div class='message'>" + meldung + "</div>" if meldung else ""}
+            {message_html(meldung)}
 
             <div class="hint">
                 Hier kann der Chef eine Angebotsnachricht an Kunden senden,
@@ -5667,7 +5696,7 @@ def chef_nachrichten():
                     maxlength="500"
                     placeholder="z. B. Heute Pizza Mexico XL nur 10 € bei deiner Kebab Höhle."
                     required
-                >{alte_nachricht}</textarea>
+                >{html_escape(alte_nachricht)}</textarea>
 
                 <button class="btn-red" type="submit">
                     🔔 Push-Nachricht senden
@@ -5991,5 +6020,9 @@ def impressum():
     """
 
 
+from hardening import install
+install(app, globals())
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=False)
+
