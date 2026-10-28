@@ -47,11 +47,13 @@ def config(connect):
         return g.shop_config
     with transaction(connect) as cur:
         raw = setting(cur, 'shop_config', '{}')
+        menu_configured = bool(setting(cur,'menu_catalog',''))
     result = copy.deepcopy(DEFAULT)
     result.update(json.loads(raw))
     # New installations must explicitly supply their own identity (no silent clone).
     if os.environ.get('SHOP_KEY', 'kebab-hoehle-xxl') != 'kebab-hoehle-xxl' and raw == '{}':
         result.update(name='Neuer Laden', city='', owner='', address='', postcode='', phone='', email='', logo='', delivery={}, modules='bonus')
+    result['setup_complete'] = os.environ.get('SHOP_KEY','kebab-hoehle-xxl')=='kebab-hoehle-xxl' or (raw!='{}' and menu_configured)
     if has_request_context():
         g.shop_config = result
     return result
@@ -95,8 +97,7 @@ def catalog(connect, rewards=False):
         if rewards:
             from praemien_katalog import PRAEMIEN_KATALOG, PRAEMIEN_EXTRAS, PRAEMIEN_MENUES
             reference = json.loads(Path(__file__).with_name('reward_catalog.json').read_text(encoding='utf-8'))
-            source = {p['id']:p for p in reference['products']}
-            source.update({p['id']:p for p in result['products'] if p['id'] not in source})
+            source = {p['id']:p for p in result['products']}
             cur.execute('SELECT produkt_id,varianten,aktiv FROM bonus_katalog ORDER BY produkt_id')
             rows = cur.fetchall()
             products = []
@@ -104,8 +105,9 @@ def catalog(connect, rewards=False):
                 if not active or product_id not in source:
                     continue
                 product = copy.deepcopy(source[product_id])
-                product['name'] = PRAEMIEN_KATALOG.get(product_id,product)['name']
-                product['variants'] = [{'name':name,'price':points/100} for name,points in variants.items()]
+                product['variants'] = [{'name':v['name'],'price':variants[v['name']]/100} for v in product['variants'] if v['name'] in variants]
+                if not product['variants']:
+                    continue
                 for extra in product['extras']:
                     if extra['name']=='Extra Ei':
                         extra.update(priceClassic=1,priceXXL=2)

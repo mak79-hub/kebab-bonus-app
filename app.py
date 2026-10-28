@@ -2055,7 +2055,10 @@ def normalisiere_bestelloption(option):
 
 
 def text_feld(daten, name, max_laenge=300):
-    return str(daten.get(name) or "").strip()[:max_laenge]
+    wert = daten.get(name) or ""
+    if not isinstance(wert, str):
+        return ""
+    return "".join(c for c in wert if ord(c) >= 32 or c in "\n\t").strip()[:max_laenge]
 
 
 def reader_fuer_station(station):
@@ -2130,7 +2133,8 @@ def api_theke_bestellungen():
                 b.kundenhinweis,
                 b.gewuenschte_zeit,
                 b.station,
-                b.druckstatus
+                b.druckstatus,
+                b.vergebene_punkte
             FROM bestellungen b
             WHERE b.bestelldatum = CURRENT_DATE
             ORDER BY b.erstellt_am ASC
@@ -2203,7 +2207,7 @@ def api_theke_bestellungen():
                 "Gesamtbetrag": gesamtbetrag_cent,
                 "status": zeile[4],
                 "bonus_kunde": ist_bonus_kunde,
-                "punkte": int(float(zeile[3])) if ist_bonus_kunde else 0,
+                "punkte": (int(zeile[25]) if zeile[25] is not None else purchase_points(cur, zeile[3])) if ist_bonus_kunde else 0,
                 "bonus_gutgeschrieben": bool(zeile[6]),
                 "zahlungsart": zeile[9],
                 "punkte_betrag": int(zeile[10] or 0),
@@ -2326,7 +2330,7 @@ def api_bestellung():
             if lieferort not in LIEFERMINDESTWERTE:
                 return jsonify({"ok": False, "fehler": "Bitte einen gültigen Lieferort auswählen."}), 400
             mindestwert = LIEFERMINDESTWERTE[lieferort]
-            fehlbetrag_cent = max(0, mindestwert * 100 - round(gesamtbetrag * 100))
+            fehlbetrag_cent = max(0, int(Decimal(str(mindestwert)) * 100) - gesamt_cent)
             if fehlbetrag_cent:
                 fehlbetrag = f"{fehlbetrag_cent / 100:.2f}".replace(".", ",")
                 return jsonify({"ok": False, "fehler": f"Es fehlen noch {fehlbetrag} € für Ihren Lieferort {lieferort} (Mindestbestellwert: {mindestwert} €)."}), 400
@@ -2511,9 +2515,9 @@ def sumup_zahlung_in_db_abschliessen(cur, bestellung_id, kunde_id, gesamtbetrag,
         UPDATE bestellungen
         SET status = 'BEZAHLT', bezahlt_am = CURRENT_TIMESTAMP,
             zahlungsart = 'SUMUP', punkte_gutgeschrieben = TRUE,
-            sumup_status = 'SUCCESS', sumup_fehler = NULL
+            sumup_status = 'SUCCESS', sumup_fehler = NULL, vergebene_punkte = %s
         WHERE id = %s
-    """, (bestellung_id,))
+    """, (vergebene_punkte, bestellung_id))
     return vergebene_punkte
 
 
@@ -2630,8 +2634,12 @@ def api_sumup_status(token):
         sumup_betrag = (daten.get("total_amount") or {}).get("value")
 
         if status == "successful":
-            if sumup_betrag is not None and int(sumup_betrag) != betrag_in_cent(bestellung[2]):
-                raise RuntimeError("SumUp meldet einen abweichenden Zahlungsbetrag.")
+            geld = daten.get("total_amount") or {}
+            if (isinstance(sumup_betrag, bool) or not isinstance(sumup_betrag, int)
+                    or sumup_betrag != betrag_in_cent(bestellung[2])
+                    or geld.get("currency") != "EUR" or geld.get("minor_unit") != 2
+                    or daten.get("checkout_id") != bestellung[5]):
+                raise RuntimeError("SumUp-Zahlungskennung, Betrag oder Währung konnten nicht bestätigt werden.")
             punkte = sumup_zahlung_in_db_abschliessen(
                 cur, bestellung[0], bestellung[1], bestellung[2], bestellung[4]
             )
@@ -2886,9 +2894,9 @@ def api_bestellung_bezahlt(token):
 
             cur.execute("""
                 UPDATE bestellungen
-                SET punkte_gutgeschrieben = TRUE
+                SET punkte_gutgeschrieben = TRUE, vergebene_punkte = %s
                 WHERE id = %s
-            """, (bestellung_id,))
+            """, (vergebene_punkte, bestellung_id))
 
         cur.execute("""
             UPDATE bestellungen
@@ -3283,8 +3291,8 @@ def scanner():
             let kundenId = null;
             decodedText = decodedText.trim();
 
-            const matchUrl = decodedText.match(/\\/kunde\\/(KH-\\d+)/i);
-            const matchPlain = decodedText.match(/^(KH-\\d+)$/i);
+            const matchUrl = decodedText.match(/\\/kunde\\/(KH-[A-Z0-9-]+)(?:[/?#]|$)/i);
+            const matchPlain = decodedText.match(/^(KH-[A-Z0-9-]+)$/i);
 
             if (matchUrl) {{
                 kundenId = matchUrl[1].toUpperCase();

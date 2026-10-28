@@ -38,6 +38,10 @@ def env(monkeypatch):
             cur.execute("INSERT INTO kunden(kunden_id,vorname,nachname,geburtsdatum,passwort) VALUES ('KH-TEST-1','Synthetic','Customer','2000-01-01',%s) RETURNING id",(generate_password_hash(customer_password),));customer_id=cur.fetchone()[0]
             cur.execute('INSERT INTO kunden_laeden(kunde_id,laden_id) VALUES (%s,1)',(customer_id,))
             cur.execute('UPDATE bonus_katalog SET aktiv=TRUE')
+            from praemien_katalog import PRAEMIEN_KATALOG
+            for pid,p in PRAEMIEN_KATALOG.items():
+                import json
+                cur.execute('UPDATE bonus_katalog SET varianten=%s::jsonb WHERE produkt_id=%s',(json.dumps(p['varianten']),pid))
     original_status=application.aktueller_bestellstatus
     monkeypatch.setattr(application,'aktueller_bestellstatus',lambda zeitpunkt=None:{'offen':True,'ruhetag':False,'naechste_oeffnung':None,'server_zeit':'2026-10-28T13:00:00+01:00'})
     def forbidden(*a,**kw): raise AssertionError('External network access forbidden in integration tests')

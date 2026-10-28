@@ -93,6 +93,7 @@ def install(app, legacy):
         context={'shop':cfg()}
         if request.endpoint in {'bestellen','mitarbeiter_bestellung','bestellterminal'}:
             context['menu_catalog']=catalog(connect)
+            context['staff_back_url']='/chef-dashboard' if access.role('chef') else '/mitarbeiter'
         elif request.endpoint=='kunde_praemien':
             context['reward_catalog']=catalog(connect,True)
         return context
@@ -107,6 +108,8 @@ def install(app, legacy):
         if endpoint=='health':
             return None
         shop = cfg()
+        if not shop['setup_complete'] and not endpoint.startswith('chef_') and endpoint not in {'health','shop_manifest'}:
+            return error('Dieser Laden wird noch eingerichtet. Bestellungen und Registrierungen sind noch nicht freigegeben.',503)
         if endpoint in BONUS_ENDPOINTS and not enabled(shop,'bonus'):
             return error('Das Bonusprogramm ist für diesen Laden nicht aktiviert.',404)
         if endpoint in ORDER_ENDPOINTS and not enabled(shop,'ordering'):
@@ -170,6 +173,7 @@ def install(app, legacy):
         response.headers['X-Frame-Options']='DENY'
         response.headers['Referrer-Policy']='same-origin'
         response.headers['Permissions-Policy']='camera=(self), microphone=(), geolocation=()'
+        response.headers['Content-Security-Policy']="object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
         if request.is_secure:
             response.headers['Strict-Transport-Security']='max-age=31536000'
         if response.status_code>=500 and response.is_json:
@@ -192,6 +196,20 @@ def install(app, legacy):
             if form.get('method','get').lower()=='post':
                 form.insert(0,soup.new_tag('input',type='hidden',attrs={'name':'_csrf','value':token}))
                 form.insert(0,soup.new_tag('input',type='hidden',attrs={'name':'_action_id','value':secrets.token_hex(16)}))
+        # Replace legacy display-only branding, never script/data content.
+        shop=cfg()
+        identities={'Kebap Höhle XXL':shop['name'],'Kebab Höhle XXL':shop['name'],
+                    'KEBAB HÖHLE XXL':shop['name'],'KEBAB HÖHLE':shop['name'],
+                    'DÖNI BONUS':shop['name']+' Bonus','DÖNİ BONUS':shop['name']+' Bonus',
+                    'Mustafa Erdogan':shop['owner'],'Darmstädter Str. 81':shop['address'],
+                    '65474 Bischofsheim':shop['postcode']+' '+shop['city'],
+                    '06144 2079485':shop['phone'],'mustafaerdugulu@outlook.de':shop['email']}
+        for node in list(soup.find_all(string=True)):
+            if node.parent and node.parent.name not in {'script','style'}:
+                text=str(node)
+                for old,new in identities.items():
+                    if old != new: text=text.replace(old,new)
+                if text!=str(node):node.replace_with(text)
         # Remove unavailable navigation, rather than merely failing after a click.
         for anchor in soup.find_all('a',href=True):
             path = urlsplit(anchor['href']).path
@@ -393,10 +411,11 @@ def install(app, legacy):
         with transaction(connect) as cur:
             cur.execute('SELECT produkt_id,varianten,aktiv FROM bonus_katalog ORDER BY produkt_id')
             rows=cur.fetchall()
-        names={p['id']:p['name'] for p in reward_menu['products']}
+        menu_products={p['id']:p for p in catalog(connect)['products']}
         from praemien_katalog import PRAEMIEN_KATALOG
-        products=[{'id':pid,'name':names.get(pid,PRAEMIEN_KATALOG.get(pid,{}).get('name','Produkt '+str(pid))),
-                   'active':active,'variants':[{'name':v,'points':n} for v,n in variants.items()]} for pid,variants,active in rows]
+        products=[{'id':pid,'name':menu_products[pid]['name'],
+                   'active':active,'variants':[{'name':v['name'],'points':variants[v['name']]} for v in menu_products[pid]['variants'] if v['name'] in variants]}
+                  for pid,variants,active in rows if pid in menu_products]
         if request.method=='POST':
             try:
                 updates=[]
@@ -547,6 +566,17 @@ def install(app, legacy):
     def health():
         with transaction(connect) as cur: cur.execute('SELECT 1')
         return jsonify(ok=True,version='readiness-v2')
+
+    @app.route('/static/manifest.webmanifest')
+    def shop_manifest():
+        shop=cfg()
+        response=jsonify(name=shop['name']+' Bonus',short_name=shop['name'],start_url='/',scope='/',
+                         display='standalone',background_color='#0d0d0d',theme_color='#0d0d0d',
+                         icons=[{'src':'/static/icons/icon-192.png','sizes':'192x192','type':'image/png'},
+                                {'src':'/static/icons/icon-512.png','sizes':'512x512','type':'image/png'}])
+        response.mimetype='application/manifest+json'
+        response.headers['Cache-Control']='no-store'
+        return response
 
     # Replace legacy implementations, preserving all established URLs.
     replacements={'startseite':home,'login':customer_login,'register':register,'kunde':customer_card,

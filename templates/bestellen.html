@@ -475,7 +475,7 @@
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         @media (min-width: 768px) { .products { grid-template-columns: repeat(3, 1fr); } .category-grid { grid-template-columns: repeat(3, 1fr); } .menu-product-grid { grid-template-columns: repeat(3, 1fr); } body { max-width: 500px; margin: 0 auto; } }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="/static/vendor/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -630,11 +630,11 @@ let menuPreselected = null;
 const APP_MODE = {{ app_mode|tojson }};
 const ORDER_STATION = {{ station|tojson }};
 const ORDER_SOURCE = {{ bestellquelle|tojson }};
-const CUSTOMER_ID = {{ session.get('kunde_id')|tojson }};
+const CUSTOMER_ID = {{ (session.get('kunde_id') if shop.modules in ['both','bonus'] else none)|tojson }};
 
 function bestellseiteZurueck() {
     if (APP_MODE === 'mitarbeiter') {
-        window.location.href = '/mitarbeiter';
+        window.location.href = {{ staff_back_url|default('/mitarbeiter')|tojson }};
     } else if (APP_MODE === 'kunde' && CUSTOMER_ID) {
         window.location.href = '/kunde/' + encodeURIComponent(CUSTOMER_ID);
     } else {
@@ -651,6 +651,7 @@ function zeigeBestellstatus() {
     var button = document.getElementById('checkoutButton');
     button.disabled = !bestellstatus.offen;
     if (bestellstatus.offen) { notice.style.display = 'none'; return; }
+    if (!bestellstatus.naechste_oeffnung) { notice.textContent='Zurzeit sind keine Bestellzeiten freigegeben.'; notice.style.display='block'; return; }
     var ziel = new Date(bestellstatus.naechste_oeffnung);
     var sekunden = Math.max(0, Math.ceil((ziel.getTime() - Date.now() - serverZeitOffset) / 1000));
     var tage = Math.floor(sekunden / 86400);

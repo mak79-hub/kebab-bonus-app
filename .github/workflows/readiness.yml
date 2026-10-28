@@ -24,6 +24,7 @@ jobs:
     env:
       TEST_DATABASE_URL: postgresql://test_user:ci-only-disposable-database@127.0.0.1:5432/kebab_test
       PGOPTIONS: '-c statement_timeout=15000'
+      RUN_BROWSER_TESTS: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -31,10 +32,18 @@ jobs:
           python-version: '3.12'
           cache: pip
       - run: pip install -r requirements-dev.txt
+      - run: pip install playwright==1.64.1
+      - name: Prepare browser
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+          else
+            python -m playwright install --with-deps chromium
+          fi
       - run: python -m compileall -q .
       - run: python -m pytest tests -q --junitxml=test-results/readiness.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: readiness-results
-          path: test-results/readiness.xml
+          path: test-results/

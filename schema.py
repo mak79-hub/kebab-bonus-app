@@ -21,6 +21,8 @@ def foundation(cur):
             letzter_login TIMESTAMP);
         CREATE TABLE IF NOT EXISTS schema_migrations (
             version INTEGER PRIMARY KEY, angewendet_am TIMESTAMPTZ DEFAULT NOW());
+        ALTER TABLE mitarbeiter ALTER COLUMN pin TYPE TEXT;
+        ALTER TABLE einstellungen ALTER COLUMN wert TYPE TEXT;
     """)
 
 
@@ -56,6 +58,8 @@ def complete(cur):
             aktiv BOOLEAN NOT NULL DEFAULT TRUE);
         ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS anfrage_id TEXT;
         ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS anfrage_hash TEXT;
+        ALTER TABLE bestellungen ADD COLUMN IF NOT EXISTS vergebene_punkte INTEGER;
+        UPDATE bestellungen SET vergebene_punkte=CASE WHEN kunde_id IS NOT NULL AND zahlungsart<>'BONUSPUNKTE' THEN FLOOR(gesamtbetrag)::integer ELSE 0 END WHERE status='BEZAHLT' AND vergebene_punkte IS NULL;
         ALTER TABLE punkte_bewegungen ADD COLUMN IF NOT EXISTS referenz TEXT;
         CREATE UNIQUE INDEX IF NOT EXISTS idx_punkte_referenz ON punkte_bewegungen(referenz) WHERE referenz IS NOT NULL;
         CREATE UNIQUE INDEX IF NOT EXISTS idx_bestellungen_anfrage ON bestellungen(anfrage_id) WHERE anfrage_id IS NOT NULL;
