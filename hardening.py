@@ -26,6 +26,7 @@ BONUS_ENDPOINTS = {'register','login','kunde','kunde_praemien','kunde_praemien_a
     'mitarbeiter','scanner','mitarbeiter_kunde','punkte_einloesen','chef_kunden','chef_gutschriften',
     'chef_einloesungen','chef_statistiken','chef_praemien','chef_praemie_neu','chef_praemie_bearbeiten',
     'chef_praemie_loeschen','chef_punkte_regel','chef_nachrichten','push_public_key','push_subscribe','customer_settings'}
+BONUS_ENDPOINTS.add('cancel_customer_reward')
 ORDER_ENDPOINTS = {'bestellen','mitarbeiter_bestellung','bestellterminal','api_bestellung','chef_menu','chef_terminals','terminal_activation'}
 
 
@@ -125,7 +126,7 @@ def install(app, legacy):
             customer_code = (request.view_args or {}).get('kunden_id','').strip().upper()
             if session.get('kunde_id') != customer_code:
                 return redirect('/login')
-        if endpoint in {'push_subscribe','customer_settings'} and not session.get('kunde_id'):
+        if endpoint in {'push_subscribe','customer_settings','cancel_customer_reward'} and not session.get('kunde_id'):
             return error('Bitte zuerst als Kunde anmelden.',401)
         if endpoint in {'api_sumup_start','api_sumup_status'} and not access.staff():
             if not valid_terminal():
@@ -227,7 +228,7 @@ def install(app, legacy):
         return error('Ein interner Fehler ist aufgetreten. Bitte den Laden kontaktieren.',500)
 
     def home():
-        return page('home','Willkommen',customer_code=session.get('kunde_id'))
+        return page('home','Willkommen',customer_code=session.get('kunde_id'),back=None)
 
     def customer_login():
         if request.method=='GET' and session.get('kunde_id'):
@@ -290,9 +291,33 @@ def install(app, legacy):
                 return redirect('/login')
             cur.execute('SELECT titel,nachricht FROM push_nachrichten WHERE aktiv=TRUE ORDER BY erstellt_am DESC,id DESC LIMIT 1')
             offer=cur.fetchone()
+            cur.execute("SELECT token,tagesnummer,punkte_betrag FROM bestellungen WHERE kunde_id=%s AND zahlungsart='BONUSPUNKTE' AND status='WARTET_AUF_ZAHLUNG' AND NOT punkte_eingeloest ORDER BY erstellt_am DESC",(row[0],))
+            pending=cur.fetchall()
         customer={'id':row[0],'code':row[1],'vorname':row[2],'nachname':row[3],'consent':row[4]}
         return page('card','Deine Bonuskarte',customer=customer,balance=legacy['get_punktestand'](row[0]),
-                    qr=legacy['make_qr_code'](url_for('kunde',kunden_id=row[1],_external=True)),offer=offer)
+                    qr=legacy['make_qr_code'](url_for('kunde',kunden_id=row[1],_external=True)),offer=offer,
+                    pending=pending,reserved=sum(p[2] for p in pending))
+
+    def customer_rewards(kunden_id):
+        with transaction(connect) as cur:
+            cur.execute('SELECT id FROM kunden WHERE kunden_id=%s',(kunden_id.upper(),));row=cur.fetchone()
+            if not row:return redirect('/login')
+            cur.execute("SELECT COALESCE((SELECT SUM(punkte) FROM punkte_bewegungen WHERE kunde_id=%s),0)-COALESCE((SELECT SUM(punkte_betrag) FROM bestellungen WHERE kunde_id=%s AND zahlungsart='BONUSPUNKTE' AND status='WARTET_AUF_ZAHLUNG' AND NOT punkte_eingeloest),0)",(row[0],row[0]))
+            available=max(0,cur.fetchone()[0])
+        return render_template('praemien.html',punktestand=available)
+
+    @app.route('/kunde/praemien/<token>/stornieren',methods=['POST'])
+    def cancel_customer_reward(token):
+        with transaction(connect) as cur:
+            cur.execute("SELECT b.id,b.status FROM bestellungen b JOIN kunden k ON k.id=b.kunde_id WHERE b.token=%s AND k.kunden_id=%s AND b.zahlungsart='BONUSPUNKTE' FOR UPDATE OF b",(token,session['kunde_id']))
+            row=cur.fetchone()
+            if not row:return error('Prämienbestellung nicht gefunden.',404)
+            if row[1]=='BEZAHLT':return error('Diese Prämie wurde bereits eingelöst. Bitte an der Theke nachfragen.',409)
+            if row[1]!='STORNIERT':
+                cur.execute("UPDATE bestellungen SET status='STORNIERT',druckstatus=CASE WHEN druckstatus='GEDRUCKT' THEN druckstatus ELSE 'STORNIERT' END WHERE id=%s",(row[0],))
+                cur.execute("UPDATE druckauftraege SET status='STORNIERT' WHERE bestellung_id=%s AND status IN ('BEREIT','FEHLER')",(row[0],))
+                access.audit(cur,'CUSTOMER_REWARD_CANCELLED',row[0])
+        return redirect(url_for('kunde',kunden_id=session['kunde_id']))
 
     @app.route('/kunde/einstellungen',methods=['POST'])
     def customer_settings():
@@ -579,7 +604,7 @@ def install(app, legacy):
         return response
 
     # Replace legacy implementations, preserving all established URLs.
-    replacements={'startseite':home,'login':customer_login,'register':register,'kunde':customer_card,
+    replacements={'startseite':home,'login':customer_login,'register':register,'kunde':customer_card,'kunde_praemien':customer_rewards,
                   'push_subscribe':push_subscribe,'mitarbeiter_login':lambda:staff_login('mitarbeiter'),
                   'chef_login':lambda:staff_login('chef'),'mitarbeiter_logout':lambda:staff_logout('mitarbeiter'),
                   'chef_logout':lambda:staff_logout('chef'),'chef_pin_verwaltung':chef_pin,

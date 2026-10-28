@@ -199,3 +199,17 @@ def test_upgrade_existing_production_column_limits_preserves_data(env):
     assert len(hashed)>20 and check_password_hash(hashed,legacy_pin)
     sql(env,"INSERT INTO einstellungen VALUES ('long-synthetic-config',%s)",('x'*1000,))
     assert sql(env,'SELECT COUNT(*) FROM kunden',fetch=True)[0][0]==1
+
+
+def test_customer_can_release_only_own_pending_reward_reservation(env):
+    c=env['app'].test_client();login(c,env,'customer')
+    sql(env,"INSERT INTO punkte_bewegungen(kunde_id,typ,punkte) VALUES (%s,'GUTSCHRIFT',1500)",(env['customer_id'],))
+    data=order();data['items'][0].pop('total')
+    r=post(c,'/api/praemien-bestellung',json=data);assert r.status_code==200;t=r.json['token']
+    card=c.get('/kunde/KH-TEST-1').text;assert '1000 Punkte reserviert' in card and '500 frei verfügbar' in card
+    assert 'Number(500)' in c.get('/kunde/KH-TEST-1/praemien').text
+    stranger=env['app'].test_client()
+    assert post(stranger,'/kunde/praemien/'+t+'/stornieren').status_code==401
+    assert post(c,'/kunde/praemien/'+t+'/stornieren').status_code==302
+    assert '1000 Punkte reserviert' not in c.get('/kunde/KH-TEST-1').text
+    assert sql(env,'SELECT SUM(punkte) FROM punkte_bewegungen',fetch=True)[0][0]==1500

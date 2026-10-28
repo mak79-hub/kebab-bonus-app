@@ -35,7 +35,9 @@ stoppt die Initialisierung, statt vorhandene Kunden einem anderen Laden zuzuordn
 - Wiederholte Bestellanfragen mit gleicher Kennung erzeugen dieselbe Bestellung;
   manuelle Punkteaktionen besitzen ebenfalls Wiederholungsschutz.
 - Prämien: gemeinsame serverseitige Zeitprüfung und zentraler Punktekatalog;
-  offene Prämienbestellungen reservieren Punkte. Einlösung prüft erneut unter
+  offene Prämienbestellungen reservieren Punkte und können auf der eigenen
+  Bonuskarte zurückgenommen werden. Die Prämienauswahl zeigt nur freie Punkte.
+  Einlösung prüft erneut unter
   Kundensperre. Auswertungen berücksichtigen beide Einlösungstypen.
 - Punkteregel gilt für manuelle Gutschrift, Bar- und bestätigte Kartenzahlung.
 - Modulwahl „Nur Bonus / Nur Bestellen / Beides“ unter `/chef-laden`, wirksam in

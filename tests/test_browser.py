@@ -47,6 +47,7 @@ def test_mobile_bonus_and_guest_order_browser(env):
             guest.locator('#addToCartBtn').click()
             guest.get_by_role('button',name='Zum Warenkorb').click()
             expect(guest.locator('#cartTotal')).to_have_text('12,50€')
+            guest.wait_for_function("Math.abs(document.querySelector('#cartSidebar').getBoundingClientRect().x)<1")
             guest.screenshot(path=str(output/'03-order-mobile.png'),full_page=True)
             guest.locator('#checkoutButton').click()
             expect(guest.locator('#successModal')).to_have_class('success-overlay show')
