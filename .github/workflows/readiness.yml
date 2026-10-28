@@ -1,7 +1,7 @@
 name: Readiness and security regression tests
 on:
   push:
-    branches: [main, 'fix/start-readiness-*']
+    branches: [main]
   pull_request:
     branches: [main]
 permissions:

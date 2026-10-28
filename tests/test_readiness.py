@@ -265,10 +265,11 @@ def test_reward_order_reservations_prevent_overcommit(env):
     assert post(c,'/api/praemien-bestellung',json=data).status_code==409
 
 
-def test_reward_hours_gate_is_not_bypassed(env):
+def test_reward_hours_gate_is_not_bypassed(env,monkeypatch):
     from shop import DEFAULT
     shop=copy.deepcopy(DEFAULT);shop['hours']={str(d):None for d in range(7)}
     sql(env,"INSERT INTO einstellungen VALUES ('shop_config',%s)",(json.dumps(shop),))
+    monkeypatch.setattr(env['module'],'aktueller_bestellstatus',env['status'])
     c=env['app'].test_client();login(c,env,'customer')
     assert post(c,'/api/praemien-bestellung',json=order()).status_code==403
 

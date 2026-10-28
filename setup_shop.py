@@ -21,16 +21,18 @@ def validate_menu(menu):
     def text(value,limit=300):
         if not isinstance(value,str) or len(value)>limit or any(c in value for c in '<>"\'\\&') or any(ord(c)<32 for c in value):
             raise ValueError('Produkttexte müssen Klartext ohne HTML oder Anführungszeichen sein.')
+    def image(value):
+        if not isinstance(value,str) or len(value)>2000 or any(c in value for c in '<>"\'\\') or any(ord(c)<32 for c in value) or (value and not (value.startswith('/static/') or value.startswith('https://'))):
+            raise ValueError('Produktbilder benötigen einen sicheren /static/-Pfad oder eine HTTPS-Adresse.')
     for category in menu['categories']:
         cid=category.get('id','')
         if not re.fullmatch(r'[a-z0-9-]{1,50}',cid) or cid in category_ids:raise ValueError('Kategorie-ID ist ungültig oder doppelt.')
-        category_ids.add(cid);text(category.get('name'),100)
+        category_ids.add(cid);text(category.get('name'),100);text(category.get('emoji',''),16);image(category.get('img',''))
     for p in menu['products']:
         if not isinstance(p,dict) or isinstance(p.get('id'),bool) or not isinstance(p.get('id'),int) or not 1<=p['id']<=1000000 or p['id'] in product_ids or p.get('cat') not in category_ids:
             raise ValueError('Produkt-ID oder Kategorie ist ungültig oder doppelt.')
         product_ids.add(p['id']);text(p.get('name').replace('&','und'),100);text(p.get('desc','').replace('&','und'),1000)
-        image=p.get('img','')
-        if not isinstance(image,str) or (image and not (image.startswith('/static/') or image.startswith('https://'))):raise ValueError('Produktbilder benötigen /static/-Pfad oder HTTPS-Adresse.')
+        image(p.get('img',''));text(p.get('emoji',''),16)
         if not isinstance(p.get('variants'),list) or not 1<=len(p['variants'])<=10:raise ValueError('Produktvarianten fehlen.')
         names=set()
         for v in p['variants']:
@@ -50,6 +52,7 @@ def validate_menu(menu):
         if len(menu[group])>20:raise ValueError('Zu viele Zusatzoptionen.')
         for value in menu[group]:
             text(value.get('name'),80)
+            text(value.get('desc','').replace('&','und'),1000)
             if not 0<=cents(value.get('price'))<=100000:raise ValueError('Ungültiger Zusatzpreis.')
     return menu
 

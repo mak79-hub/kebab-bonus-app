@@ -161,7 +161,7 @@ def install(app, legacy):
             elif source!='KUNDEN_APP' or station or data.get('bestellart')=='VOR_ORT' or data.get('zahlungsart')=='SUMUP':
                 return error('Bestellquelle, Station oder Zahlungsart ist nicht erlaubt.')
         if endpoint=='api_praemien_bestellung':
-            status = bestellstatus()
+            status = legacy['aktueller_bestellstatus']()
             if not status['offen']:
                 return jsonify(ok=False,fehler='Heute ist Ruhetag.' if status['ruhetag'] else 'Bestellungen sind zurzeit nicht verfügbar.',**status),403
         session.setdefault('_csrf',secrets.token_urlsafe(32))
